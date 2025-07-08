@@ -1,0 +1,115 @@
+/* GenerarBoleta.css */
+.gb-form-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.gb-form-input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.gb-form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.gb-form-group {
+  margin-bottom: 20px;
+}
+
+.gb-form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Estilos para el autocomplete dentro del formulario */
+.gb-form-group .autocomplete-container {
+  margin-top: 0;
+}
+
+.gb-form-group .autocomplete-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  background-color: #fff;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.gb-form-group .autocomplete-input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+/* Botones de acciones */
+.generar-boleta-button {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  min-width: 120px;
+  margin-right: 10px;
+}
+
+.generar-boleta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.generar-boleta-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.generar-boleta-button.secondary {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.generar-boleta-button.secondary:hover {
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* Contenedor principal */
+.generar-boleta-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .gb-form-input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .generar-boleta-button {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-width: 100px;
+  }
+}
