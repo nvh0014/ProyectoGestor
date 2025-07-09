@@ -11,8 +11,15 @@
   --light-gray: #e0e6ed;
   --white: #ffffff;
   --success: #27ae60;
+  --success-light: #2ecc71;
+  --success-dark: #229954;
   --error: #e74c3c;
+  --error-light: #ec7063;
+  --error-dark: #c0392b;
   --warning: #f39c12;
+  --edit-blue: #3498db;
+  --edit-blue-light: #5dade2;
+  --edit-blue-dark: #2980b9;
   
   /* Gradientes */
   --gradient-main: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 50%, var(--primary-blue) 100%);
@@ -112,6 +119,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 60px;
+  height: 60px;
 }
 
 .clientes-logo-button:hover {
@@ -122,6 +131,18 @@
 .clientes-logo-button:focus {
   outline: 2px solid var(--secondary-blue);
   outline-offset: 2px;
+}
+
+.clientes-logo-image {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+  transition: var(--transition-base);
+}
+
+.clientes-logo-button:hover .clientes-logo-image {
+  transform: scale(1.1);
 }
 
 .clientes-header-text-group {
@@ -253,9 +274,9 @@
 }
 
 .clientes-add-button {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--success);
   color: var(--white);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--success-dark);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
@@ -266,13 +287,14 @@
   align-items: center;
   gap: var(--spacing-xs);
   white-space: nowrap;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
 }
 
 .clientes-add-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background: var(--success-light);
+  border-color: var(--success);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
 }
 
 .clientes-add-button:active {
@@ -282,6 +304,69 @@
 /* ===== TABLA ===== */
 .clientes-table-container {
   padding: var(--spacing-xl);
+  position: relative;
+}
+
+.clientes-table-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  background: var(--white);
+  /* Scrollbar personalizada para mejor UX en móviles */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-blue) var(--light-gray);
+}
+
+.clientes-table-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-track {
+  background: var(--light-gray);
+  border-radius: var(--radius-sm);
+  margin: 0 var(--spacing-sm);
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--light-gray);
+  min-width: 50px;
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, var(--secondary-blue), var(--primary-blue));
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-thumb:active {
+  background: var(--primary-blue);
+}
+
+/* Indicador de scroll para móviles */
+.clientes-table-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .clientes-table-container::after {
+    opacity: 0.6;
+  }
+  
+  .clientes-table-container:hover::after {
+    opacity: 1;
+  }
 }
 
 .clientes-table-controls {
@@ -315,11 +400,11 @@
 
 .clientes-table {
   width: 100%;
+  min-width: 800px; /* Ancho mínimo para asegurar que se vea bien en móviles */
   border-collapse: collapse;
   background: var(--white);
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
 }
 
 .clientes-table thead {
@@ -395,7 +480,7 @@
 
 .clientes-action-button {
   background: none;
-  border: none;
+  border: 2px solid transparent;
   padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -403,26 +488,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
+  font-weight: 600;
 }
 
 .clientes-action-button.edit {
-  color: var(--primary-blue);
+  color: var(--edit-blue);
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--edit-blue);
 }
 
 .clientes-action-button.edit:hover {
-  background: rgba(30, 60, 114, 0.1);
-  transform: scale(1.1);
+  background: var(--edit-blue);
+  color: var(--white);
+  border-color: var(--edit-blue-dark);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 .clientes-action-button.delete {
   color: var(--error);
+  background: rgba(231, 76, 60, 0.1);
+  border-color: var(--error);
 }
 
 .clientes-action-button.delete:hover {
-  background: rgba(231, 76, 60, 0.1);
-  transform: scale(1.1);
+  background: var(--error);
+  color: var(--white);
+  border-color: var(--error-dark);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
 .clientes-action-button:focus {
@@ -542,6 +638,7 @@
 }
 
 .clientes-modal-title {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: var(--font-size-lg);
   font-weight: 600;
   margin: 0;
@@ -659,15 +756,17 @@
 }
 
 .clientes-modal-button.primary {
-  background: var(--gradient-card);
+  background: var(--success);
   color: var(--white);
-  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--success-dark);
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
 }
 
 .clientes-modal-button.primary:hover {
-  background: var(--gradient-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background: var(--success-light);
+  border-color: var(--success);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
 }
 
 .clientes-modal-button.primary:active {
@@ -677,12 +776,31 @@
 .clientes-modal-button.secondary {
   background: var(--white);
   color: var(--medium-gray);
-  border: 1px solid var(--light-gray);
+  border: 2px solid var(--light-gray);
 }
 
 .clientes-modal-button.secondary:hover {
   background: var(--light-gray);
   border-color: var(--medium-gray);
+  color: var(--dark-gray);
+}
+
+.clientes-modal-button.danger {
+  background: var(--error);
+  color: var(--white);
+  border: 2px solid var(--error-dark);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.clientes-modal-button.danger:hover {
+  background: var(--error-light);
+  border-color: var(--error);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.clientes-modal-button.danger:active {
+  transform: translateY(0);
 }
 
 .clientes-modal-button:focus {
@@ -781,6 +899,16 @@
     order: 1;
   }
   
+  .clientes-logo-button {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .clientes-logo-image {
+    width: 40px;
+    height: 40px;
+  }
+  
   .clientes-header-text-group {
     order: 2;
   }
@@ -826,6 +954,17 @@
   
   .clientes-table-container {
     padding: var(--spacing-md);
+    /* Asegurar scroll horizontal en tablets */
+  }
+  
+  .clientes-table-wrapper {
+    /* Mejorar visualización del scroll en tablets */
+    border: 1px solid var(--light-gray);
+    border-radius: var(--radius-md);
+  }
+  
+  .clientes-table {
+    min-width: 700px; /* Reducir ancho mínimo para tablets */
   }
   
   .clientes-table-controls {
@@ -881,6 +1020,16 @@
     gap: var(--spacing-xs);
   }
   
+  .clientes-logo-button {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .clientes-logo-image {
+    width: 36px;
+    height: 36px;
+  }
+  
   .clientes-header-title {
     font-size: var(--font-size-base);
   }
@@ -925,11 +1074,22 @@
   
   .clientes-table-container {
     padding: var(--spacing-sm);
-    overflow-x: auto;
+    /* Scroll horizontal optimizado para móviles */
+  }
+  
+  .clientes-table-wrapper {
+    /* Mejorar UX de scroll en móviles */
+    border: 1px solid var(--light-gray);
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
   }
   
   .clientes-table {
-    min-width: 600px;
+    min-width: 600px; /* Ancho mínimo para móviles grandes */
+  }
+  
+  .clientes-table {
+    min-width: 600px; /* Ancho mínimo para móviles grandes */
     font-size: var(--font-size-xs);
   }
   
@@ -939,8 +1099,8 @@
   }
   
   .clientes-action-button {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
   }
   
   .clientes-pagination-button {
@@ -970,6 +1130,16 @@
     --spacing-lg: 14px;
     --spacing-xl: 18px;
     --spacing-xxl: 24px;
+  }
+  
+  .clientes-logo-button {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .clientes-logo-image {
+    width: 32px;
+    height: 32px;
   }
   
   .clientes-header-title {
@@ -1003,7 +1173,14 @@
   }
   
   .clientes-table {
-    min-width: 500px;
+    min-width: 500px; /* Ancho mínimo para móviles pequeños */
+  }
+  
+  .clientes-table-wrapper {
+    /* Scroll más visible en móviles pequeños */
+    border: 2px solid var(--primary-blue);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.2);
   }
   
   .clientes-table th,
@@ -1013,6 +1190,12 @@
   
   .clientes-table-container {
     padding: var(--spacing-xs);
+    /* Indicador de scroll más visible */
+  }
+  
+  .clientes-table-container::after {
+    opacity: 1;
+    bottom: var(--spacing-xs);
   }
   
   .clientes-modal-content {
@@ -1145,7 +1328,7 @@
   }
 }
 
-/* Scroll personalizado */
+/* Scroll personalizado mejorado */
 .clientes-table-container::-webkit-scrollbar {
   height: 8px;
 }
@@ -1162,4 +1345,30 @@
 
 .clientes-table-container::-webkit-scrollbar-thumb:hover {
   background: var(--secondary-blue);
+}
+
+/* Scroll adicional para el wrapper de la tabla */
+.clientes-table-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-track {
+  background: var(--light-gray);
+  border-radius: var(--radius-sm);
+  margin: 0 var(--spacing-sm);
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--light-gray);
+  min-width: 50px;
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, var(--secondary-blue), var(--primary-blue));
+}
+
+.clientes-table-wrapper::-webkit-scrollbar-thumb:active {
+  background: var(--primary-blue);
 }

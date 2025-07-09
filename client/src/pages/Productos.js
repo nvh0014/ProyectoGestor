@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import Swal from 'sweetalert2';
 import Modal from 'react-modal';
+import './Productos.css';
 
 
 import {

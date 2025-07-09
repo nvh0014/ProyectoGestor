@@ -426,9 +426,14 @@ function Clientes() {
                         <button
                             onClick={() => navigate('/home')}
                             className="clientes-logo-button"
-                            aria-label="Ir al inicio"
+                            aria-label="Volver al home"
+                            title="Volver al home principal"
                         >
-                            <i className="fas fa-users" style={{ fontSize: '2rem', color: 'var(--primary-blue)' }}></i>
+                            <img 
+                                src="/logo512.png" 
+                                alt="Logo Distribuidora" 
+                                className="clientes-logo-image"
+                            />
                         </button>
                     </div>
                     
@@ -491,50 +496,52 @@ function Clientes() {
                         </div>
 
                         {/* Table */}
-                        <table className="clientes-table">
-                            <thead>
-                                {table.getHeaderGroups().map(headerGroup => (
-                                    <tr key={headerGroup.id}>
-                                        {headerGroup.headers.map(header => (
-                                            <th 
-                                                key={header.id}
-                                                className={header.column.getCanSort() ? 'sortable' : ''}
-                                                onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                                            >
-                                                {flexRender(header.column.columnDef.header, header.getContext())}
-                                                {{
-                                                    asc: ' ↑',
-                                                    desc: ' ↓',
-                                                }[header.column.getIsSorted()] ?? ''}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </thead>
-                            <tbody>
-                                {table.getRowModel().rows.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={table.getAllColumns().length} style={{ textAlign: 'center', padding: '2rem' }}>
-                                            <div style={{ color: 'var(--medium-gray)' }}>
-                                                <i className="fas fa-users" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>
-                                                <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay clientes registrados</p>
-                                                <p style={{ fontSize: '0.9rem' }}>Haz clic en "Nuevo Cliente" para agregar el primero</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    table.getRowModel().rows.map(row => (
-                                        <tr key={row.id}>
-                                            {row.getVisibleCells().map(cell => (
-                                                <td key={cell.id}>
-                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                                </td>
+                        <div className="clientes-table-wrapper">
+                            <table className="clientes-table">
+                                <thead>
+                                    {table.getHeaderGroups().map(headerGroup => (
+                                        <tr key={headerGroup.id}>
+                                            {headerGroup.headers.map(header => (
+                                                <th 
+                                                    key={header.id}
+                                                    className={header.column.getCanSort() ? 'sortable' : ''}
+                                                    onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                                                >
+                                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                                    {{
+                                                        asc: ' ↑',
+                                                        desc: ' ↓',
+                                                    }[header.column.getIsSorted()] ?? ''}
+                                                </th>
                                             ))}
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                    ))}
+                                </thead>
+                                <tbody>
+                                    {table.getRowModel().rows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={table.getAllColumns().length} style={{ textAlign: 'center', padding: '2rem' }}>
+                                                <div style={{ color: 'var(--medium-gray)' }}>
+                                                    <i className="fas fa-users" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>
+                                                    <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay clientes registrados</p>
+                                                    <p style={{ fontSize: '0.9rem' }}>Haz clic en "Nuevo Cliente" para agregar el primero</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        table.getRowModel().rows.map(row => (
+                                            <tr key={row.id}>
+                                                {row.getVisibleCells().map(cell => (
+                                                    <td key={cell.id}>
+                                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
                         {/* Pagination */}
                         <div className="clientes-pagination">
