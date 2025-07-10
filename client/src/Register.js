@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import api from './config/api'
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { validarRegistro } from './Validaciones.js';
+import { validarRegistro } from './components/Validaciones.js';
 import './Register.css'; // Importar los estilos modulares
 
 // Función para obtener cookies

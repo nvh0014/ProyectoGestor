@@ -42,11 +42,27 @@ api.interceptors.response.use(
 export const testConnection = async () => {
   try {
     console.log('🧪 Probando conexión con:', API_BASE_URL);
-    await api.get('/usuarios');
+    
+    // Usar una ruta simple que siempre esté disponible
+    const response = await api.get('/usuarios', {
+      timeout: 5000 // 5 segundos de timeout específico para esta prueba
+    });
+    
     console.log('✅ Conexión exitosa con el backend');
+    console.log('📊 Respuesta del servidor:', response.data);
     return true;
   } catch (error) {
     console.error('❌ Error al conectar con el backend:', error.message);
+    
+    // Información detallada del error para debugging
+    if (error.code === 'ECONNREFUSED') {
+      console.error('🔌 El servidor no está ejecutándose en el puerto 3001');
+    } else if (error.code === 'ENOTFOUND') {
+      console.error('🌐 No se puede resolver localhost');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.error('⏰ Tiempo de espera agotado');
+    }
+    
     return false;
   }
 };

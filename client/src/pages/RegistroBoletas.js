@@ -190,6 +190,7 @@ function RegistroBoletas() {
                     title="Ver detalle"
                     aria-label="Ver detalle de la boleta"
                 >
+                    👁️
                     <i className="fas fa-eye"></i>
                 </button>
             )
@@ -237,32 +238,37 @@ function RegistroBoletas() {
     return (
         <div className="registro-boletas-container">
             {/* Header */}
-            <header className="registro-boletas-header">
-                <div className="registro-boletas-header-content">
-                    <div className="registro-boletas-header-logo">
+            <header className="clientes-header">
+                <div className="clientes-header-content">
+                    <div className="clientes-header-logo">
                         <button
                             onClick={() => navigate('/home')}
-                            className="registro-boletas-logo-button"
-                            aria-label="Ir al inicio"
+                            className="clientes-logo-button"
+                            aria-label="Volver al home"
+                            title="Volver al home principal"
                         >
-                            <i className="fas fa-receipt" style={{ fontSize: '2rem', color: 'var(--primary-blue)' }}></i>
+                            <img 
+                                src="/logo512.png" 
+                                alt="Logo Distribuidora" 
+                                className="clientes-logo-image"
+                            />
                         </button>
                     </div>
                     
-                    <div className="registro-boletas-header-text-group">
-                        <h1 className="registro-boletas-header-title">Registro de Boletas</h1>
-                        <p className="registro-boletas-header-subtitle">Consulta y administra todas las boletas emitidas</p>
+                    <div className="clientes-header-text-group">
+                        <h1 className="clientes-header-title">Gestión de boletas emitidas</h1>
+                        <p className="clientes-header-subtitle">Administra la información de tus boletas emitidas</p>
                     </div>
                     
-                    <div className="registro-boletas-header-actions">
+                    <div className="clientes-header-actions">
                         {usuario && (
-                            <span className="registro-boletas-user-greeting">
+                            <span className="clientes-user-greeting">
                                 <i className="fas fa-user"></i> {usuario}
                             </span>
                         )}
                         <button
                             onClick={cerrarSesion}
-                            className="registro-boletas-logout-button"
+                            className="clientes-logout-button"
                             disabled={isLoading}
                             aria-label="Cerrar sesión"
                         >
@@ -289,11 +295,11 @@ function RegistroBoletas() {
                         <div className="registro-boletas-stats">
                             <div className="registro-boletas-stat">
                                 <div className="registro-boletas-stat-value">{boletas.length}</div>
-                                <div className="registro-boletas-stat-label">Total Boletas</div>
+                                <div className="registro-boletas-stat-label">PDF´s Generados</div>
                             </div>
                             <button 
                                 className="clientes-add-button"
-                                onClick={() => navigate('/generar-boleta')}
+                                onClick={() => navigate('/generarboleta')}
                             >
                                 <i className="fas fa-plus"></i>
                                 Nueva Boleta
@@ -314,38 +320,40 @@ function RegistroBoletas() {
                         </div>
 
                         {/* Table */}
-                        <table className="registro-boletas-table">
-                            <thead>
-                                {table.getHeaderGroups().map(headerGroup => (
-                                    <tr key={headerGroup.id}>
-                                        {headerGroup.headers.map(header => (
-                                            <th 
-                                                key={header.id}
-                                                className={header.column.getCanSort() ? 'sortable' : ''}
-                                                onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                                            >
-                                                {flexRender(header.column.columnDef.header, header.getContext())}
-                                                {{
-                                                    asc: ' ↑',
-                                                    desc: ' ↓',
-                                                }[header.column.getIsSorted()] ?? ''}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </thead>
-                            <tbody>
-                                {table.getRowModel().rows.map(row => (
-                                    <tr key={row.id}>
-                                        {row.getVisibleCells().map(cell => (
-                                            <td key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <div className="registro-boletas-table-wrapper">
+                            <table className="registro-boletas-table">
+                                <thead>
+                                    {table.getHeaderGroups().map(headerGroup => (
+                                        <tr key={headerGroup.id}>
+                                            {headerGroup.headers.map(header => (
+                                                <th 
+                                                    key={header.id}
+                                                    className={header.column.getCanSort() ? 'sortable' : ''}
+                                                    onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                                                >
+                                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                                    {{
+                                                        asc: ' ↑',
+                                                        desc: ' ↓',
+                                                    }[header.column.getIsSorted()] ?? ''}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </thead>
+                                <tbody>
+                                    {table.getRowModel().rows.map(row => (
+                                        <tr key={row.id}>
+                                            {row.getVisibleCells().map(cell => (
+                                                <td key={cell.id}>
+                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
                         {/* Pagination */}
                         <div className="registro-boletas-pagination">

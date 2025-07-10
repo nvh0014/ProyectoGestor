@@ -83,7 +83,7 @@ function GenerarBoleta() {
 
   // Estados para crear nueva boleta
   const [clientes, setClientes] = useState([]);
-  const [articulos, setArticulos] = useState([]);
+  const [productos, setProductos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   
   // Estados del formulario de boleta
@@ -97,11 +97,12 @@ function GenerarBoleta() {
   // Estados para la información del cliente seleccionado
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   
-  // Estados para los artículos de la boleta
-  const [articulosBoleta, setArticulosBoleta] = useState([]);
-  const [articuloForm, setArticuloForm] = useState({
-    CodigoArticulo: '',
+  // Estados para los productos de la boleta
+  const [productosBoleta, setProductosBoleta] = useState([]);
+  const [productoForm, setProductoForm] = useState({
+    CodigoProducto: '',
     Cantidad: 1,
+    TipoPrecio: 'PrecioUnitario', // 'PrecioUnitario' para Precio Sala, 'PrecioDescuento' para Precio con Descuento
     PrecioUnitario: 0
   });
   
@@ -117,16 +118,14 @@ function GenerarBoleta() {
 
   // Función para calcular totales
   const calcularTotales = useCallback(() => {
-    const subtotalNeto = articulosBoleta.reduce((sum, item) => sum + item.SubtotalNeto, 0);
-    const totalImpuestos = articulosBoleta.reduce((sum, item) => sum + item.ImpuestoLinea, 0);
-    const totalBruto = subtotalNeto + totalImpuestos;
-
+    const subtotalNeto = productosBoleta.reduce((sum, item) => sum + item.SubtotalNeto, 0);
+    
     setTotales({
       subtotalNeto,
-      totalImpuestos,
-      totalBruto
+      totalImpuestos: 0, // Ya no calculamos IVA
+      totalBruto: subtotalNeto // Total es igual al subtotal
     });
-  }, [articulosBoleta]);
+  }, [productosBoleta]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -137,15 +136,15 @@ function GenerarBoleta() {
     cargarDatosIniciales();
   }, []);
 
-  // Recalcular totales cuando cambien los artículos
+  // Recalcular totales cuando cambien los productos
   useEffect(() => {
     calcularTotales();
-  }, [articulosBoleta, calcularTotales]);
+  }, [productosBoleta, calcularTotales]);
 
   const cargarDatosIniciales = async () => {
     try {
       setLoading(true);
-      const [clientesRes, articulosRes, usuariosRes] = await Promise.all([
+      const [clientesRes, productosRes, usuariosRes] = await Promise.all([
         api.get('/clientes'),
         api.get('/articulos'),
         api.get('/usuarios')
@@ -155,11 +154,11 @@ function GenerarBoleta() {
       setClientes(clientesRes.data);
       console.log('Clientes cargados:', clientesRes.data.length, 'clientes');
       
-      const articulosActivos = articulosRes.data.filter(articulo => 
-        articulo.ArticuloActivo === true || articulo.ArticuloActivo === 1
+      const productosActivos = productosRes.data.filter(producto => 
+        producto.ArticuloActivo === true || producto.ArticuloActivo === 1
       );
-      setArticulos(articulosActivos);
-      console.log('Artículos activos:', articulosActivos.length, 'artículos');
+      setProductos(productosActivos);
+      console.log('Productos activos:', productosActivos.length, 'productos');
       
       setUsuarios(usuariosRes.data);
       console.log('Usuarios cargados:', usuariosRes.data.length, 'usuarios');
@@ -200,62 +199,84 @@ function GenerarBoleta() {
     }
   };
 
-  const handleArticuloChange = (codigoArticulo) => {
-    const articulo = articulos.find(a => a.CodigoArticulo === codigoArticulo);
-    if (articulo) {
-      setArticuloForm({
-        ...articuloForm,
-        CodigoArticulo: codigoArticulo,
-        PrecioUnitario: parseFloat(articulo.PrecioNeto || 0)
+  const handleProductoChange = (codigoProducto) => {
+    const producto = productos.find(p => p.CodigoArticulo === codigoProducto);
+    if (producto) {
+      const precioSeleccionado = productoForm.TipoPrecio === 'PrecioUnitario' 
+        ? parseFloat(producto.PrecioUnitario || 0)
+        : parseFloat(producto.PrecioDescuento || 0);
+        
+      setProductoForm({
+        ...productoForm,
+        CodigoProducto: codigoProducto,
+        PrecioUnitario: precioSeleccionado
       });
     }
   };
 
-  const agregarArticulo = () => {
-    if (!articuloForm.CodigoArticulo || articuloForm.Cantidad <= 0) {
+  const handleTipoPrecioChange = (tipoPrecio) => {
+    setProductoForm(prev => {
+      const producto = productos.find(p => p.CodigoArticulo === prev.CodigoProducto);
+      let nuevoPrecio = 0;
+      
+      if (producto) {
+        nuevoPrecio = tipoPrecio === 'PrecioUnitario' 
+          ? parseFloat(producto.PrecioUnitario || 0)
+          : parseFloat(producto.PrecioDescuento || 0);
+      }
+      
+      return {
+        ...prev,
+        TipoPrecio: tipoPrecio,
+        PrecioUnitario: nuevoPrecio
+      };
+    });
+  };
+
+  const agregarProducto = () => {
+    if (!productoForm.CodigoProducto || productoForm.Cantidad <= 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Datos incompletos',
-        text: 'Seleccione un artículo y ingrese una cantidad válida',
+        text: 'Seleccione un producto y ingrese una cantidad válida',
         confirmButtonText: 'OK'
       });
       return;
     }
 
-    const articulo = articulos.find(a => a.CodigoArticulo === articuloForm.CodigoArticulo);
-    const subtotalNeto = articuloForm.Cantidad * articuloForm.PrecioUnitario;
-    const impuestoLinea = subtotalNeto * 0.19;
-    const totalLinea = subtotalNeto + impuestoLinea;
-
-    const nuevoArticulo = {
-      CodigoArticulo: articuloForm.CodigoArticulo,
-      NombreArticulo: articulo.NombreArticulo || articulo.Descripcion || 'Sin descripción',
-      Cantidad: articuloForm.Cantidad,
-      PrecioNetoUnitario: articuloForm.PrecioUnitario,
+    const producto = productos.find(p => p.CodigoArticulo === productoForm.CodigoProducto);
+    const subtotalNeto = productoForm.Cantidad * productoForm.PrecioUnitario;
+    
+    const nuevoProducto = {
+      CodigoProducto: productoForm.CodigoProducto,
+      NombreProducto: producto.NombreArticulo || producto.Descripcion || 'Sin descripción',
+      Cantidad: productoForm.Cantidad,
+      PrecioNetoUnitario: productoForm.PrecioUnitario,
       SubtotalNeto: subtotalNeto,
-      ImpuestoLinea: impuestoLinea,
-      TotalLinea: totalLinea
+      ImpuestoLinea: 0, // Ya no hay IVA
+      TotalLinea: subtotalNeto // Total es igual al subtotal
     };
 
-    setArticulosBoleta([...articulosBoleta, nuevoArticulo]);
-    setArticuloForm({
-      CodigoArticulo: '',
+    setProductosBoleta([...productosBoleta, nuevoProducto]);
+    setProductoForm({
+      CodigoProducto: '',
       Cantidad: 1,
+      TipoPrecio: 'PrecioUnitario',
       PrecioUnitario: 0
     });
   };
 
-  const eliminarArticulo = (index) => {
-    const nuevosArticulos = articulosBoleta.filter((_, i) => i !== index);
-    setArticulosBoleta(nuevosArticulos);
+  const eliminarProducto = (index) => {
+    const nuevosProductos = productosBoleta.filter((_, i) => i !== index);
+    setProductosBoleta(nuevosProductos);
   };
 
   const crearBoleta = async () => {
-    if (!boletaForm.CodigoCliente || !boletaForm.CodigoUsuario || articulosBoleta.length === 0) {
+    if (!boletaForm.CodigoCliente || !boletaForm.CodigoUsuario || productosBoleta.length === 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Datos incompletos',
-        text: 'Seleccione un cliente, un usuario y agregue al menos un artículo',
+        text: 'Seleccione un cliente, un usuario y agregue al menos un producto',
         confirmButtonText: 'OK'
       });
       return;
@@ -266,11 +287,11 @@ function GenerarBoleta() {
       const fechaVencimiento = new Date();
       fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
       
-      const detalles = articulosBoleta.map(articulo => ({
-        CodigoProducto: articulo.CodigoArticulo,
-        Cantidad: articulo.Cantidad,
-        PrecioUnitario: articulo.PrecioNetoUnitario,
-        Subtotal: articulo.SubtotalNeto
+      const detalles = productosBoleta.map(producto => ({
+        CodigoProducto: producto.CodigoProducto,
+        Cantidad: producto.Cantidad,
+        PrecioUnitario: producto.PrecioNetoUnitario,
+        Subtotal: producto.SubtotalNeto
       }));
 
       const boletaData = {
@@ -362,19 +383,8 @@ function GenerarBoleta() {
 
       yPosition += 10;
       doc.setFont('helvetica', 'bold');
-      doc.text('SUBTOTAL NETO:', 130, yPosition);
-      doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
-
-      yPosition += 10;
-      const impuestos = subtotalGeneral * 0.19;
-      doc.text('IVA (19%):', 130, yPosition);
-      doc.text(`$${impuestos.toLocaleString('es-CL')}`, 170, yPosition);
-
-      yPosition += 10;
-      const totalBruto = subtotalGeneral + impuestos;
-      doc.setFontSize(12);
       doc.text('TOTAL:', 130, yPosition);
-      doc.text(`$${totalBruto.toLocaleString('es-CL')}`, 170, yPosition);
+      doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
 
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
@@ -401,10 +411,11 @@ function GenerarBoleta() {
       Observaciones: ''
     });
     setClienteSeleccionado(null);
-    setArticulosBoleta([]);
-    setArticuloForm({
-      CodigoArticulo: '',
+    setProductosBoleta([]);
+    setProductoForm({
+      CodigoProducto: '',
       Cantidad: 1,
+      TipoPrecio: 'PrecioUnitario',
       PrecioUnitario: 0
     });
   };
@@ -424,50 +435,50 @@ function GenerarBoleta() {
 
   return (
     <div className="generar-boleta-container">
-      {/* Header específico del componente */}
-      <header className="gb-header">
-        <div className="gb-header-content">
-          {/* Logo a la izquierda */}
-          <div className="gb-header-logo">
-            <button
-              onClick={() => navigate('/home')}
-              className="gb-logo-button"
-              aria-label="Volver al home"
-              title="Volver al home principal"
-            >
-              <i className="fas fa-file-invoice-dollar" style={{ fontSize: '2rem', color: 'var(--primary-blue)' }}></i>
-            </button>
-          </div>
-
-          {/* Título centrado */}
-          <div className="gb-header-text-group">
-            <h1 className="gb-header-title">Generar Boleta</h1>
-            <p className="gb-header-subtitle">Crear nueva boleta de venta</p>
-          </div>
-
-          {/* Usuario y botón de cerrar sesión a la derecha */}
-          <div className="gb-header-actions">
-            {usuario && (
-              <span className="gb-user-greeting">
-                <i className="fas fa-user"></i> {usuario}
-              </span>
-            )}
-            <button
-              onClick={cerrarSesion}
-              className="gb-logout-button"
-              disabled={isLoading}
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión del sistema"
-            >
-              {isLoading ? (
-                <span>Cerrando...</span>
-              ) : (
-                <span>CERRAR SESIÓN</span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Header */}
+            <header className="clientes-header">
+                <div className="clientes-header-content">
+                    <div className="clientes-header-logo">
+                        <button
+                            onClick={() => navigate('/home')}
+                            className="clientes-logo-button"
+                            aria-label="Volver al home"
+                            title="Volver al home principal"
+                        >
+                            <img 
+                                src="/logo512.png" 
+                                alt="Logo Distribuidora" 
+                                className="clientes-logo-image"
+                            />
+                        </button>
+                    </div>
+                    
+                    <div className="clientes-header-text-group">
+                        <h1 className="clientes-header-title">Generar Boleta</h1>
+                        <p className="clientes-header-subtitle">Crea y gestiona boletas de venta</p>
+                    </div>
+                    
+                    <div className="clientes-header-actions">
+                        {usuario && (
+                            <span className="clientes-user-greeting">
+                                <i className="fas fa-user"></i> {usuario}
+                            </span>
+                        )}
+                        <button
+                            onClick={cerrarSesion}
+                            className="clientes-logout-button"
+                            disabled={isLoading}
+                            aria-label="Cerrar sesión"
+                        >
+                            {isLoading ? (
+                                <span>Cerrando...</span>
+                            ) : (
+                                <span>CERRAR SESIÓN</span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </header>
 
       <main className="gb-main-content">
 
@@ -520,7 +531,7 @@ function GenerarBoleta() {
                     </div>
                     
                     <div className="gb-form-group">
-                      <label className="gb-form-label">Usuario/Vendedor *</label>
+                      <label className="gb-form-label">Vendedor *</label>
                       <select
                         className="gb-form-input"
                         value={boletaForm.CodigoUsuario}
@@ -545,7 +556,6 @@ function GenerarBoleta() {
                         onChange={(e) => setBoletaForm({ ...boletaForm, MedioPago: e.target.value })}
                       >
                         <option value="Efectivo">Efectivo</option>
-                        <option value="Tarjeta">Tarjeta</option>
                         <option value="Transferencia">Transferencia</option>
                       </select>
                     </div>
@@ -574,27 +584,31 @@ function GenerarBoleta() {
                 </div>
               </div>
 
-              {/* Agregar Artículos */}
+              {/* Agregar Productos */}
               <div className="form-card">
                 <div className="card-header">
-                  <h3 className="card-title">Agregar Artículos</h3>
+                  <h3 className="card-title">Agregar Productos</h3>
                 </div>
                 <div className="card-body">
                   <div className="form-row">
                     <div className="form-group full-width">
-                      <label className="form-label">Artículo *</label>
-                      <select
+                      <label className="form-label">Producto *</label>
+                      <Autocomplete
+                        options={productos.map(producto => ({
+                          value: producto.CodigoArticulo,
+                          name: `${producto.CodigoArticulo} - ${producto.NombreArticulo || producto.Descripcion || 'Sin descripción'}`,
+                          subtitle: `Sala: $${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} | Descuento: $${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')} | Stock: ${producto.Stock || 'N/A'}`
+                        }))}
+                        value={productoForm.CodigoProducto}
+                        onChange={(codigoProducto) => handleProductoChange(codigoProducto)}
+                        placeholder="Buscar producto..."
                         className="form-input"
-                        value={articuloForm.CodigoArticulo}
-                        onChange={(e) => handleArticuloChange(e.target.value)}
-                      >
-                        <option value="">Seleccione un artículo</option>
-                        {articulos.map((articulo) => (
-                          <option key={articulo.CodigoArticulo} value={articulo.CodigoArticulo}>
-                            {articulo.CodigoArticulo} - {articulo.NombreArticulo || articulo.Descripcion || 'Sin descripción'} - ${parseFloat(articulo.PrecioNeto || 0).toLocaleString('es-CL')}
-                          </option>
-                        ))}
-                      </select>
+                        displayKey="name"
+                        valueKey="value"
+                        searchKeys={["name"]}
+                        maxResults={10}
+                        required
+                      />
                     </div>
                   </div>
                   
@@ -605,57 +619,75 @@ function GenerarBoleta() {
                         type="number"
                         className="form-input"
                         min="1"
-                        value={articuloForm.Cantidad}
-                        onChange={(e) => setArticuloForm({ ...articuloForm, Cantidad: parseInt(e.target.value) || 1 })}
+                        value={productoForm.Cantidad}
+                        onChange={(e) => setProductoForm({ ...productoForm, Cantidad: parseInt(e.target.value) || 1 })}
                       />
                     </div>
                     
                     <div className="form-group">
-                      <label className="form-label">Precio Unitario</label>
-                      <input
-                        type="number"
+                      <label className="form-label">Tipo de Precio</label>
+                      <select
                         className="form-input"
-                        step="0.01"
-                        value={articuloForm.PrecioUnitario}
-                        onChange={(e) => setArticuloForm({ ...articuloForm, PrecioUnitario: parseFloat(e.target.value) || 0 })}
-                      />
+                        value={productoForm.TipoPrecio}
+                        onChange={(e) => handleTipoPrecioChange(e.target.value)}
+                        disabled={!productoForm.CodigoProducto}
+                      >
+                        <option value="PrecioUnitario">Precio Sala</option>
+                        <option value="PrecioDescuento">Precio con Descuento</option>
+                      </select>
                     </div>
                   </div>
                   
+                  {/* Mostrar el precio seleccionado */}
+                  {productoForm.CodigoProducto && (
+                    <div className="form-row">
+                      <div className="form-group full-width">
+                        <div className="precio-seleccionado">
+                          <span className="precio-label">
+                            Precio {productoForm.TipoPrecio === 'PrecioUnitario' ? 'Sala' : 'con Descuento'}:
+                          </span>
+                          <span className="precio-valor">
+                            ${productoForm.PrecioUnitario.toLocaleString('es-CL')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="form-actions">
-                    <button onClick={agregarArticulo} className="generar-boleta-button primary">
-                      ➕ Agregar Artículo
+                    <button onClick={agregarProducto} className="generar-boleta-button primary">
+                      ➕ Agregar Producto
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Columna derecha - Lista de Artículos y Resumen */}
+            {/* Columna derecha - Lista de Productos y Resumen */}
             <div className="form-section">
-              {/* Lista de Artículos */}
-              {articulosBoleta.length > 0 && (
+              {/* Lista de Productos */}
+              {productosBoleta.length > 0 && (
                 <div className="form-card">
                   <div className="card-header">
-                    <h3 className="card-title">Artículos en la Boleta ({articulosBoleta.length})</h3>
+                    <h3 className="card-title">Productos en la Boleta ({productosBoleta.length})</h3>
                   </div>
                   <div className="card-body">
                     <div className="articles-list">
-                      {articulosBoleta.map((articulo, index) => (
+                      {productosBoleta.map((producto, index) => (
                         <div key={index} className="article-item">
                           <div className="article-info">
-                            <div className="article-name">{articulo.NombreArticulo}</div>
-                            <div className="article-code">Código: {articulo.CodigoArticulo}</div>
+                            <div className="article-name">{producto.NombreProducto}</div>
+                            <div className="article-code">Código: {producto.CodigoProducto}</div>
                           </div>
                           <div className="article-details">
-                            <div className="article-quantity">Cant: {articulo.Cantidad}</div>
-                            <div className="article-price">${articulo.PrecioNetoUnitario.toLocaleString('es-CL')}</div>
-                            <div className="article-total">${articulo.TotalLinea.toLocaleString('es-CL')}</div>
+                            <div className="article-quantity">Cant: {producto.Cantidad}</div>
+                            <div className="article-price">${producto.PrecioNetoUnitario.toLocaleString('es-CL')}</div>
+                            <div className="article-total">${producto.TotalLinea.toLocaleString('es-CL')}</div>
                           </div>
                           <button
-                            onClick={() => eliminarArticulo(index)}
+                            onClick={() => eliminarProducto(index)}
                             className="generar-boleta-action-button delete"
-                            aria-label="Eliminar artículo"
+                            aria-label="Eliminar producto"
                           >
                             🗑️
                           </button>
@@ -667,19 +699,15 @@ function GenerarBoleta() {
               )}
 
               {/* Resumen de Totales */}
-              {articulosBoleta.length > 0 && (
+              {productosBoleta.length > 0 && (
                 <div className="form-card">
                   <div className="card-header">
                     <h3 className="card-title">Resumen de la Boleta</h3>
                   </div>
                   <div className="card-body totals-summary">
                     <div className="total-row">
-                      <span className="total-label">Subtotal Neto:</span>
+                      <span className="total-label">Subtotal:</span>
                       <span className="total-value">${totales.subtotalNeto.toLocaleString('es-CL')}</span>
-                    </div>
-                    <div className="total-row">
-                      <span className="total-label">IVA (19%):</span>
-                      <span className="total-value">${totales.totalImpuestos.toLocaleString('es-CL')}</span>
                     </div>
                     <div className="total-row total-final">
                       <span className="total-label">TOTAL:</span>
@@ -695,7 +723,7 @@ function GenerarBoleta() {
                   <div className="action-buttons">
                     <button
                       onClick={crearBoleta}
-                      disabled={!boletaForm.CodigoCliente || !boletaForm.CodigoUsuario || articulosBoleta.length === 0}
+                      disabled={!boletaForm.CodigoCliente || !boletaForm.CodigoUsuario || productosBoleta.length === 0}
                       className="generar-boleta-button success"
                     >
                       📄 Crear Boleta y Generar PDF

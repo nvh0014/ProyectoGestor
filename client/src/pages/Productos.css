@@ -317,6 +317,25 @@
   scrollbar-color: var(--primary-blue) var(--light-gray);
 }
 
+.productos-table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.productos-table-container::-webkit-scrollbar-track {
+  background: var(--light-gray);
+  border-radius: var(--radius-sm);
+}
+
+.productos-table-container::-webkit-scrollbar-thumb {
+  background: var(--primary-blue);
+  border-radius: var(--radius-sm);
+}
+
+.productos-table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-blue);
+}
+
+/* Scroll adicional para el wrapper de la tabla */
 .productos-table-wrapper::-webkit-scrollbar {
   height: 12px;
 }
@@ -340,6 +359,32 @@
 
 .productos-table-wrapper::-webkit-scrollbar-thumb:active {
   background: var(--primary-blue);
+}
+
+/* Indicador de scroll para móviles */
+.productos-table-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .productos-table-container::after {
+    opacity: 0.6;
+  }
+  
+  .productos-table-container:hover::after {
+    opacity: 1;
+  }
 }
 
 .productos-table-controls {
@@ -373,7 +418,7 @@
 
 .productos-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 800px; /* Consistente con Clientes.css */
   border-collapse: collapse;
   background: var(--white);
   border-radius: var(--radius-md);
@@ -408,6 +453,9 @@
 }
 
 .productos-table td {
+  background: var(--white);
+  color: var(--secondary-blue);
+  font-weight: 600;
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--light-gray);
   font-size: var(--font-size-sm);
@@ -415,6 +463,7 @@
 }
 
 .productos-table tbody tr {
+  background: var(--white);
   transition: var(--transition-base);
 }
 
@@ -475,35 +524,40 @@
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition-base);
-  width: 32px;
-  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 34px; /* Consistente con Clientes.css */
+  height: 34px; /* Consistente con Clientes.css */
+  font-weight: 600;
 }
 
 .productos-action-button.edit {
   color: var(--edit-blue);
+  background: rgba(52, 152, 219, 0.1); /* Añadido fondo como en Clientes.css */
   border-color: var(--edit-blue);
 }
 
 .productos-action-button.edit:hover {
   background: var(--edit-blue);
   color: var(--white);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+  border-color: var(--edit-blue-dark);
+  transform: scale(1.05); /* Cambio de translateY a scale como en Clientes.css */
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
 }
 
 .productos-action-button.delete {
   color: var(--error);
+  background: rgba(231, 76, 60, 0.1); /* Añadido fondo como en Clientes.css */
   border-color: var(--error);
 }
 
 .productos-action-button.delete:hover {
   background: var(--error);
   color: var(--white);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+  border-color: var(--error-dark);
+  transform: scale(1.05); /* Cambio de translateY a scale como en Clientes.css */
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
 .productos-action-button:focus {
@@ -516,8 +570,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: rgba(248, 249, 250, 0.8);
+  margin-top: var(--spacing-lg); /* Cambio de padding a margin-top como en Clientes.css */
+  padding-top: var(--spacing-lg); /* Añadido padding-top */
   border-top: 1px solid var(--light-gray);
   flex-wrap: wrap;
   gap: var(--spacing-md);
@@ -526,7 +580,7 @@
 .productos-pagination-info {
   font-size: var(--font-size-sm);
   color: var(--medium-gray);
-  font-weight: 500;
+  /* Removido font-weight: 500 para que sea idéntico a Clientes.css */
 }
 
 .productos-pagination-controls {
@@ -538,23 +592,26 @@
 .productos-pagination-button {
   background: var(--white);
   border: 1px solid var(--light-gray);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md); /* Cambio de padding para consistencia */
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition-base);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  min-width: 36px;
+  min-width: 40px; /* Consistente con Clientes.css */
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--font-family); /* Añadido font-family */
 }
 
 .productos-pagination-button:hover:not(:disabled) {
-  background: var(--light-blue);
+  background: var(--primary-blue); /* Cambio de light-blue a primary-blue como en Clientes.css */
+  color: var(--white); /* Añadido color blanco */
   border-color: var(--primary-blue);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-sm); /* Cambio de shadow */
 }
 
 .productos-pagination-button:disabled {
@@ -575,7 +632,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6); /* Cambio de 0.7 a 0.6 como en Clientes.css */
+  -webkit-backdrop-filter: blur(8px); /* Añadido backdrop-filter */
+  backdrop-filter: blur(8px); /* Añadido backdrop-filter */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,20 +643,23 @@
 }
 
 .productos-modal-content {
-  background: var(--white);
-  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.98); /* Cambio a transparencia como en Clientes.css */
+  -webkit-backdrop-filter: blur(15px); /* Añadido backdrop-filter */
+  backdrop-filter: blur(15px); /* Añadido backdrop-filter */
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Añadido border */
   box-shadow: var(--shadow-xl);
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modalSlideIn 0.3s ease-out;
+  animation: modalSlideIn 0.3s ease-out forwards; /* Cambio de animation */
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-50px) scale(0.9);
+    transform: translateY(-20px) scale(0.95); /* Cambio de animación como en Clientes.css */
   }
   to {
     opacity: 1;
@@ -608,28 +670,37 @@
 .productos-modal-header {
   background: var(--gradient-card);
   color: var(--white);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl); /* Cambio de spacing-lg a spacing-xl */
   display: flex;
+  align-items: center; /* Añadido align-items */
   justify-content: space-between;
-  align-items: center;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  position: sticky; /* Añadido position sticky */
+  top: 0; /* Añadido top */
+  z-index: 1; /* Añadido z-index */
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0; /* Cambio de radius */
 }
 
 .productos-modal-title {
-  font-size: var(--font-size-xl);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Añadido font-family */
+  font-size: var(--font-size-lg); /* Cambio de xl a lg como en Clientes.css */
   font-weight: 600;
   margin: 0;
+  display: flex; /* Añadido display */
+  align-items: center; /* Añadido align-items */
+  gap: var(--spacing-sm); /* Añadido gap */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Añadido text-shadow */
 }
 
 .productos-modal-close {
   background: none;
   border: none;
   color: var(--white);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl); /* Cambio de lg a 2xl como en Clientes.css */
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
   transition: var(--transition-base);
+  line-height: 1; /* Añadido line-height */
   width: 32px;
   height: 32px;
   display: flex;
@@ -639,6 +710,7 @@
 
 .productos-modal-close:hover {
   background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1); /* Añadido transform */
 }
 
 .productos-modal-close:focus {
@@ -656,7 +728,7 @@
 
 .productos-form-label {
   display: block;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs); /* Cambio de sm a xs como en Clientes.css */
   font-weight: 600;
   color: var(--dark-gray);
   font-size: var(--font-size-sm);
@@ -668,7 +740,7 @@
   border: 1px solid var(--light-gray);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  background: var(--white);
+  background: rgba(255, 255, 255, 0.9); /* Cambio a transparencia como en Clientes.css */
   transition: var(--transition-base);
   font-family: var(--font-family);
 }
@@ -676,6 +748,7 @@
 .productos-form-input:focus {
   outline: none;
   border-color: var(--primary-blue);
+  background: var(--white);
   box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
 }
 
@@ -684,14 +757,14 @@
 }
 
 .productos-form-input:hover {
-  border-color: var(--secondary-blue);
+  border-color: var(--primary-blue); /* Cambio de secondary-blue a primary-blue */
 }
 
 .productos-form-checkbox-group {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-sm); /* Removido margin-top para consistencia */
 }
 
 .productos-form-checkbox {
@@ -702,40 +775,42 @@
 }
 
 .productos-modal-footer {
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: rgba(248, 249, 250, 0.8);
-  border-top: 1px solid var(--light-gray);
-  display: flex;
+  display: flex; /* Añadido display */
   justify-content: flex-end;
   gap: var(--spacing-md);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding-top: var(--spacing-lg); /* Cambio de padding a padding-top */
+  border-top: 1px solid var(--light-gray); /* Añadido border-top */
 }
 
 .productos-modal-button {
   padding: var(--spacing-sm) var(--spacing-lg);
+  border: none; /* Cambio de border: 2px solid transparent a border: none */
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-base);
-  border: 2px solid transparent;
+  display: flex; /* Añadido display */
+  align-items: center; /* Añadido align-items */
+  gap: var(--spacing-xs); /* Añadido gap */
   min-width: 100px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: center; /* Añadido justify-content */
+  min-height: 40px; /* Cambio de height a min-height */
+  font-family: var(--font-family); /* Añadido font-family */
 }
 
 .productos-modal-button.primary {
-  background: var(--gradient-card);
+  background: var(--success); /* Cambio de gradient-card a success como en Clientes.css */
   color: var(--white);
-  border-color: var(--primary-blue);
+  border: 2px solid var(--success-dark); /* Añadido border */
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3); /* Añadido box-shadow */
 }
 
 .productos-modal-button.primary:hover {
-  background: var(--gradient-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(30, 60, 114, 0.3);
+  background: var(--success-light); /* Cambio de gradient-hover a success-light */
+  border-color: var(--success); /* Añadido border-color */
+  transform: translateY(-2px); /* Cambio de translateY(-1px) a translateY(-2px) */
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4); /* Cambio de box-shadow */
 }
 
 .productos-modal-button.primary:active {
@@ -745,24 +820,27 @@
 .productos-modal-button.secondary {
   background: var(--white);
   color: var(--medium-gray);
-  border-color: var(--light-gray);
+  border: 2px solid var(--light-gray); /* Añadido border */
 }
 
 .productos-modal-button.secondary:hover {
   background: var(--light-gray);
+  border-color: var(--medium-gray); /* Añadido border-color */
   color: var(--dark-gray);
 }
 
 .productos-modal-button.danger {
   background: var(--error);
   color: var(--white);
-  border-color: var(--error-dark);
+  border: 2px solid var(--error-dark); /* Añadido border */
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3); /* Añadido box-shadow */
 }
 
 .productos-modal-button.danger:hover {
   background: var(--error-light);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+  border-color: var(--error); /* Añadido border-color */
+  transform: translateY(-2px); /* Cambio de translateY(-1px) a translateY(-2px) */
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4); /* Cambio de box-shadow */
 }
 
 .productos-modal-button.danger:active {
@@ -829,29 +907,6 @@
 
 /* ===== RESPONSIVE DESIGN ===== */
 
-/* Tablets grandes (1024px y menos) */
-@media (max-width: 1024px) {
-  .productos-header-content {
-    grid-template-columns: auto 1fr;
-    gap: var(--spacing-md);
-  }
-  
-  .productos-header-actions {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .productos-main-content {
-    padding: var(--spacing-lg) var(--spacing-md);
-  }
-  
-  .productos-table {
-    min-width: 800px;
-  }
-}
-
 /* Tablets (768px y menos) */
 @media (max-width: 768px) {
   .productos-header-content {
@@ -860,18 +915,60 @@
     gap: var(--spacing-sm);
   }
   
+  .productos-header-logo {
+    justify-content: center; /* Añadido justify-content */
+    order: 1; /* Añadido order */
+  }
+  
+  .productos-logo-button {
+    width: 50px; /* Cambio de 60px a 50px */
+    height: 50px; /* Cambio de 60px a 50px */
+  }
+  
+  .productos-logo-image {
+    width: 40px; /* Cambio de 48px a 40px */
+    height: 40px; /* Cambio de 48px a 40px */
+  }
+  
+  .productos-header-text-group {
+    order: 2; /* Añadido order */
+  }
+  
+  .productos-header-actions {
+    order: 3; /* Añadido order */
+    align-items: center; /* Cambio de flex-end a center */
+    flex-direction: row; /* Cambio de column a row */
+    justify-content: center; /* Añadido justify-content */
+    gap: var(--spacing-md); /* Cambio de sm a md */
+  }
+  
   .productos-header-title {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg); /* Cambio de xl a lg */
+  }
+  
+  .productos-header-subtitle {
+    display: none; /* Añadido display none */
+  }
+  
+  .productos-user-greeting {
+    font-size: var(--font-size-xs); /* Añadido font-size */
+  }
+  
+  .productos-logout-button {
+    padding: var(--spacing-xs) var(--spacing-sm); /* Cambio de padding */
+    font-size: var(--font-size-xs); /* Añadido font-size */
   }
   
   .productos-title {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl); /* Cambio de 2xl a xl */
+    margin-bottom: var(--spacing-lg); /* Cambio de xxl a lg */
   }
   
   .productos-card-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     gap: var(--spacing-sm);
+    text-align: center; /* Añadido text-align */
   }
   
   .productos-card-title {
@@ -880,15 +977,41 @@
   
   .productos-add-button {
     justify-content: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
   
   .productos-table-container {
     padding: var(--spacing-md);
   }
   
+  .productos-table-wrapper {
+    /* Mejorar visualización del scroll en tablets */
+    border: 1px solid var(--light-gray); /* Añadido border */
+    border-radius: var(--radius-md); /* Añadido border-radius */
+  }
+  
+  .productos-table {
+    min-width: 700px; /* Cambio de 800px a 700px */
+    font-size: var(--font-size-xs); /* Añadido font-size */
+  }
+  
+  .productos-table th,
+  .productos-table td {
+    padding: var(--spacing-sm);
+  }
+  
+  .productos-table-controls {
+    justify-content: center; /* Añadido justify-content */
+  }
+  
+  .productos-search-input {
+    max-width: 100%; /* Añadido max-width */
+  }
+  
   .productos-pagination {
     flex-direction: column;
     gap: var(--spacing-sm);
+    text-align: center; /* Añadido text-align */
   }
   
   .productos-pagination-info {
@@ -916,10 +1039,69 @@
   
   .productos-header-content {
     padding: 0 var(--spacing-sm);
+    gap: var(--spacing-xs); /* Añadido gap */
+  }
+  
+  .productos-logo-button {
+    width: 44px; /* Cambio de 50px a 44px */
+    height: 44px; /* Cambio de 50px a 44px */
+  }
+  
+  .productos-logo-image {
+    width: 36px; /* Cambio de 40px a 36px */
+    height: 36px; /* Cambio de 40px a 36px */
+  }
+  
+  .productos-header-title {
+    font-size: var(--font-size-base); /* Cambio de lg a base */
+  }
+  
+  .productos-header-actions {
+    flex-direction: column; /* Cambio de row a column */
+    gap: var(--spacing-xs); /* Cambio de md a xs */
+  }
+  
+  .productos-user-greeting {
+    text-align: center; /* Añadido text-align */
+  }
+  
+  .productos-logout-button {
+    min-height: 36px; /* Cambio de 40px a 36px */
+  }
+  
+  .productos-title {
+    font-size: var(--font-size-lg); /* Cambio de xl a lg */
+    margin-bottom: var(--spacing-md); /* Cambio de lg a md */
   }
   
   .productos-table-container {
     padding: var(--spacing-sm);
+  }
+  
+  .productos-table-wrapper {
+    border: 1px solid var(--light-gray); /* Añadido border */
+    border-radius: var(--radius-sm); /* Añadido border-radius */
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1); /* Añadido box-shadow */
+  }
+  
+  .productos-table {
+    min-width: 600px; /* Cambio de 700px a 600px */
+  }
+  
+  .productos-table th,
+  .productos-table td {
+    padding: var(--spacing-xs) var(--spacing-sm); /* Cambio de spacing-sm a spacing-xs spacing-sm */
+  }
+  
+  .productos-action-button {
+    width: 30px; /* Cambio de 28px a 30px */
+    height: 30px; /* Cambio de 28px a 30px */
+  }
+  
+  .productos-pagination-button {
+    min-width: 36px;
+    height: 32px; /* Cambio de 36px a 32px */
+    font-size: var(--font-size-xs); /* Añadido font-size */
   }
   
   .productos-modal-body {
@@ -934,29 +1116,51 @@
     padding: var(--spacing-md);
   }
   
-  .productos-table th,
-  .productos-table td {
-    padding: var(--spacing-sm);
-  }
-  
-  .productos-action-button {
-    width: 28px;
-    height: 28px;
+  .productos-form-group {
+    margin-bottom: var(--spacing-md); /* Añadido margin-bottom */
   }
 }
 
 /* Móviles pequeños (360px y menos) */
 @media (max-width: 360px) {
   .productos-header-title {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-sm); /* Cambio de lg a sm */
+  }
+  
+  .productos-user-greeting {
+    font-size: 0.7rem; /* Añadido font-size específico */
+  }
+  
+  .productos-logout-button {
+    padding: 6px 10px; /* Añadido padding específico */
+    font-size: 0.7rem; /* Añadido font-size específico */
+    min-height: 32px; /* Añadido min-height */
   }
   
   .productos-title {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-base); /* Cambio de xl a base */
+  }
+  
+  .productos-card-header {
+    padding: var(--spacing-sm); /* Cambio de md a sm */
   }
   
   .productos-card-title {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-sm); /* Cambio de base a sm */
+  }
+  
+  .productos-add-button {
+    font-size: 0.7rem; /* Añadido font-size específico */
+  }
+  
+  .productos-table {
+    min-width: 500px; /* Cambio de 600px a 500px */
+  }
+  
+  .productos-table-wrapper {
+    border: 2px solid var(--primary-blue); /* Añadido border más visible */
+    border-radius: var(--radius-sm); /* Añadido border-radius */
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.2); /* Añadido box-shadow */
   }
   
   .productos-table th,
@@ -965,9 +1169,27 @@
     font-size: var(--font-size-xs);
   }
   
+  .productos-table-container {
+    padding: var(--spacing-xs);
+  }
+  
+  .productos-table-container::after {
+    opacity: 1; /* Hacer visible el indicador de scroll */
+    bottom: var(--spacing-xs); /* Añadido bottom */
+  }
+  
   .productos-action-button {
     width: 24px;
     height: 24px;
+  }
+  
+  .productos-modal-content {
+    max-height: 95vh; /* Añadido max-height */
+    margin: var(--spacing-xs); /* Cambio de sm a xs */
+  }
+  
+  .productos-modal-body {
+    padding: var(--spacing-sm); /* Cambio de md a sm */
   }
 }
 
@@ -1017,5 +1239,30 @@
   .productos-modal-close {
     width: 44px;
     height: 44px;
+  }
+  
+  .productos-content-card:hover {
+    transform: none;
+  }
+  
+  .productos-table tbody tr:hover {
+    transform: none; /* Añadido transform none */
+  }
+  
+  .productos-action-button:hover {
+    transform: none; /* Añadido transform none */
+  }
+  
+  .productos-content-card:active {
+    transform: scale(0.98); /* Añadido transform active */
+    transition-duration: 0.1s; /* Añadido transition */
+  }
+  
+  .productos-logout-button:hover {
+    transform: none; /* Añadido transform none */
+  }
+  
+  .productos-logout-button:active {
+    transform: scale(0.95); /* Añadido transform active */
   }
 }

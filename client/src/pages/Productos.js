@@ -27,7 +27,7 @@ if (typeof document !== 'undefined') {
 
 function Productos() {
     const navigate = useNavigate();
-    
+
     // Estados para el header
     const [isLoading, setIsLoading] = useState(false);
     const [usuario, setUsuario] = useState('');
@@ -56,7 +56,7 @@ function Productos() {
     const getCookie = (name) => {
         const nameEQ = name + "=";
         const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
+        for (let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) === ' ') c = c.substring(1, c.length);
             if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
@@ -158,7 +158,7 @@ function Productos() {
                 text: 'El producto se creó exitosamente',
                 confirmButtonText: 'OK'
             });
-            
+
             setModalIsOpen(false);
             limpiarFormulario();
             obtenerProductos();
@@ -198,7 +198,7 @@ function Productos() {
                 text: 'El producto se actualizó exitosamente',
                 confirmButtonText: 'OK'
             });
-            
+
             setModalIsOpen(false);
             setEditingProducto(null);
             limpiarFormulario();
@@ -341,6 +341,7 @@ function Productos() {
                         onClick={() => abrirModalEditar(row.original)}
                         title="Editar"
                     >
+                        ✏️
                         <i className="fas fa-edit"></i>
                     </button>
                     <button
@@ -348,6 +349,7 @@ function Productos() {
                         onClick={() => eliminarProducto(row.original)}
                         title="Desactivar"
                     >
+                        🗑️
                         <i className="fas fa-ban"></i>
                     </button>
                 </div>
@@ -396,32 +398,37 @@ function Productos() {
     return (
         <div className="productos-container">
             {/* Header */}
-            <header className="productos-header">
-                <div className="productos-header-content">
-                    <div className="productos-header-logo">
+            <header className="clientes-header">
+                <div className="clientes-header-content">
+                    <div className="clientes-header-logo">
                         <button
                             onClick={() => navigate('/home')}
-                            className="productos-logo-button"
-                            aria-label="Ir al inicio"
+                            className="clientes-logo-button"
+                            aria-label="Volver al home"
+                            title="Volver al home principal"
                         >
-                            <i className="fas fa-box" style={{ fontSize: '2rem', color: 'var(--primary-blue)' }}></i>
+                            <img
+                                src="/logo512.png"
+                                alt="Logo Distribuidora"
+                                className="clientes-logo-image"
+                            />
                         </button>
                     </div>
-                    
-                    <div className="productos-header-text-group">
-                        <h1 className="productos-header-title">Gestión de Productos</h1>
-                        <p className="productos-header-subtitle">Administra tu inventario y catálogo</p>
+
+                    <div className="clientes-header-text-group">
+                        <h1 className="clientes-header-title">Gestión de productos</h1>
+                        <p className="clientes-header-subtitle">Administra la información de tus productos</p>
                     </div>
-                    
-                    <div className="productos-header-actions">
+
+                    <div className="clientes-header-actions">
                         {usuario && (
-                            <span className="productos-user-greeting">
+                            <span className="clientes-user-greeting">
                                 <i className="fas fa-user"></i> {usuario}
                             </span>
                         )}
                         <button
                             onClick={cerrarSesion}
-                            className="productos-logout-button"
+                            className="clientes-logout-button"
                             disabled={isLoading}
                             aria-label="Cerrar sesión"
                         >
@@ -438,14 +445,14 @@ function Productos() {
             {/* Main Content */}
             <main className="productos-main-content">
                 <h2 className="productos-title">Catálogo de Productos</h2>
-                
+
                 <div className="productos-content-card">
                     <div className="productos-card-header">
                         <h3 className="productos-card-title">
                             <i className="fas fa-list"></i>
                             Lista de Productos
                         </h3>
-                        <button 
+                        <button
                             className="productos-add-button"
                             onClick={abrirModalCrear}
                         >
@@ -453,7 +460,7 @@ function Productos() {
                             Nuevo Producto
                         </button>
                     </div>
-                    
+
                     <div className="productos-table-container">
                         {/* Controls */}
                         <div className="productos-table-controls">
@@ -467,12 +474,13 @@ function Productos() {
                         </div>
 
                         {/* Table */}
-                        <table className="productos-table">
+                        <div className="productos-table-wrapper">
+                            <table className="productos-table">
                             <thead>
                                 {table.getHeaderGroups().map(headerGroup => (
                                     <tr key={headerGroup.id}>
                                         {headerGroup.headers.map(header => (
-                                            <th 
+                                            <th
                                                 key={header.id}
                                                 className={header.column.getCanSort() ? 'sortable' : ''}
                                                 onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
@@ -488,17 +496,30 @@ function Productos() {
                                 ))}
                             </thead>
                             <tbody>
-                                {table.getRowModel().rows.map(row => (
-                                    <tr key={row.id}>
-                                        {row.getVisibleCells().map(cell => (
-                                            <td key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </td>
-                                        ))}
+                                {table.getRowModel().rows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={table.getAllColumns().length} style={{ textAlign: 'center', padding: '2rem' }}>
+                                            <div>
+                                                <i className="fas fa-box" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>
+                                                <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay productos registrados</p>
+                                                <p style={{ fontSize: '0.9rem' }}>Haz clic en "Nuevo Producto" para agregar el primero</p>
+                                            </div>
+                                        </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    table.getRowModel().rows.map(row => (
+                                        <tr key={row.id}>
+                                            {row.getVisibleCells().map(cell => (
+                                                <td key={cell.id}>
+                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
+                        </div>
 
                         {/* Pagination */}
                         <div className="productos-pagination">
@@ -552,8 +573,8 @@ function Productos() {
                         <i className={`fas ${editingProducto ? 'fa-edit' : 'fa-plus'}`}></i>
                         {editingProducto ? 'Editar Producto' : 'Nuevo Producto'}
                     </h3>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="productos-modal-close"
                         onClick={() => setModalIsOpen(false)}
                     >
@@ -570,6 +591,8 @@ function Productos() {
                             <label className="productos-form-label">Descripción *</label>
                             <input
                                 type="text"
+                                // Todo lo que se escriba se convertirá a mayúsculas
+                                style={{ textTransform: 'uppercase' }}
                                 className="productos-form-input"
                                 name="Descripcion"
                                 value={productoForm.Descripcion}
@@ -588,24 +611,20 @@ function Productos() {
                                     name="PrecioSala"
                                     value={productoForm.PrecioSala}
                                     onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
                                     required
-                                    placeholder="0.00"
+                                    placeholder="0"
                                 />
                             </div>
 
                             <div className="productos-form-group">
-                                <label className="productos-form-label">Precio Descuento</label>
+                                <label className="productos-form-label">Precio Descuento *</label>
                                 <input
                                     type="number"
                                     className="productos-form-input price-input"
                                     name="PrecioDto"
                                     value={productoForm.PrecioDto}
                                     onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0.00"
+                                    placeholder="0"
                                 />
                             </div>
                         </div>
@@ -624,15 +643,15 @@ function Productos() {
                         </div>
 
                         <div className="productos-modal-footer">
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className="productos-modal-button secondary"
                                 onClick={() => setModalIsOpen(false)}
                             >
                                 Cancelar
                             </button>
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 className="productos-modal-button primary"
                             >
                                 <i className={`fas ${editingProducto ? 'fa-save' : 'fa-plus'}`}></i>

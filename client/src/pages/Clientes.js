@@ -26,7 +26,7 @@ if (typeof document !== 'undefined') {
 
 function Clientes() {
     const navigate = useNavigate();
-    
+
     // Estados para el header
     const [isLoading, setIsLoading] = useState(false);
     const [usuario, setUsuario] = useState('');
@@ -58,7 +58,7 @@ function Clientes() {
     const getCookie = (name) => {
         const nameEQ = name + "=";
         const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
+        for (let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) === ' ') c = c.substring(1, c.length);
             if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
@@ -124,7 +124,7 @@ function Clientes() {
             console.log('✅ Respuesta del servidor:', response);
             console.log('📊 Datos recibidos:', response.data);
             console.log('📈 Cantidad de clientes:', response.data.length);
-            
+
             // El backend ya filtra solo clientes activos
             setClientes(response.data);
         } catch (error) {
@@ -135,7 +135,7 @@ function Clientes() {
                 data: error.response?.data,
                 url: error.config?.url
             });
-            
+
             Swal.fire({
                 icon: 'error',
                 title: 'Error de Conexión',
@@ -173,7 +173,7 @@ function Clientes() {
                 text: 'El cliente se creó exitosamente',
                 confirmButtonText: 'OK'
             });
-            
+
             setModalIsOpen(false);
             limpiarFormulario();
             obtenerClientes();
@@ -207,7 +207,7 @@ function Clientes() {
                 text: 'El cliente se actualizó exitosamente',
                 confirmButtonText: 'OK'
             });
-            
+
             setModalIsOpen(false);
             setEditingCliente(null);
             limpiarFormulario();
@@ -355,6 +355,7 @@ function Clientes() {
                         onClick={() => abrirModalEditar(row.original)}
                         title="Editar"
                     >
+                        ✏️
                         <i className="fas fa-edit"></i>
                     </button>
                     <button
@@ -362,6 +363,7 @@ function Clientes() {
                         onClick={() => eliminarCliente(row.original)}
                         title="Desactivar"
                     >
+                        🗑️
                         <i className="fas fa-ban"></i>
                     </button>
                 </div>
@@ -397,7 +399,7 @@ function Clientes() {
         } else {
             console.warn('⚠️ No se encontró usuario logueado');
         }
-        
+
         console.log('📞 Llamando a obtenerClientes()...');
         obtenerClientes();
     }, []);
@@ -429,19 +431,19 @@ function Clientes() {
                             aria-label="Volver al home"
                             title="Volver al home principal"
                         >
-                            <img 
-                                src="/logo512.png" 
-                                alt="Logo Distribuidora" 
+                            <img
+                                src="/logo512.png"
+                                alt="Logo Distribuidora"
                                 className="clientes-logo-image"
                             />
                         </button>
                     </div>
-                    
+
                     <div className="clientes-header-text-group">
                         <h1 className="clientes-header-title">Gestión de Clientes</h1>
                         <p className="clientes-header-subtitle">Administra la información de tus clientes</p>
                     </div>
-                    
+
                     <div className="clientes-header-actions">
                         {usuario && (
                             <span className="clientes-user-greeting">
@@ -467,14 +469,14 @@ function Clientes() {
             {/* Main Content */}
             <main className="clientes-main-content">
                 <h2 className="clientes-title">Clientes Registrados</h2>
-                
+
                 <div className="clientes-content-card">
                     <div className="clientes-card-header">
                         <h3 className="clientes-card-title">
                             <i className="fas fa-list"></i>
                             Lista de Clientes
                         </h3>
-                        <button 
+                        <button
                             className="clientes-add-button"
                             onClick={abrirModalCrear}
                         >
@@ -482,7 +484,7 @@ function Clientes() {
                             Nuevo Cliente
                         </button>
                     </div>
-                    
+
                     <div className="clientes-table-container">
                         {/* Controls */}
                         <div className="clientes-table-controls">
@@ -502,7 +504,7 @@ function Clientes() {
                                     {table.getHeaderGroups().map(headerGroup => (
                                         <tr key={headerGroup.id}>
                                             {headerGroup.headers.map(header => (
-                                                <th 
+                                                <th
                                                     key={header.id}
                                                     className={header.column.getCanSort() ? 'sortable' : ''}
                                                     onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
@@ -521,7 +523,7 @@ function Clientes() {
                                     {table.getRowModel().rows.length === 0 ? (
                                         <tr>
                                             <td colSpan={table.getAllColumns().length} style={{ textAlign: 'center', padding: '2rem' }}>
-                                                <div style={{ color: 'var(--medium-gray)' }}>
+                                                <div>
                                                     <i className="fas fa-users" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>
                                                     <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No hay clientes registrados</p>
                                                     <p style={{ fontSize: '0.9rem' }}>Haz clic en "Nuevo Cliente" para agregar el primero</p>
@@ -595,8 +597,8 @@ function Clientes() {
                         <i className={`fas ${editingCliente ? 'fa-edit' : 'fa-plus'}`}></i>
                         {editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}
                     </h3>
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         className="clientes-modal-close"
                         onClick={() => setModalIsOpen(false)}
                     >
@@ -626,6 +628,7 @@ function Clientes() {
                             <label className="clientes-form-label">Razón Social *</label>
                             <input
                                 type="text"
+                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="RazonSocial"
                                 value={clienteForm.RazonSocial}
@@ -651,6 +654,7 @@ function Clientes() {
                             <label className="clientes-form-label">Dirección</label>
                             <input
                                 type="text"
+                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="Direccion"
                                 value={clienteForm.Direccion}
@@ -663,6 +667,7 @@ function Clientes() {
                             <label className="clientes-form-label">Comuna</label>
                             <input
                                 type="text"
+                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="Comuna"
                                 value={clienteForm.Comuna}
@@ -675,6 +680,7 @@ function Clientes() {
                             <label className="clientes-form-label">Giro</label>
                             <input
                                 type="text"
+                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="Giro"
                                 value={clienteForm.Giro}
@@ -697,15 +703,15 @@ function Clientes() {
                         </div>
 
                         <div className="clientes-modal-footer">
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className="clientes-modal-button secondary"
                                 onClick={() => setModalIsOpen(false)}
                             >
                                 Cancelar
                             </button>
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 className="clientes-modal-button primary"
                             >
                                 <i className={`fas ${editingCliente ? 'fa-save' : 'fa-plus'}`}></i>

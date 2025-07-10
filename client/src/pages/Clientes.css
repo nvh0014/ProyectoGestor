@@ -435,6 +435,9 @@
 }
 
 .clientes-table td {
+  background: var(--white);
+  color: var(--secondary-blue);
+  font-weight: 600;
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--light-gray);
   font-size: var(--font-size-sm);
@@ -442,6 +445,7 @@
 }
 
 .clientes-table tbody tr {
+  background: var(--white);
   transition: var(--transition-base);
 }
 
@@ -949,6 +953,8 @@
   
   .clientes-card-header {
     flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
     text-align: center;
   }
   
@@ -1068,7 +1074,7 @@
   }
   
   .clientes-add-button {
-    font-size: var(--font-size-xs);
+    justify-content: center;
     padding: var(--spacing-xs) var(--spacing-sm);
   }
   
@@ -1257,12 +1263,6 @@
   
   .clientes-table {
     background: #2d3748;
-    color: #e2e8f0;
-  }
-  
-  .clientes-form-input,
-  .clientes-search-input {
-    background: rgba(74, 85, 104, 0.8);
     color: #e2e8f0;
   }
 }

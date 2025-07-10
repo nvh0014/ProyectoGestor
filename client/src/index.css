@@ -1,0 +1,66 @@
+/* Global CSS - Establece Segoe UI como fuente principal para toda la aplicación */
+
+/* Reset global y configuración de fuente base */
+* {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Configuración específica para elementos comunes */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Asegurar que todos los elementos de formulario usen Segoe UI */
+input, 
+textarea, 
+select, 
+button {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Elementos de modal y overlay */
+.modal,
+.modal-content,
+.modal-header,
+.modal-body,
+.modal-footer {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Elementos de tabla */
+table,
+th,
+td {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Elementos de lista */
+ul,
+ol,
+li {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Títulos y texto */
+h1, h2, h3, h4, h5, h6,
+p, span, div, label {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Para componentes de terceros que puedan sobrescribir la fuente */
+.swal2-popup,
+.swal2-title,
+.swal2-content,
+.swal2-confirm,
+.swal2-cancel {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* Asegurar que elementos con fuentes heredadas usen Segoe UI */
+*[style*="font-family"] {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
