@@ -422,8 +422,10 @@ function GenerarBoleta() {
       doc.text('TOTAL:', 130, yPosition);
       doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
 
-      // Agregar observaciones si existen (mejorado)
-      if (boleta.Observaciones && boleta.Observaciones.trim() !== '') {
+      // Agregar observaciones si existen
+      const observaciones = boleta.Observaciones || boleta.observaciones || '';
+      
+      if (observaciones && observaciones.toString().trim() !== '') {
         yPosition += 20;
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -434,7 +436,7 @@ function GenerarBoleta() {
         doc.setFontSize(10);
         
         // Dividir las observaciones en líneas para que no se salgan del PDF
-        const observacionesLines = doc.splitTextToSize(boleta.Observaciones, 170);
+        const observacionesLines = doc.splitTextToSize(observaciones.toString(), 170);
         doc.text(observacionesLines, 20, yPosition);
         
         // Ajustar la posición Y según el número de líneas de observaciones

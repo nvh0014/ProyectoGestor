@@ -775,6 +775,39 @@ app.delete('/productos/:id', (req, res) => {
 
 // ========== RUTAS PARA BOLETAS ==========
 
+// Función para verificar y agregar la columna Observaciones si no existe
+function verificarColumnaObservaciones() {
+  const checkQuery = `
+    SELECT COLUMN_NAME 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_NAME = 'boleta' AND COLUMN_NAME = 'Observaciones'
+  `;
+  
+  db.query(checkQuery, (err, results) => {
+    if (err) {
+      console.error('Error al verificar columna Observaciones:', err);
+      return;
+    }
+    
+    if (results.length === 0) {
+      // La columna no existe, agregarla
+      const addColumnQuery = 'ALTER TABLE boleta ADD COLUMN Observaciones TEXT';
+      db.query(addColumnQuery, (err) => {
+        if (err) {
+          console.error('Error al agregar columna Observaciones:', err);
+        } else {
+          console.log('Columna Observaciones agregada exitosamente a la tabla boleta');
+        }
+      });
+    } else {
+      console.log('La columna Observaciones ya existe en la tabla boleta');
+    }
+  });
+}
+
+// Ejecutar la verificación al iniciar el servidor
+verificarColumnaObservaciones();
+
 // Obtener todas las boletas con información del cliente
 app.get('/boletas', (req, res) => {
   const query = `
@@ -813,7 +846,8 @@ app.get('/boletas/:numero', (req, res) => {
       c.Comuna,
       b.FechaBoleta,
       b.FechaVencimiento,
-      b.TotalBoleta
+      b.TotalBoleta,
+      b.Observaciones
     FROM boleta b
     INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
     WHERE b.NumeroBoleta = ?
@@ -858,7 +892,7 @@ app.get('/boletas/:numero', (req, res) => {
 
 // Crear nueva boleta con detalles
 app.post('/boletas', (req, res) => {
-  const { CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, detalles } = req.body;
+  const { CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, detalles } = req.body;
   
   // Iniciar transacción
   db.beginTransaction((err) => {
@@ -867,9 +901,9 @@ app.post('/boletas', (req, res) => {
       return res.status(500).json({ error: 'Error al crear boleta' });
     }
     
-    // Insertar boleta
-    const queryBoleta = 'INSERT INTO boleta (CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta) VALUES (?, ?, ?, ?)';
-    db.query(queryBoleta, [CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta], (err, result) => {
+    // Insertar boleta (incluyendo observaciones)
+    const queryBoleta = 'INSERT INTO boleta (CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones) VALUES (?, ?, ?, ?, ?)';
+    db.query(queryBoleta, [CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones || ''], (err, result) => {
       if (err) {
         return db.rollback(() => {
           console.error('Error al crear boleta:', err);
