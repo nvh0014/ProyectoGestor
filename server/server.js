@@ -215,7 +215,6 @@ app.use(express.json());
 
 // Aplicar geobloqueo a todas las rutas
 app.use(geoBlockMiddleware);
-app.use(geoBlockMiddleware);
 
 // Configuración de la base de datos usando variables de entorno
 const db = mysql.createConnection({

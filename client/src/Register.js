@@ -41,7 +41,12 @@ function Register() {
   };
 
   const addUser = () => {
-    const errores = validarRegistro(NombreUsuario, Password, Password2);
+    // Eliminar espacios en blanco al inicio y final
+    const usuarioLimpio = NombreUsuario.trim();
+    const passwordLimpio = Password.trim();
+    const password2Limpio = Password2.trim();
+    
+    const errores = validarRegistro(usuarioLimpio, passwordLimpio, password2Limpio);
 
     if (errores.length > 0) {
       Swal.fire({
@@ -54,8 +59,8 @@ function Register() {
     }
 
     api.post('/register', {
-      NombreUsuario: NombreUsuario,
-      Password: Password
+      NombreUsuario: usuarioLimpio,
+      Password: passwordLimpio
     })
       .then((response) => {
         Swal.fire({

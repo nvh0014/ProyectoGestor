@@ -37,7 +37,11 @@ function Login() {
     }, [Navigate]);
 
     const loginUser = () => {
-        if (!NombreUsuario || !Password) {
+        // Eliminar espacios en blanco al inicio y final
+        const usuarioLimpio = NombreUsuario.trim();
+        const passwordLimpio = Password.trim();
+        
+        if (!usuarioLimpio || !passwordLimpio) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Campos incompletos',
@@ -50,13 +54,13 @@ function Login() {
         setIsLoading(true);
 
         api.post('/login', {
-            NombreUsuario,
-            Password
+            NombreUsuario: usuarioLimpio,
+            Password: passwordLimpio
         })
             .then((res) => {
                 if (res.data.status === 'success') {
-                    // Guardar el usuario en una cookie por 7 días
-                    setCookie('usuario', NombreUsuario, 7);
+                    // Guardar el usuario en una cookie por 7 días (sin espacios)
+                    setCookie('usuario', usuarioLimpio, 7);
                     setCookie('isLoggedIn', 'true', 7);
                     
                     Swal.fire({
