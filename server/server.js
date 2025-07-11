@@ -1,9 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -11,17 +12,27 @@ app.use(express.json());
 
 // Conexión a MySQL
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '141205',
-  database: 'gestor',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  database: process.env.DB_NAME,
 });
 
 db.connect((err) => {
   if (err) {
     console.error('Error al conectar con MySQL:', err);
+    console.error('Configuración de conexión:');
+    console.error('Host:', process.env.DB_HOST);
+    console.error('User:', process.env.DB_USER);
+    console.error('Port:', process.env.DB_PORT);
+    console.error('Database:', process.env.DB_NAME);
     return;
   }
+  
+  console.log('Conectado exitosamente a la base de datos MySQL');
+  console.log('Host:', process.env.DB_HOST);
+  console.log('Database:', process.env.DB_NAME);
 
     // Verificar si existe al menos un usuario, si no, crear uno por defecto
     const checkUserQuery = 'SELECT COUNT(*) as count FROM usuario';
@@ -30,7 +41,9 @@ db.connect((err) => {
         console.error('Error al verificar usuarios:', err);
         return;
       }
-  });
+      
+      console.log('Base de datos verificada correctamente');
+    });
 });
 
 // Ruta para registrar usuario
