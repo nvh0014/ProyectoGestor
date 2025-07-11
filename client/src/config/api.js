@@ -67,5 +67,25 @@ export const testConnection = async () => {
   }
 };
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+export const apiService = {
+  async getUsers() {
+    const response = await fetch(`${API_URL}/api/users`);
+    return response.json();
+  },
+  
+  async createUser(userData) {
+    const response = await fetch(`${API_URL}/api/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+    return response.json();
+  }
+};
+
 export { API_BASE_URL, api };
 export default api;
