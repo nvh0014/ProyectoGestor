@@ -13,9 +13,11 @@
   },
   "keywords": [],
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "ipaddr.js": "^2.2.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.14.1",
     "node-cache": "^5.1.2",

@@ -3,8 +3,205 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const ipaddr = require('ipaddr.js');
+const NodeCache = require('node-cache');
+const bcrypt = require('bcrypt');
+const geoConfig = require('./geo-config');
 
 const app = express();
+
+// Configuración para bcrypt
+const SALT_ROUNDS = 12; // Número de rondas de salt (más alto = más seguro pero más lento)
+
+// Cache para las consultas de geolocalización
+const geoCache = new NodeCache({ 
+  stdTTL: geoConfig.cache.ttl,
+  checkperiod: geoConfig.cache.checkPeriod
+});
+
+// Función para obtener la IP real del cliente
+function getClientIP(req) {
+  // Verifica varios headers para obtener la IP real
+  const forwarded = req.headers['x-forwarded-for'];
+  const realIP = req.headers['x-real-ip'];
+  const remoteAddress = req.connection.remoteAddress || req.socket.remoteAddress;
+  
+  if (forwarded) {
+    // Si hay múltiples IPs, tomar la primera
+    return forwarded.split(',')[0].trim();
+  }
+  
+  if (realIP) {
+    return realIP;
+  }
+  
+  // Limpiar IPv6 local a IPv4
+  if (remoteAddress) {
+    if (remoteAddress.includes('::ffff:')) {
+      return remoteAddress.replace('::ffff:', '');
+    }
+    return remoteAddress;
+  }
+  
+  return '127.0.0.1';
+}
+
+// Función para verificar si una IP es local o privada
+function isLocalIP(ip) {
+  try {
+    const addr = ipaddr.process(ip);
+    
+    // Verificar si es IPv4 local
+    if (addr.kind() === 'ipv4') {
+      return addr.match(ipaddr.IPv4.parse('127.0.0.0'), 8) ||  // localhost
+             addr.match(ipaddr.IPv4.parse('10.0.0.0'), 8) ||   // private
+             addr.match(ipaddr.IPv4.parse('172.16.0.0'), 12) || // private
+             addr.match(ipaddr.IPv4.parse('192.168.0.0'), 16);  // private
+    }
+    
+    // Verificar si es IPv6 local
+    if (addr.kind() === 'ipv6') {
+      return addr.match(ipaddr.IPv6.parse('::1'), 128) ||       // localhost
+             addr.match(ipaddr.IPv6.parse('fc00::'), 7) ||      // private
+             addr.match(ipaddr.IPv6.parse('fe80::'), 10);       // link-local
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error procesando IP:', error);
+    return false;
+  }
+}
+
+// Middleware de geobloqueo para Chile
+async function geoBlockMiddleware(req, res, next) {
+  try {
+    const clientIP = getClientIP(req);
+    
+    // Verificar lista blanca de IPs
+    if (geoConfig.ipWhitelist.includes(clientIP)) {
+      if (geoConfig.logging.logAllowed) {
+        console.log(`✅ IP en lista blanca: ${clientIP}`);
+      }
+      return next();
+    }
+    
+    // Permitir IPs locales y privadas (para desarrollo)
+    if (isLocalIP(clientIP)) {
+      if (geoConfig.logging.logLocal) {
+        console.log(`✅ IP local permitida: ${clientIP}`);
+      }
+      return next();
+    }
+    
+    // Verificar cache primero
+    const cachedResult = geoCache.get(clientIP);
+    if (cachedResult !== undefined) {
+      const isAllowed = geoConfig.allowedCountries.includes(cachedResult.country);
+      
+      if (isAllowed) {
+        if (geoConfig.logging.logAllowed) {
+          console.log(`✅ IP permitida (cache): ${clientIP} - País: ${cachedResult.country}`);
+        }
+        return next();
+      } else {
+        if (geoConfig.logging.logBlocked) {
+          console.log(`❌ IP bloqueada (cache): ${clientIP} - País: ${cachedResult.country}`);
+        }
+        
+        // Si está en modo desarrollo, solo loggear pero permitir acceso
+        if (geoConfig.developmentMode) {
+          console.log(`⚠️  Modo desarrollo: Permitiendo acceso de IP bloqueada`);
+          return next();
+        }
+        
+        return res.status(geoConfig.blockedResponse.status).json({ 
+          error: geoConfig.blockedResponse.message,
+          ...(geoConfig.blockedResponse.includeCountry && { country: cachedResult.country }),
+          ...(geoConfig.blockedResponse.includeIP && { ip: clientIP })
+        });
+      }
+    }
+    
+    // Consultar GeoJS API con reintentos
+    let geoData = null;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= geoConfig.geoAPI.retries; attempt++) {
+      try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${geoConfig.geoAPI.baseUrl}/${clientIP}.json`, {
+          timeout: geoConfig.geoAPI.timeout,
+          headers: {
+            'User-Agent': geoConfig.geoAPI.userAgent
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        geoData = await response.json();
+        break; // Éxito, salir del bucle de reintentos
+        
+      } catch (error) {
+        lastError = error;
+        if (attempt < geoConfig.geoAPI.retries) {
+          console.log(`⚠️  Intento ${attempt} fallido para ${clientIP}, reintentando...`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+        }
+      }
+    }
+    
+    if (!geoData) {
+      if (geoConfig.logging.logErrors) {
+        console.error(`Error en GeoJS API después de ${geoConfig.geoAPI.retries} intentos:`, lastError);
+      }
+      // En caso de error en la API, permitir acceso pero loggear
+      console.log(`⚠️  Error en geolocalización, permitiendo acceso: ${clientIP}`);
+      return next();
+    }
+    
+    const country = geoData.country;
+    
+    // Guardar en cache
+    geoCache.set(clientIP, { country, timestamp: Date.now() });
+    
+    // Verificar si el país está permitido
+    const isAllowed = geoConfig.allowedCountries.includes(country);
+    
+    if (isAllowed) {
+      if (geoConfig.logging.logAllowed) {
+        console.log(`✅ IP permitida: ${clientIP} - País: ${country}`);
+      }
+      return next();
+    } else {
+      if (geoConfig.logging.logBlocked) {
+        console.log(`❌ IP bloqueada: ${clientIP} - País: ${country}`);
+      }
+      
+      // Si está en modo desarrollo, solo loggear pero permitir acceso
+      if (geoConfig.developmentMode) {
+        console.log(`⚠️  Modo desarrollo: Permitiendo acceso de IP bloqueada`);
+        return next();
+      }
+      
+      return res.status(geoConfig.blockedResponse.status).json({ 
+        error: geoConfig.blockedResponse.message,
+        ...(geoConfig.blockedResponse.includeCountry && { country }),
+        ...(geoConfig.blockedResponse.includeIP && { ip: clientIP })
+      });
+    }
+    
+  } catch (error) {
+    if (geoConfig.logging.logErrors) {
+      console.error('Error en middleware de geobloqueo:', error);
+    }
+    // En caso de error, permitir acceso pero loggear
+    console.log(`⚠️  Error en geobloqueo, permitiendo acceso: ${getClientIP(req)}`);
+    return next();
+  }
+}
 
 // Middleware
 app.use(cors({
@@ -15,6 +212,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Aplicar geobloqueo a todas las rutas
+app.use(geoBlockMiddleware);
+app.use(geoBlockMiddleware);
 
 // Configuración de la base de datos usando variables de entorno
 const db = mysql.createConnection({
@@ -38,6 +239,118 @@ db.connect((err) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Servidor funcionando correctamente' });
 });
+
+// Ruta para verificar geolocalización
+app.get('/api/geo-status', async (req, res) => {
+  try {
+    const clientIP = getClientIP(req);
+    
+    if (isLocalIP(clientIP)) {
+      return res.json({
+        ip: clientIP,
+        country: 'Local/Private',
+        allowed: true,
+        source: 'local'
+      });
+    }
+    
+    // Verificar cache
+    const cachedResult = geoCache.get(clientIP);
+    if (cachedResult) {
+      return res.json({
+        ip: clientIP,
+        country: cachedResult.country,
+        allowed: geoConfig.allowedCountries.includes(cachedResult.country),
+        source: 'cache',
+        allowedCountries: geoConfig.allowedCountries,
+        developmentMode: geoConfig.developmentMode,
+        timestamp: cachedResult.timestamp
+      });
+    }
+    
+    // Consultar API si no está en cache
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(`https://get.geojs.io/v1/ip/geo/${clientIP}.json`, {
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'GestorApp/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      return res.status(500).json({
+        error: 'Error consultando geolocalización',
+        ip: clientIP
+      });
+    }
+    
+    const geoData = await response.json();
+    const country = geoData.country;
+    
+    // Guardar en cache
+    geoCache.set(clientIP, { country, timestamp: Date.now() });
+    
+    res.json({
+      ip: clientIP,
+      country: country,
+      allowed: geoConfig.allowedCountries.includes(country),
+      source: 'api',
+      allowedCountries: geoConfig.allowedCountries,
+      developmentMode: geoConfig.developmentMode,
+      geoData: geoData
+    });
+    
+  } catch (error) {
+    console.error('Error en geo-status:', error);
+    res.status(500).json({
+      error: 'Error verificando geolocalización',
+      ip: getClientIP(req)
+    });
+  }
+});
+
+// Ruta para estadísticas y administración del geobloqueo (solo para admin)
+app.get('/api/geo-admin', (req, res) => {
+  const cacheKeys = geoCache.keys();
+  const stats = {
+    configuration: {
+      allowedCountries: geoConfig.allowedCountries,
+      developmentMode: geoConfig.developmentMode,
+      cacheTimeout: geoConfig.cache.ttl,
+      ipWhitelistCount: geoConfig.ipWhitelist.length
+    },
+    cache: {
+      totalCachedIPs: cacheKeys.length,
+      cacheHits: geoCache.getStats().hits,
+      cacheMisses: geoCache.getStats().misses,
+      cacheKeys: geoCache.getStats().keys,
+      cacheSize: geoCache.getStats().ksize
+    },
+    cachedEntries: {}
+  };
+  
+  cacheKeys.forEach(ip => {
+    const data = geoCache.get(ip);
+    if (data) {
+      stats.cachedEntries[ip] = {
+        country: data.country,
+        timestamp: new Date(data.timestamp).toISOString(),
+        allowed: geoConfig.allowedCountries.includes(data.country)
+      };
+    }
+  });
+  
+  res.json(stats);
+});
+
+// Ruta para limpiar cache de geolocalización
+app.post('/api/geo-admin/clear-cache', (req, res) => {
+  geoCache.flushAll();
+  res.json({ 
+    message: 'Cache de geolocalización limpiado exitosamente',
+    timestamp: new Date().toISOString()
+  });
+});
   
   console.log('Conectado exitosamente a la base de datos MySQL');
   console.log('Host:', process.env.DB_HOST);
@@ -55,39 +368,209 @@ app.get('/api/test', (req, res) => {
     });
 
 // Ruta para registrar usuario
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { NombreUsuario, Password } = req.body;
 
-  const query = 'INSERT INTO usuario (NombreUsuario, Password) VALUES (?, ?)';
-  db.query(query, [NombreUsuario, Password], (err, result) => {
-    if (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({ message: 'El nombre de usuario ya está en uso.' });
-      }
-      console.error('Error al registrar usuario:', err);
-      return res.status(500).json({ error: 'Error al registrar el usuario en la base de datos.' });
-    }
+  // Validar que se proporcionen los datos necesarios
+  if (!NombreUsuario || !Password) {
+    return res.status(400).json({ error: 'Nombre de usuario y contraseña son requeridos.' });
+  }
 
-    res.status(201).json({ message: 'Usuario registrado exitosamente.' });
-  });
+  // Validar longitud mínima de contraseña
+  if (Password.length < 6) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  try {
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(Password, SALT_ROUNDS);
+    
+    const query = 'INSERT INTO usuario (NombreUsuario, Password) VALUES (?, ?)';
+    db.query(query, [NombreUsuario, hashedPassword], (err, result) => {
+      if (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(409).json({ message: 'El nombre de usuario ya está en uso.' });
+        }
+        console.error('Error al registrar usuario:', err);
+        return res.status(500).json({ error: 'Error al registrar el usuario en la base de datos.' });
+      }
+
+      console.log(`✅ Usuario registrado: ${NombreUsuario}`);
+      res.status(201).json({ message: 'Usuario registrado exitosamente.' });
+    });
+  } catch (error) {
+    console.error('Error al hashear contraseña:', error);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
 });
 
 // Ruta para el login del usuario
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { NombreUsuario, Password } = req.body;
   
-  const query = 'SELECT * FROM usuario WHERE NombreUsuario = ? AND Password = ?';
-  db.query(query, [NombreUsuario, Password], (err, data) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al iniciar sesión' });
-    }
-    
-    if (data.length > 0) {
-      return res.status(200).json({ status: 'success', message: 'Inicio de sesión exitoso' });
-    } else {
-      return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
-    }
-  });
+  // Validar que se proporcionen los datos necesarios
+  if (!NombreUsuario || !Password) {
+    return res.status(400).json({ error: 'Nombre de usuario y contraseña son requeridos.' });
+  }
+
+  try {
+    // Buscar usuario en la base de datos
+    const query = 'SELECT CodigoUsuario, NombreUsuario, Password FROM usuario WHERE NombreUsuario = ?';
+    db.query(query, [NombreUsuario], async (err, data) => {
+      if (err) {
+        console.error('Error en consulta de login:', err);
+        return res.status(500).json({ error: 'Error al iniciar sesión' });
+      }
+      
+      if (data.length === 0) {
+        console.log(`❌ Intento de login fallido: Usuario '${NombreUsuario}' no encontrado`);
+        return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
+      }
+
+      const user = data[0];
+      
+      // Verificar contraseña
+      const passwordMatch = await bcrypt.compare(Password, user.Password);
+      
+      if (passwordMatch) {
+        console.log(`✅ Login exitoso: ${NombreUsuario}`);
+        return res.status(200).json({ 
+          status: 'success', 
+          message: 'Inicio de sesión exitoso',
+          user: {
+            CodigoUsuario: user.CodigoUsuario,
+            NombreUsuario: user.NombreUsuario
+          }
+        });
+      } else {
+        console.log(`❌ Intento de login fallido: Contraseña incorrecta para '${NombreUsuario}'`);
+        return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
+      }
+    });
+  } catch (error) {
+    console.error('Error en proceso de login:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Ruta para migrar contraseñas existentes a hash (solo usar una vez)
+app.post('/admin/migrate-passwords', async (req, res) => {
+  const { adminKey } = req.body;
+  
+  // Clave simple para proteger esta función crítica
+  if (adminKey !== process.env.ADMIN_MIGRATION_KEY && adminKey !== 'MIGRATE_PASSWORDS_2025') {
+    return res.status(403).json({ error: 'Clave de administrador incorrecta' });
+  }
+
+  try {
+    // Obtener todos los usuarios con contraseñas no hasheadas
+    const query = 'SELECT CodigoUsuario, NombreUsuario, Password FROM usuario';
+    db.query(query, async (err, users) => {
+      if (err) {
+        console.error('Error obteniendo usuarios:', err);
+        return res.status(500).json({ error: 'Error obteniendo usuarios' });
+      }
+
+      let migratedCount = 0;
+      let errors = 0;
+
+      for (const user of users) {
+        try {
+          // Verificar si la contraseña ya está hasheada
+          const isHashed = user.Password.startsWith('$2b$') || user.Password.startsWith('$2a$');
+          
+          if (!isHashed) {
+            // Hashear la contraseña actual
+            const hashedPassword = await bcrypt.hash(user.Password, SALT_ROUNDS);
+            
+            // Actualizar en la base de datos
+            const updateQuery = 'UPDATE usuario SET Password = ? WHERE CodigoUsuario = ?';
+            await new Promise((resolve, reject) => {
+              db.query(updateQuery, [hashedPassword, user.CodigoUsuario], (updateErr) => {
+                if (updateErr) reject(updateErr);
+                else resolve();
+              });
+            });
+            
+            migratedCount++;
+            console.log(`✅ Migrada contraseña para usuario: ${user.NombreUsuario}`);
+          }
+        } catch (userError) {
+          console.error(`❌ Error migrando usuario ${user.NombreUsuario}:`, userError);
+          errors++;
+        }
+      }
+
+      res.json({
+        message: 'Migración completada',
+        totalUsers: users.length,
+        migratedPasswords: migratedCount,
+        errors: errors,
+        timestamp: new Date().toISOString()
+      });
+    });
+  } catch (error) {
+    console.error('Error en migración de contraseñas:', error);
+    res.status(500).json({ error: 'Error en migración de contraseñas' });
+  }
+});
+
+// Ruta para cambiar contraseña de usuario
+app.post('/change-password', async (req, res) => {
+  const { NombreUsuario, CurrentPassword, NewPassword } = req.body;
+
+  // Validar que se proporcionen todos los datos
+  if (!NombreUsuario || !CurrentPassword || !NewPassword) {
+    return res.status(400).json({ error: 'Todos los campos son requeridos.' });
+  }
+
+  // Validar longitud mínima de nueva contraseña
+  if (NewPassword.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  try {
+    // Buscar usuario y verificar contraseña actual
+    const query = 'SELECT CodigoUsuario, Password FROM usuario WHERE NombreUsuario = ?';
+    db.query(query, [NombreUsuario], async (err, data) => {
+      if (err) {
+        console.error('Error buscando usuario:', err);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+      }
+
+      if (data.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const user = data[0];
+
+      // Verificar contraseña actual
+      const passwordMatch = await bcrypt.compare(CurrentPassword, user.Password);
+      
+      if (!passwordMatch) {
+        console.log(`❌ Intento de cambio de contraseña fallido: Contraseña actual incorrecta para '${NombreUsuario}'`);
+        return res.status(401).json({ error: 'Contraseña actual incorrecta' });
+      }
+
+      // Hashear nueva contraseña
+      const hashedNewPassword = await bcrypt.hash(NewPassword, SALT_ROUNDS);
+
+      // Actualizar contraseña en la base de datos
+      const updateQuery = 'UPDATE usuario SET Password = ? WHERE CodigoUsuario = ?';
+      db.query(updateQuery, [hashedNewPassword, user.CodigoUsuario], (updateErr) => {
+        if (updateErr) {
+          console.error('Error actualizando contraseña:', updateErr);
+          return res.status(500).json({ error: 'Error al actualizar contraseña' });
+        }
+
+        console.log(`✅ Contraseña cambiada exitosamente para: ${NombreUsuario}`);
+        res.json({ message: 'Contraseña cambiada exitosamente' });
+      });
+    });
+  } catch (error) {
+    console.error('Error en cambio de contraseña:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // Ruta para verificar la conexión
