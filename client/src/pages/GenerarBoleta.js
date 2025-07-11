@@ -335,29 +335,62 @@ function GenerarBoleta() {
       const { boleta, detalles } = response.data;
 
       const doc = new jsPDF();
+      
+      // Agregar logo de la distribuidora en la esquina superior izquierda
+      try {
+        // Intentar cargar el logo desde la carpeta public
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          logoImg.onload = () => {
+            try {
+              // Agregar el logo en la esquina superior izquierda (20x20 pixels)
+              doc.addImage(logoImg, 'PNG', 10, 10, 20, 20);
+              resolve();
+            } catch (error) {
+              console.warn('Error al agregar logo al PDF:', error);
+              resolve(); // Continuar sin logo si hay error
+            }
+          };
+          logoImg.onerror = () => {
+            console.warn('No se pudo cargar el logo');
+            resolve(); // Continuar sin logo si no se puede cargar
+          };
+          logoImg.src = '/logo512.png';
+        });
+      } catch (error) {
+        console.warn('Error al procesar logo:', error);
+        // Continuar sin logo si hay cualquier error
+      }
+      
+      // Título principal (ajustado para no chocar con el logo)
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('BOLETA DE VENTA', 105, 20, { align: 'center' });
+      doc.text('COTIZACIÓN DE MERCADERÍA', 105, 20, { align: 'center' });
       
+      // Información básica de la boleta
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Número de Boleta: ${boleta.NumeroBoleta}`, 20, 35);
-      doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 45);
+      doc.text(`Número de Boleta: ${boleta.NumeroBoleta}`, 20, 40);
+      doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 50);
       
+      // Información del cliente
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('INFORMACIÓN DEL CLIENTE', 20, 65);
+      doc.text('INFORMACIÓN DEL CLIENTE', 20, 70);
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`RUT: ${boleta.Rut}`, 20, 75);
-      doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 85);
+      doc.text(`RUT: ${boleta.Rut}`, 20, 80);
+      doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 90);
 
+      // Detalle de productos
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('DETALLE DE PRODUCTOS', 20, 105);
+      doc.text('DETALLE DE PRODUCTOS', 20, 110);
 
-      const startY = 115;
+      const startY = 120;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('Descripción', 20, startY);
@@ -389,27 +422,30 @@ function GenerarBoleta() {
       doc.text('TOTAL:', 130, yPosition);
       doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
 
-      // Agregar observaciones si existen
+      // Agregar observaciones si existen (mejorado)
       if (boleta.Observaciones && boleta.Observaciones.trim() !== '') {
         yPosition += 20;
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text('OBSERVACIONES:', 20, yPosition);
         
         yPosition += 10;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         
         // Dividir las observaciones en líneas para que no se salgan del PDF
         const observacionesLines = doc.splitTextToSize(boleta.Observaciones, 170);
         doc.text(observacionesLines, 20, yPosition);
         
-        yPosition += observacionesLines.length * 5;
-        doc.setFontSize(10);
+        // Ajustar la posición Y según el número de líneas de observaciones
+        yPosition += observacionesLines.length * 6;
       }
 
+      // Texto final (ajustado según si hay observaciones o no)
+      const finalY = yPosition < 260 ? 280 : yPosition + 20;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text('Gracias por su compra', 105, 280, { align: 'center' });
+      doc.text('Gracias por su compra', 105, finalY, { align: 'center' });
 
       doc.save(`Boleta_${numeroBoleta}.pdf`);
 
