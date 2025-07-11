@@ -1,34 +1,43 @@
-const express = require('express');
-const cors = require('cors');
-const mysql = require('mysql2');
+// server.js
 require('dotenv').config();
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://gestorcn.vercel.app', // Tu dominio de Vercel
+    'http://localhost:3000'      // Para desarrollo local
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
-// Conexión a MySQL
+// Configuración de la base de datos usando variables de entorno
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
   database: process.env.DB_NAME,
+  port: process.env.DB_PORT
 });
 
+// Conectar a la base de datos
 db.connect((err) => {
   if (err) {
-    console.error('Error al conectar con MySQL:', err);
-    console.error('Configuración de conexión:');
-    console.error('Host:', process.env.DB_HOST);
-    console.error('User:', process.env.DB_USER);
-    console.error('Port:', process.env.DB_PORT);
-    console.error('Database:', process.env.DB_NAME);
+    console.error('Error conectando a la base de datos:', err);
     return;
   }
+  console.log('Conectado a la base de datos MySQL');
+});
+
+// Rutas de tu API aquí
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Servidor funcionando correctamente' });
+});
   
   console.log('Conectado exitosamente a la base de datos MySQL');
   console.log('Host:', process.env.DB_HOST);
@@ -44,7 +53,6 @@ db.connect((err) => {
       
       console.log('Base de datos verificada correctamente');
     });
-});
 
 // Ruta para registrar usuario
 app.post('/register', (req, res) => {
@@ -467,7 +475,9 @@ app.get('/articulos', (req, res) => {
   });
 });
 
-// Iniciar el servidor
+// El puerto ahora viene de las variables de entorno
+const PORT = process.env.PORT || 3001;
+
 app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
