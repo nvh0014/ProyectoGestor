@@ -691,7 +691,7 @@
   display: block;
   margin-bottom: var(--spacing-xs);
   font-weight: 600;
-  color: var(--dark-gray);
+  color: var(--primary-blue);
   font-size: var(--font-size-sm);
 }
 

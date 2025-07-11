@@ -615,12 +615,14 @@ function Clientes() {
                             <label className="clientes-form-label">RUT *</label>
                             <input
                                 type="text"
+                                maxLength="10"
+                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="Rut"
                                 value={clienteForm.Rut}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="12345678-9"
+                                placeholder="Rut del cliente (sin puntos con guión)"
                             />
                         </div>
 
@@ -641,12 +643,14 @@ function Clientes() {
                         <div className="clientes-form-group">
                             <label className="clientes-form-label">Teléfono</label>
                             <input
-                                type="text"
+                                type="number"
+                                maxLength="9"
+                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="Telefono"
                                 value={clienteForm.Telefono}
                                 onChange={handleInputChange}
-                                placeholder="+56 9 1234 5678"
+                                placeholder="9 1234 5678"
                             />
                         </div>
 

@@ -612,7 +612,7 @@ function Productos() {
                                     value={productoForm.PrecioSala}
                                     onChange={handleInputChange}
                                     required
-                                    placeholder="0"
+                                    placeholder="$$$"
                                 />
                             </div>
 
@@ -624,7 +624,7 @@ function Productos() {
                                     name="PrecioDto"
                                     value={productoForm.PrecioDto}
                                     onChange={handleInputChange}
-                                    placeholder="0"
+                                    placeholder="$$$"
                                 />
                             </div>
                         </div>

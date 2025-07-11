@@ -153,6 +153,7 @@ function GenerarBoleta() {
       // El backend ya filtra solo clientes activos
       setClientes(clientesRes.data);
       console.log('Clientes cargados:', clientesRes.data.length, 'clientes');
+      console.log('Estructura de cliente ejemplo:', clientesRes.data[0]);
       
       const productosActivos = productosRes.data.filter(producto => 
         producto.ArticuloActivo === true || producto.ArticuloActivo === 1
@@ -189,6 +190,7 @@ function GenerarBoleta() {
     if (codigoCliente) {
       try {
         const response = await api.get(`/clientes/${codigoCliente}`);
+        console.log('Datos del cliente seleccionado:', response.data);
         setClienteSeleccionado(response.data);
       } catch (error) {
         console.error('Error al obtener cliente:', error);
@@ -299,6 +301,7 @@ function GenerarBoleta() {
         FechaBoleta: fechaBoleta,
         FechaVencimiento: fechaVencimiento.toISOString().split('T')[0],
         TotalBoleta: totales.subtotalNeto,
+        Observaciones: boletaForm.Observaciones || '',
         detalles: detalles
       };
 
@@ -386,6 +389,24 @@ function GenerarBoleta() {
       doc.text('TOTAL:', 130, yPosition);
       doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
 
+      // Agregar observaciones si existen
+      if (boleta.Observaciones && boleta.Observaciones.trim() !== '') {
+        yPosition += 20;
+        doc.setFont('helvetica', 'bold');
+        doc.text('OBSERVACIONES:', 20, yPosition);
+        
+        yPosition += 10;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        
+        // Dividir las observaciones en líneas para que no se salgan del PDF
+        const observacionesLines = doc.splitTextToSize(boleta.Observaciones, 170);
+        doc.text(observacionesLines, 20, yPosition);
+        
+        yPosition += observacionesLines.length * 5;
+        doc.setFontSize(10);
+      }
+
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.text('Gracias por su compra', 105, 280, { align: 'center' });
@@ -455,7 +476,7 @@ function GenerarBoleta() {
                     
                     <div className="clientes-header-text-group">
                         <h1 className="clientes-header-title">Generar Boleta</h1>
-                        <p className="clientes-header-subtitle">Crea y gestiona boletas de venta</p>
+                        <p className="clientes-header-subtitle">Crea PDF´s de venta</p>
                     </div>
                     
                     <div className="clientes-header-actions">
@@ -568,7 +589,9 @@ function GenerarBoleta() {
                       <div className="client-details">
                         <div className="client-detail">
                           <span className="detail-label">RUT:</span>
-                          <span className="detail-value">{clienteSeleccionado.RUT}</span>
+                          <span className="detail-value">
+                            {clienteSeleccionado.RUT || clienteSeleccionado.Rut || clienteSeleccionado.rut || 'N/A'}
+                          </span>
                         </div>
                         <div className="client-detail">
                           <span className="detail-label">Teléfono:</span>
@@ -587,7 +610,7 @@ function GenerarBoleta() {
               {/* Agregar Productos */}
               <div className="form-card">
                 <div className="card-header">
-                  <h3 className="card-title">Agregar Productos</h3>
+                  <h3 className="gb-card-title">Agregar Productos</h3>
                 </div>
                 <div className="card-body">
                   <div className="form-row">
@@ -617,10 +640,10 @@ function GenerarBoleta() {
                       <label className="form-label">Cantidad</label>
                       <input
                         type="number"
-                        className="form-input"
                         min="1"
+                        className="form-input"
                         value={productoForm.Cantidad}
-                        onChange={(e) => setProductoForm({ ...productoForm, Cantidad: parseInt(e.target.value) || 1 })}
+                        onChange={(e) => setProductoForm({ ...productoForm, Cantidad: parseInt(e.target.value)})}
                       />
                     </div>
                     
@@ -661,6 +684,29 @@ function GenerarBoleta() {
                   </div>
                 </div>
               </div>
+
+              {/* Panel de Observaciones */}
+              <div className="form-card">
+                <div className="card-header">
+                  <h3 className="gb-card-title">Observaciones</h3>
+                </div>
+                <div className="card-body">
+                  <div className="form-group">
+                    <label className="form-label">Observaciones de la Boleta</label>
+                    <textarea
+                      className="form-input"
+                      value={boletaForm.Observaciones}
+                      onChange={(e) => setBoletaForm({ ...boletaForm, Observaciones: e.target.value })}
+                      placeholder="Ingrese observaciones adicionales para la boleta..."
+                      rows="3"
+                      maxLength="200"
+                    />
+                    <small className="form-help-text">
+                      Máximo 200 caracteres. Estas observaciones aparecerán en el PDF de la boleta.
+                    </small>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Columna derecha - Lista de Productos y Resumen */}
@@ -669,7 +715,7 @@ function GenerarBoleta() {
               {productosBoleta.length > 0 && (
                 <div className="form-card">
                   <div className="card-header">
-                    <h3 className="card-title">Productos en la Boleta ({productosBoleta.length})</h3>
+                    <h3 className="gb-card-title">Productos en la Boleta ({productosBoleta.length})</h3>
                   </div>
                   <div className="card-body">
                     <div className="articles-list">
@@ -702,13 +748,7 @@ function GenerarBoleta() {
               {productosBoleta.length > 0 && (
                 <div className="form-card">
                   <div className="card-header">
-                    <h3 className="card-title">Resumen de la Boleta</h3>
-                  </div>
-                  <div className="card-body totals-summary">
-                    <div className="total-row">
-                      <span className="total-label">Subtotal:</span>
-                      <span className="total-value">${totales.subtotalNeto.toLocaleString('es-CL')}</span>
-                    </div>
+                    <h3 className="gb-card-title">Resumen de la Boleta</h3>
                     <div className="total-row total-final">
                       <span className="total-label">TOTAL:</span>
                       <span className="total-value">${totales.totalBruto.toLocaleString('es-CL')}</span>

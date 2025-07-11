@@ -375,12 +375,12 @@
 .registro-boletas-table-controls {
   margin-bottom: var(--spacing-lg);
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .registro-boletas-search-input {
   width: 100%;
-  max-width: 300px;
+  max-width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--light-gray);
   border-radius: var(--radius-sm);
@@ -442,7 +442,7 @@
 .registro-boletas-table-container::after {
   content: '';
   position: absolute;
-  bottom: 60px;
+  bottom: -5%;
   left: 50%;
   transform: translateX(-50%);
   width: 40px;
@@ -749,13 +749,13 @@
 
 .registro-boletas-detail-label {
   font-weight: 600;
-  color: var(--medium-gray);
+  color: var(--primary-blue);
   font-size: var(--font-size-sm);
 }
 
 .registro-boletas-detail-value {
   font-weight: 600;
-  color: var(--dark-gray);
+  color: gray;
   font-size: var(--font-size-sm);
   text-align: right;
 }
@@ -808,7 +808,7 @@
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--light-gray);
   font-size: var(--font-size-sm);
-  color: var(--dark-gray);
+  color: gray;
   white-space: nowrap;
 }
 
@@ -979,10 +979,16 @@
   
   .registro-boletas-table-controls {
     margin-bottom: var(--spacing-md);
+    padding: 0; /* Sin padding lateral para que el search use todo el ancho */
   }
   
   .registro-boletas-search-input {
     max-width: 100%;
+    width: 100%; /* Fuerza el ancho completo */
+    margin: 0; /* Sin márgenes */
+    border-radius: var(--radius-md); /* Radio de borde más pronunciado en móvil */
+    font-size: var(--font-size-base); /* Tamaño de fuente más grande */
+    padding: var(--spacing-md); /* Más padding para mejor experiencia táctil */
   }
   
   .registro-boletas-table th,
