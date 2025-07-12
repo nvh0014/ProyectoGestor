@@ -298,7 +298,7 @@ function Clientes() {
         const { name, value, type, checked } = e.target;
         setClienteForm(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' ? checked : (type === 'text' ? value.toUpperCase() : value)
         }));
     };
 
@@ -645,7 +645,6 @@ function Clientes() {
                             <input
                                 type="number"
                                 maxLength="9"
-                                style={{ textTransform: 'uppercase' }}
                                 className="clientes-form-input"
                                 name="Telefono"
                                 value={clienteForm.Telefono}

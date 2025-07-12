@@ -291,7 +291,7 @@ function Productos() {
             let processedValue = value;
             
             // Convert text fields to uppercase
-            if (name === 'Descripcion') {
+            if (type === 'text' && name === 'Descripcion') {
                 processedValue = value.toUpperCase();
             }
             
@@ -620,6 +620,7 @@ function Productos() {
                             <label className="productos-form-label">Descripción *</label>
                             <input
                                 type="text"
+                                style={{ textTransform: 'uppercase' }}
                                 className="productos-form-input"
                                 name="Descripcion"
                                 value={productoForm.Descripcion}
