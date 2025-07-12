@@ -114,7 +114,6 @@ function GenerarBoleta() {
   });
   
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
 
   // Función para calcular totales
   const calcularTotales = useCallback(() => {
