@@ -12,11 +12,11 @@ const SALT_ROUNDS = 12; // Número de rondas de salt (más alto = más seguro pe
 
 // Configuración de la base de datos usando variables de entorno
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '141205',
+  database: process.env.DB_NAME || 'gestor',
+  port: process.env.DB_PORT || 3001
 });
 
 // Conectar a la base de datos
@@ -48,7 +48,7 @@ db.connect((err) => {
 // Middleware
 app.use(cors({
   origin: [
-    'https://gestorcerronegro.vercel.app', // Sin la barra final
+    'https://gestorcerronegro.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true

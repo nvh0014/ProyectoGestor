@@ -281,10 +281,39 @@ function Productos() {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setProductoForm(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        
+        if (type === 'checkbox') {
+            setProductoForm(prev => ({
+                ...prev,
+                [name]: checked
+            }));
+        } else {
+            let processedValue = value;
+            
+            // Convert text fields to uppercase
+            if (name === 'Descripcion') {
+                processedValue = value.toUpperCase();
+            }
+            
+            setProductoForm(prev => {
+                const newForm = {
+                    ...prev,
+                    [name]: processedValue
+                };
+                
+                // Auto-calculate discount price when PrecioSala changes
+                if (name === 'PrecioSala' && processedValue) {
+                    const precioSala = parseFloat(processedValue);
+                    if (!isNaN(precioSala) && precioSala > 0) {
+                        // Calculate 3% discount (multiply by 0.97)
+                        const precioDescuento = Math.round(precioSala * 0.97);
+                        newForm.PrecioDto = precioDescuento;
+                    }
+                }
+                
+                return newForm;
+            });
+        }
     };
 
     const formatearPrecio = (precio) => {
@@ -591,8 +620,6 @@ function Productos() {
                             <label className="productos-form-label">Descripción *</label>
                             <input
                                 type="text"
-                                // Todo lo que se escriba se convertirá a mayúsculas
-                                style={{ textTransform: 'uppercase' }}
                                 className="productos-form-input"
                                 name="Descripcion"
                                 value={productoForm.Descripcion}

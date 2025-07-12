@@ -333,6 +333,10 @@ function GenerarBoleta() {
     try {
       const response = await api.get(`/boletas/${numeroBoleta}`);
       const { boleta, detalles } = response.data;
+      
+      // Debug: Ver qué datos llegan del backend
+      console.log('Datos de la boleta para PDF:', boleta);
+      console.log('Observaciones recibidas:', boleta.Observaciones);
 
       const doc = new jsPDF();
       
@@ -367,8 +371,8 @@ function GenerarBoleta() {
       // Título principal (ajustado para no chocar con el logo)
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('COTIZACIÓN DE MERCADERÍA', 105, 20, { align: 'center' });
-      
+      doc.text('NOTA DE VENTA', 105, 20, { align: 'center' });
+
       // Información básica de la boleta
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
@@ -406,7 +410,7 @@ function GenerarBoleta() {
 
       detalles.forEach((detalle) => {
         doc.text(detalle.Descripcion.substring(0, 30), 20, yPosition);
-        doc.text(detalle.Cantidad.toString(), 100, yPosition);
+        doc.text((detalle.Cantidad % 1 === 0 ? detalle.Cantidad.toString() : detalle.Cantidad.toFixed(1)), 100, yPosition);
         doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 130, yPosition);
         doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
         
@@ -424,6 +428,7 @@ function GenerarBoleta() {
 
       // Agregar observaciones si existen
       const observaciones = boleta.Observaciones || boleta.observaciones || '';
+      console.log('Observaciones procesadas para PDF:', observaciones);
       
       if (observaciones && observaciones.toString().trim() !== '') {
         yPosition += 20;
@@ -678,10 +683,11 @@ function GenerarBoleta() {
                       <label className="form-label">Cantidad</label>
                       <input
                         type="number"
-                        min="1"
+                        min="0.1"
+                        step="0.1"
                         className="form-input"
                         value={productoForm.Cantidad}
-                        onChange={(e) => setProductoForm({ ...productoForm, Cantidad: parseInt(e.target.value)})}
+                        onChange={(e) => setProductoForm({ ...productoForm, Cantidad: parseFloat(e.target.value) || 0})}
                       />
                     </div>
                     
@@ -710,6 +716,11 @@ function GenerarBoleta() {
                           <span className="precio-valor">
                             ${productoForm.PrecioUnitario.toLocaleString('es-CL')}
                           </span>
+                          {productoForm.Cantidad > 0 && (
+                            <span className="precio-total">
+                              | Total: ${(productoForm.PrecioUnitario * productoForm.Cantidad).toLocaleString('es-CL')}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -764,7 +775,7 @@ function GenerarBoleta() {
                             <div className="article-code">Código: {producto.CodigoProducto}</div>
                           </div>
                           <div className="article-details">
-                            <div className="article-quantity">Cant: {producto.Cantidad}</div>
+                            <div className="article-quantity">Cant: {producto.Cantidad % 1 === 0 ? producto.Cantidad : producto.Cantidad.toFixed(1)}</div>
                             <div className="article-price">${producto.PrecioNetoUnitario.toLocaleString('es-CL')}</div>
                             <div className="article-total">${producto.TotalLinea.toLocaleString('es-CL')}</div>
                           </div>
