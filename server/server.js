@@ -206,7 +206,7 @@ async function geoBlockMiddleware(req, res, next) {
 // Middleware
 app.use(cors({
   origin: [
-    'https://gestorcn.vercel.app', // Tu dominio de Vercel
+    'https://gestorcerronegro.vercel.app/', // Tu dominio de Vercel
     'http://localhost:3000'      // Para desarrollo local
   ],
   credentials: true
