@@ -3,218 +3,12 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-const ipaddr = require('ipaddr.js');
-const NodeCache = require('node-cache');
 const bcrypt = require('bcrypt');
-const geoConfig = require('./geo-config');
 
 const app = express();
 
 // Configuración para bcrypt
 const SALT_ROUNDS = 12; // Número de rondas de salt (más alto = más seguro pero más lento)
-
-// Cache para las consultas de geolocalización
-const geoCache = new NodeCache({ 
-  stdTTL: geoConfig.cache.ttl,
-  checkperiod: geoConfig.cache.checkPeriod
-});
-
-// Función para obtener la IP real del cliente
-function getClientIP(req) {
-  // Verifica varios headers para obtener la IP real
-  const forwarded = req.headers['x-forwarded-for'];
-  const realIP = req.headers['x-real-ip'];
-  const remoteAddress = req.connection.remoteAddress || req.socket.remoteAddress;
-  
-  if (forwarded) {
-    // Si hay múltiples IPs, tomar la primera
-    return forwarded.split(',')[0].trim();
-  }
-  
-  if (realIP) {
-    return realIP;
-  }
-  
-  // Limpiar IPv6 local a IPv4
-  if (remoteAddress) {
-    if (remoteAddress.includes('::ffff:')) {
-      return remoteAddress.replace('::ffff:', '');
-    }
-    return remoteAddress;
-  }
-  
-  return '127.0.0.1';
-}
-
-// Función para verificar si una IP es local o privada
-function isLocalIP(ip) {
-  try {
-    const addr = ipaddr.process(ip);
-    
-    // Verificar si es IPv4 local
-    if (addr.kind() === 'ipv4') {
-      return addr.match(ipaddr.IPv4.parse('127.0.0.0'), 8) ||  // localhost
-             addr.match(ipaddr.IPv4.parse('10.0.0.0'), 8) ||   // private
-             addr.match(ipaddr.IPv4.parse('172.16.0.0'), 12) || // private
-             addr.match(ipaddr.IPv4.parse('192.168.0.0'), 16);  // private
-    }
-    
-    // Verificar si es IPv6 local
-    if (addr.kind() === 'ipv6') {
-      return addr.match(ipaddr.IPv6.parse('::1'), 128) ||       // localhost
-             addr.match(ipaddr.IPv6.parse('fc00::'), 7) ||      // private
-             addr.match(ipaddr.IPv6.parse('fe80::'), 10);       // link-local
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('Error procesando IP:', error);
-    return false;
-  }
-}
-
-// Middleware de geobloqueo para Chile
-async function geoBlockMiddleware(req, res, next) {
-  try {
-    const clientIP = getClientIP(req);
-    
-    // Verificar lista blanca de IPs
-    if (geoConfig.ipWhitelist.includes(clientIP)) {
-      if (geoConfig.logging.logAllowed) {
-        console.log(`✅ IP en lista blanca: ${clientIP}`);
-      }
-      return next();
-    }
-    
-    // Permitir IPs locales y privadas (para desarrollo)
-    if (isLocalIP(clientIP)) {
-      if (geoConfig.logging.logLocal) {
-        console.log(`✅ IP local permitida: ${clientIP}`);
-      }
-      return next();
-    }
-    
-    // Verificar cache primero
-    const cachedResult = geoCache.get(clientIP);
-    if (cachedResult !== undefined) {
-      const isAllowed = geoConfig.allowedCountries.includes(cachedResult.country);
-      
-      if (isAllowed) {
-        if (geoConfig.logging.logAllowed) {
-          console.log(`✅ IP permitida (cache): ${clientIP} - País: ${cachedResult.country}`);
-        }
-        return next();
-      } else {
-        if (geoConfig.logging.logBlocked) {
-          console.log(`❌ IP bloqueada (cache): ${clientIP} - País: ${cachedResult.country}`);
-        }
-        
-        // Si está en modo desarrollo, solo loggear pero permitir acceso
-        if (geoConfig.developmentMode) {
-          console.log(`⚠️  Modo desarrollo: Permitiendo acceso de IP bloqueada`);
-          return next();
-        }
-        
-        return res.status(geoConfig.blockedResponse.status).json({ 
-          error: geoConfig.blockedResponse.message,
-          ...(geoConfig.blockedResponse.includeCountry && { country: cachedResult.country }),
-          ...(geoConfig.blockedResponse.includeIP && { ip: clientIP })
-        });
-      }
-    }
-    
-    // Consultar GeoJS API con reintentos
-    let geoData = null;
-    let lastError = null;
-    
-    for (let attempt = 1; attempt <= geoConfig.geoAPI.retries; attempt++) {
-      try {
-        const fetch = (await import('node-fetch')).default;
-        const response = await fetch(`${geoConfig.geoAPI.baseUrl}/${clientIP}.json`, {
-          timeout: geoConfig.geoAPI.timeout,
-          headers: {
-            'User-Agent': geoConfig.geoAPI.userAgent
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        geoData = await response.json();
-        break; // Éxito, salir del bucle de reintentos
-        
-      } catch (error) {
-        lastError = error;
-        if (attempt < geoConfig.geoAPI.retries) {
-          console.log(`⚠️  Intento ${attempt} fallido para ${clientIP}, reintentando...`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
-        }
-      }
-    }
-    
-    if (!geoData) {
-      if (geoConfig.logging.logErrors) {
-        console.error(`Error en GeoJS API después de ${geoConfig.geoAPI.retries} intentos:`, lastError);
-      }
-      // En caso de error en la API, permitir acceso pero loggear
-      console.log(`⚠️  Error en geolocalización, permitiendo acceso: ${clientIP}`);
-      return next();
-    }
-    
-    const country = geoData.country;
-    
-    // Guardar en cache
-    geoCache.set(clientIP, { country, timestamp: Date.now() });
-    
-    // Verificar si el país está permitido
-    const isAllowed = geoConfig.allowedCountries.includes(country);
-    
-    if (isAllowed) {
-      if (geoConfig.logging.logAllowed) {
-        console.log(`✅ IP permitida: ${clientIP} - País: ${country}`);
-      }
-      return next();
-    } else {
-      if (geoConfig.logging.logBlocked) {
-        console.log(`❌ IP bloqueada: ${clientIP} - País: ${country}`);
-      }
-      
-      // Si está en modo desarrollo, solo loggear pero permitir acceso
-      if (geoConfig.developmentMode) {
-        console.log(`⚠️  Modo desarrollo: Permitiendo acceso de IP bloqueada`);
-        return next();
-      }
-      
-      return res.status(geoConfig.blockedResponse.status).json({ 
-        error: geoConfig.blockedResponse.message,
-        ...(geoConfig.blockedResponse.includeCountry && { country }),
-        ...(geoConfig.blockedResponse.includeIP && { ip: clientIP })
-      });
-    }
-    
-  } catch (error) {
-    if (geoConfig.logging.logErrors) {
-      console.error('Error en middleware de geobloqueo:', error);
-    }
-    // En caso de error, permitir acceso pero loggear
-    console.log(`⚠️  Error en geobloqueo, permitiendo acceso: ${getClientIP(req)}`);
-    return next();
-  }
-}
-
-// Middleware
-app.use(cors({
-  origin: [
-    'https://gestorcerronegro.vercel.app/', // Tu dominio de Vercel
-    'http://localhost:3000'      // Para desarrollo local
-  ],
-  credentials: true
-}));
-app.use(express.json());
-
-// Aplicar geobloqueo a todas las rutas
-app.use(geoBlockMiddleware);
 
 // Configuración de la base de datos usando variables de entorno
 const db = mysql.createConnection({
@@ -229,142 +23,37 @@ const db = mysql.createConnection({
 db.connect((err) => {
   if (err) {
     console.error('Error conectando a la base de datos:', err);
+    console.error('Configuración de conexión:');
+    console.error('- Host:', process.env.DB_HOST);
+    console.error('- Puerto:', process.env.DB_PORT);
+    console.error('- Base de datos:', process.env.DB_NAME);
+    console.error('- Usuario:', process.env.DB_USER);
     return;
   }
-  console.log('Conectado a la base de datos MySQL');
-});
+  console.log('✅ Conectado exitosamente a la base de datos MySQL');
+  console.log('🔌 Host:', process.env.DB_HOST);
+  console.log('📊 Base de datos:', process.env.DB_NAME);
 
-// Rutas de tu API aquí
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Servidor funcionando correctamente' });
-});
-
-// Ruta para verificar geolocalización
-app.get('/api/geo-status', async (req, res) => {
-  try {
-    const clientIP = getClientIP(req);
-    
-    if (isLocalIP(clientIP)) {
-      return res.json({
-        ip: clientIP,
-        country: 'Local/Private',
-        allowed: true,
-        source: 'local'
-      });
+  // Verificar si existe al menos un usuario
+  const checkUserQuery = 'SELECT COUNT(*) as count FROM usuario';
+  db.query(checkUserQuery, (err, results) => {
+    if (err) {
+      console.error('Error al verificar usuarios:', err);
+      return;
     }
-    
-    // Verificar cache
-    const cachedResult = geoCache.get(clientIP);
-    if (cachedResult) {
-      return res.json({
-        ip: clientIP,
-        country: cachedResult.country,
-        allowed: geoConfig.allowedCountries.includes(cachedResult.country),
-        source: 'cache',
-        allowedCountries: geoConfig.allowedCountries,
-        developmentMode: geoConfig.developmentMode,
-        timestamp: cachedResult.timestamp
-      });
-    }
-    
-    // Consultar API si no está en cache
-    const fetch = (await import('node-fetch')).default;
-    const response = await fetch(`https://get.geojs.io/v1/ip/geo/${clientIP}.json`, {
-      timeout: 5000,
-      headers: {
-        'User-Agent': 'GestorApp/1.0'
-      }
-    });
-    
-    if (!response.ok) {
-      return res.status(500).json({
-        error: 'Error consultando geolocalización',
-        ip: clientIP
-      });
-    }
-    
-    const geoData = await response.json();
-    const country = geoData.country;
-    
-    // Guardar en cache
-    geoCache.set(clientIP, { country, timestamp: Date.now() });
-    
-    res.json({
-      ip: clientIP,
-      country: country,
-      allowed: geoConfig.allowedCountries.includes(country),
-      source: 'api',
-      allowedCountries: geoConfig.allowedCountries,
-      developmentMode: geoConfig.developmentMode,
-      geoData: geoData
-    });
-    
-  } catch (error) {
-    console.error('Error en geo-status:', error);
-    res.status(500).json({
-      error: 'Error verificando geolocalización',
-      ip: getClientIP(req)
-    });
-  }
-});
-
-// Ruta para estadísticas y administración del geobloqueo (solo para admin)
-app.get('/api/geo-admin', (req, res) => {
-  const cacheKeys = geoCache.keys();
-  const stats = {
-    configuration: {
-      allowedCountries: geoConfig.allowedCountries,
-      developmentMode: geoConfig.developmentMode,
-      cacheTimeout: geoConfig.cache.ttl,
-      ipWhitelistCount: geoConfig.ipWhitelist.length
-    },
-    cache: {
-      totalCachedIPs: cacheKeys.length,
-      cacheHits: geoCache.getStats().hits,
-      cacheMisses: geoCache.getStats().misses,
-      cacheKeys: geoCache.getStats().keys,
-      cacheSize: geoCache.getStats().ksize
-    },
-    cachedEntries: {}
-  };
-  
-  cacheKeys.forEach(ip => {
-    const data = geoCache.get(ip);
-    if (data) {
-      stats.cachedEntries[ip] = {
-        country: data.country,
-        timestamp: new Date(data.timestamp).toISOString(),
-        allowed: geoConfig.allowedCountries.includes(data.country)
-      };
-    }
-  });
-  
-  res.json(stats);
-});
-
-// Ruta para limpiar cache de geolocalización
-app.post('/api/geo-admin/clear-cache', (req, res) => {
-  geoCache.flushAll();
-  res.json({ 
-    message: 'Cache de geolocalización limpiado exitosamente',
-    timestamp: new Date().toISOString()
+    console.log('Base de datos verificada correctamente');
   });
 });
-  
-  console.log('Conectado exitosamente a la base de datos MySQL');
-  console.log('Host:', process.env.DB_HOST);
-  console.log('Database:', process.env.DB_NAME);
 
-    // Verificar si existe al menos un usuario, si no, crear uno por defecto
-    const checkUserQuery = 'SELECT COUNT(*) as count FROM usuario';
-    db.query(checkUserQuery, (err, results) => {
-      if (err) {
-        console.error('Error al verificar usuarios:', err);
-        return;
-      }
-      
-      console.log('Base de datos verificada correctamente');
-    });
+// Middleware
+app.use(cors({
+  origin: [
+    'https://gestorcerronegro.vercel.app', // Sin la barra final
+    'http://localhost:3000'
+  ],
+  credentials: true
+}));
+app.use(express.json());
 
 // Ruta para registrar usuario
 app.post('/register', async (req, res) => {
