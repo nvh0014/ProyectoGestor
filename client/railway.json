@@ -1,6 +1,0 @@
-{
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "startCommand": "serve -s build",
-  "outputDirectory": "build"
-}
