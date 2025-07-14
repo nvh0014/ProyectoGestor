@@ -3,8 +3,33 @@ const express = require('express');
 const cors = require('cors');
 const { db, connectDatabase } = require('./config/database');
 const logger = require('./config/logger');
+const pool = require('./config/database.js');
 
 const app = express();
+
+// Ruta de prueba
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT 1 + 1 AS solution');
+    res.json({ 
+      status: 'success',
+      message: 'Conexión a la BD funcionando',
+      data: rows[0].solution // Debería devolver 2
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al conectar a la BD',
+      error: err.message
+    });
+  }
+});
+
+
+
+
+
+
 
 // =============================================
 // 1. Configuración Básica

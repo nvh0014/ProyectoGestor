@@ -2,17 +2,37 @@
 const mysql = require('mysql2');
 
 // Configuración de la base de datos usando variables de entorno
+// config/database.js
+const mysql = require('mysql2/promise'); // Usa promises para mejor manejo
+
 const dbConfig = {
   host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
   password: process.env.MYSQLPASSWORD || '',
   database: process.env.MYSQLDATABASE || 'gestor',
-  port: process.env.MYSQLPORT || 3306, // Puerto estándar de MySQL
-  // Configuraciones adicionales para producción
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  port: process.env.MYSQLPORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  ssl: { 
+    rejectUnauthorized: true // Habilita SSL para producción
+  }
 };
+
+const pool = mysql.createPool(dbConfig);
+
+// Verificación de conexión
+pool.getConnection()
+  .then(connection => {
+    console.log('✅ Conectado a MySQL en Railway');
+    connection.release();
+  })
+  .catch(err => {
+    console.error('❌ Error de conexión a MySQL:', err.message);
+    console.error('Configuración usada:', dbConfig); // Debug
+  });
+
+module.exports = pool;
 
 // Crear conexión a la base de datos
 const db = mysql.createConnection(dbConfig);
