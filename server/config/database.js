@@ -1,8 +1,4 @@
 // config/database.js
-const mysql = require('mysql2');
-
-// Configuración de la base de datos usando variables de entorno
-// config/database.js
 const mysql = require('mysql2/promise'); // Usa promises para mejor manejo
 
 const dbConfig = {
@@ -33,9 +29,6 @@ pool.getConnection()
   });
 
 module.exports = pool;
-
-// Crear conexión a la base de datos
-const db = mysql.createConnection(dbConfig);
 
 // Función para verificar y corregir el tamaño de la columna Password
 const verificarEstructuraTablas = () => {

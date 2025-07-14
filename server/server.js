@@ -1,9 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { db, connectDatabase } = require('./config/database');
+const pool = require('./config/database');
 const logger = require('./config/logger');
-const pool = require('./config/database.js');
+const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -57,7 +57,9 @@ app.use((req, res, next) => {
 // =============================================
 async function initializeDatabase() {
   try {
-    await connectDatabase();
+    // Probar conexión con el pool
+    const connection = await pool.getConnection();
+    connection.release();
     logger.success('✅ Base de datos conectada');
   } catch (error) {
     logger.error('❌ Fallo al conectar a la base de datos:', error);
@@ -68,11 +70,20 @@ async function initializeDatabase() {
 // =============================================
 // 4. Rutas (Ejemplo básico)
 // =============================================
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK',
-    database: db.state === 'connected' ? 'connected' : 'disconnected'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    connection.release();
+    res.json({ 
+      status: 'OK',
+      database: 'connected'
+    });
+  } catch (error) {
+    res.json({ 
+      status: 'OK',
+      database: 'disconnected'
+    });
+  }
 });
 
 // =============================================
