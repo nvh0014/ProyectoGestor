@@ -35,14 +35,21 @@ app.get('/api/test-db', async (req, res) => {
 // 1. Configuración Básica
 // =============================================
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.up.railway.app';
 
 // =============================================
 // 2. Middlewares
 // =============================================
 app.use(cors({
-  origin: FRONTEND_URL,
-  credentials: true
+  origin: [
+    'https://gestorcerronegro.up.railway.app',
+    'http://localhost:3000',
+    'https://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
@@ -70,6 +77,16 @@ async function initializeDatabase() {
 // =============================================
 // 4. Rutas (Ejemplo básico)
 // =============================================
+
+// Ruta de prueba CORS
+app.get('/api/cors-test', (req, res) => {
+  res.json({ 
+    message: 'CORS funcionando correctamente',
+    origin: req.headers.origin || 'No origin header',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/health', async (req, res) => {
   try {
     const connection = await pool.getConnection();
