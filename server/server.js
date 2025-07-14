@@ -16,17 +16,23 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.up.ra
 // =============================================
 // 2. Middlewares
 // =============================================
+
+// Configuración CORS para producción
+const allowedOrigins = [
+  'https://gestorcerronegro.up.railway.app',
+  'https://proyectogestor-production.up.railway.app', // URL correcta del backend
+  'http://localhost:3000' // Para desarrollo local
+];
+
 app.use(cors({
-  origin: [
-    'https://gestorcerronegro.up.railway.app',
-    'http://localhost:3000',
-    'https://localhost:3000'
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Manejo explícito de preflight OPTIONS
+app.options('*', cors());
 
 app.use(express.json());
 
@@ -53,6 +59,16 @@ async function initializeDatabase() {
 // =============================================
 // 4. Rutas Básicas
 // =============================================
+
+// Ruta raíz
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Gestor Cerro Negro - API Backend',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    status: 'running'
+  });
+});
 
 // Ruta de prueba básica
 app.get('/test', (req, res) => {
@@ -533,12 +549,27 @@ app.use((err, req, res, next) => {
 // 11. Inicialización del Servidor
 // =============================================
 async function startServer() {
-  await initializeDatabase();
-  
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
-    console.log(`🔗 Frontend permitido: ${FRONTEND_URL}`);
-  });
+  try {
+    // Log de variables de entorno importantes (sin mostrar passwords)
+    console.log('🔧 Configuración del servidor:');
+    console.log('- Puerto:', PORT);
+    console.log('- Frontend URL:', FRONTEND_URL);
+    console.log('- MySQL Host:', process.env.MYSQLHOST || 'localhost');
+    console.log('- MySQL Port:', process.env.MYSQLPORT || 3306);
+    console.log('- MySQL Database:', process.env.MYSQLDATABASE || 'gestor');
+    console.log('- MySQL User:', process.env.MYSQLUSER || 'root');
+    
+    await initializeDatabase();
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
+      console.log(`🔗 Frontend permitido: ${FRONTEND_URL}`);
+      console.log(`🌐 URL del servidor: http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ Error al iniciar el servidor:', error);
+    process.exit(1);
+  }
 }
 
 startServer();
