@@ -120,21 +120,16 @@ app.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(Password, SALT_ROUNDS);
     
     const query = 'INSERT INTO usuario (NombreUsuario, Password) VALUES (?, ?)';
-    db.query(query, [NombreUsuario, hashedPassword], (err, result) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({ message: 'El nombre de usuario ya está en uso.' });
-        }
-        console.error('Error al registrar usuario:', err);
-        return res.status(500).json({ error: 'Error al registrar el usuario en la base de datos.' });
-      }
-
-      console.log(`✅ Usuario registrado exitosamente: ${NombreUsuario}`);
-      res.status(201).json({ message: 'Usuario registrado exitosamente.' });
-    });
+    const [result] = await pool.execute(query, [NombreUsuario, hashedPassword]);
+    
+    console.log(`✅ Usuario registrado exitosamente: ${NombreUsuario}`);
+    res.status(201).json({ message: 'Usuario registrado exitosamente.' });
   } catch (error) {
-    console.error('Error al hashear contraseña:', error);
-    return res.status(500).json({ error: 'Error interno del servidor.' });
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'El nombre de usuario ya está en uso.' });
+    }
+    console.error('Error al registrar usuario:', error);
+    return res.status(500).json({ error: 'Error al registrar el usuario en la base de datos.' });
   }
 });
 
@@ -150,45 +145,40 @@ app.post('/login', async (req, res) => {
   try {
     // Buscar usuario en la base de datos
     const query = 'SELECT CodigoUsuario, NombreUsuario, Password FROM usuario WHERE NombreUsuario = ?';
-    db.query(query, [NombreUsuario], async (err, data) => {
-      if (err) {
-        console.error('Error en consulta de login:', err);
-        return res.status(500).json({ error: 'Error al iniciar sesión' });
-      }
-      
-      if (data.length === 0) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`❌ Intento de acceso: Usuario '${NombreUsuario}' no encontrado`);
-        } else {
-          console.log(`❌ Intento de acceso no autorizado`);
-        }
-        return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
-      }
-
-      const user = data[0];
-      
-      // Verificar contraseña
-      const passwordMatch = await bcrypt.compare(Password, user.Password);
-      
-      if (passwordMatch) {
-        console.log(`✅ Acceso autorizado: ${NombreUsuario}`);
-        return res.status(200).json({ 
-          status: 'success', 
-          message: 'Inicio de sesión exitoso',
-          user: {
-            CodigoUsuario: user.CodigoUsuario,
-            NombreUsuario: user.NombreUsuario
-          }
-        });
+    const [data] = await pool.execute(query, [NombreUsuario]);
+    
+    if (data.length === 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`❌ Intento de acceso: Usuario '${NombreUsuario}' no encontrado`);
       } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`❌ Intento de login fallido: Contraseña incorrecta para '${NombreUsuario}'`);
-        } else {
-          console.log(`❌ Intento de acceso no autorizado`);
-        }
-        return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
+        console.log(`❌ Intento de acceso no autorizado`);
       }
-    });
+      return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
+    }
+
+    const user = data[0];
+    
+    // Verificar contraseña
+    const passwordMatch = await bcrypt.compare(Password, user.Password);
+    
+    if (passwordMatch) {
+      console.log(`✅ Acceso autorizado: ${NombreUsuario}`);
+      return res.status(200).json({ 
+        status: 'success', 
+        message: 'Inicio de sesión exitoso',
+        user: {
+          CodigoUsuario: user.CodigoUsuario,
+          NombreUsuario: user.NombreUsuario
+        }
+      });
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`❌ Intento de login fallido: Contraseña incorrecta para '${NombreUsuario}'`);
+      } else {
+        console.log(`❌ Intento de acceso no autorizado`);
+      }
+      return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
+    }
   } catch (error) {
     console.error('Error en proceso de login:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
@@ -321,18 +311,18 @@ app.get('/test', (req, res) => {
 });
 
 // Ruta para obtener todos los usuarios
-app.get('/usuarios', (req, res) => {
-  const query = 'SELECT CodigoUsuario, NombreUsuario FROM usuario ORDER BY CodigoUsuario';
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error al obtener usuarios:', err);
-      return res.status(500).json({ 
-        error: 'Error al obtener usuarios',
-        details: err.message 
-      });
-    }
+app.get('/usuarios', async (req, res) => {
+  try {
+    const query = 'SELECT CodigoUsuario, NombreUsuario FROM usuario ORDER BY CodigoUsuario';
+    const [results] = await pool.execute(query);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Error al obtener usuarios:', err);
+    res.status(500).json({ 
+      error: 'Error al obtener usuarios',
+      details: err.message 
+    });
+  }
 });
 
 // ========== RUTAS PARA CLIENTES ==========
