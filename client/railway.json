@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install && npm run build",
+  "buildCommand": "rm -rf node_modules && npm install && npm run build",
   "installCommand": "npm install",
   "startCommand": "serve -s build",
   "outputDirectory": "build"
