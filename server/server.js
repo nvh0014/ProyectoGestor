@@ -7,30 +7,6 @@ const bcrypt = require('bcrypt');
 
 const app = express();
 
-// Ruta de prueba
-app.get('/api/test-db', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT 1 + 1 AS solution');
-    res.json({ 
-      status: 'success',
-      message: 'Conexión a la BD funcionando',
-      data: rows[0].solution // Debería devolver 2
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al conectar a la BD',
-      error: err.message
-    });
-  }
-});
-
-
-
-
-
-
-
 // =============================================
 // 1. Configuración Básica
 // =============================================
@@ -40,16 +16,6 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.up.ra
 // =============================================
 // 2. Middlewares
 // =============================================
-
-// Middleware para manejar preflight requests
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://gestorcerronegro.up.railway.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.sendStatus(200);
-});
-
 app.use(cors({
   origin: [
     'https://gestorcerronegro.up.railway.app',
@@ -62,20 +28,11 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Middleware adicional para headers CORS
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://gestorcerronegro.up.railway.app');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  next();
-});
-
 app.use(express.json());
 
-// Logger de solicitudes (útil para debug)
+// Logger de solicitudes
 app.use((req, res, next) => {
-  logger.api(`Solicitud recibida: ${req.method} ${req.path}`);
+  console.log(`${req.method} ${req.path}`);
   next();
 });
 
@@ -84,19 +41,23 @@ app.use((req, res, next) => {
 // =============================================
 async function initializeDatabase() {
   try {
-    // Probar conexión con el pool
     const connection = await pool.getConnection();
     connection.release();
-    logger.success('✅ Base de datos conectada');
+    console.log('✅ Base de datos conectada');
   } catch (error) {
-    logger.error('❌ Fallo al conectar a la base de datos:', error);
-    process.exit(1); // Detener la aplicación si no hay conexión a DB
+    console.error('❌ Fallo al conectar a la base de datos:', error);
+    process.exit(1);
   }
 }
 
 // =============================================
-// 4. Rutas (Ejemplo básico)
+// 4. Rutas Básicas
 // =============================================
+
+// Ruta de prueba básica
+app.get('/test', (req, res) => {
+  res.json({ message: 'Servidor funcionando correctamente' });
+});
 
 // Ruta de prueba CORS
 app.get('/api/cors-test', (req, res) => {
@@ -107,6 +68,25 @@ app.get('/api/cors-test', (req, res) => {
   });
 });
 
+// Ruta de prueba de base de datos
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const [rows] = await pool.execute('SELECT 1 + 1 AS solution');
+    res.json({ 
+      status: 'success',
+      message: 'Conexión a la BD funcionando',
+      data: rows[0].solution
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al conectar a la BD',
+      error: err.message
+    });
+  }
+});
+
+// Health check
 app.get('/api/health', async (req, res) => {
   try {
     const connection = await pool.getConnection();
@@ -124,78 +104,57 @@ app.get('/api/health', async (req, res) => {
 });
 
 // =============================================
-// 5. Manejo de Errores
+// 5. Rutas de Usuarios
 // =============================================
-app.use((err, req, res, next) => {
-  logger.error('Error no manejado:', err.stack);
-  res.status(500).json({ error: 'Algo salió mal' });
-});
-
-
-
 
 // Configuración para bcrypt
-const SALT_ROUNDS = 12; // Número de rondas de salt (más alto = más seguro pero más lento)
+const SALT_ROUNDS = 12;
 
-
-// Ruta para registrar usuario
+// Registrar usuario
 app.post('/register', async (req, res) => {
   const { NombreUsuario, Password } = req.body;
 
-  // Validar que se proporcionen los datos necesarios
   if (!NombreUsuario || !Password) {
     return res.status(400).json({ error: 'Nombre de usuario y contraseña son requeridos.' });
   }
 
-  // Validar longitud mínima de contraseña
   if (Password.length < 6) {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
   }
 
   try {
-    // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(Password, SALT_ROUNDS);
-    
     const query = 'INSERT INTO usuario (NombreUsuario, Password) VALUES (?, ?)';
-    const [result] = await pool.execute(query, [NombreUsuario, hashedPassword]);
+    await pool.execute(query, [NombreUsuario, hashedPassword]);
     
-    console.log(`✅ Usuario registrado exitosamente: ${NombreUsuario}`);
+    console.log(`✅ Usuario registrado: ${NombreUsuario}`);
     res.status(201).json({ message: 'Usuario registrado exitosamente.' });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ message: 'El nombre de usuario ya está en uso.' });
     }
     console.error('Error al registrar usuario:', error);
-    return res.status(500).json({ error: 'Error al registrar el usuario en la base de datos.' });
+    return res.status(500).json({ error: 'Error al registrar el usuario.' });
   }
 });
 
-// Ruta para el login del usuario
+// Login usuario
 app.post('/login', async (req, res) => {
   const { NombreUsuario, Password } = req.body;
   
-  // Validar que se proporcionen los datos necesarios
   if (!NombreUsuario || !Password) {
     return res.status(400).json({ error: 'Nombre de usuario y contraseña son requeridos.' });
   }
 
   try {
-    // Buscar usuario en la base de datos
     const query = 'SELECT CodigoUsuario, NombreUsuario, Password FROM usuario WHERE NombreUsuario = ?';
     const [data] = await pool.execute(query, [NombreUsuario]);
     
     if (data.length === 0) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`❌ Intento de acceso: Usuario '${NombreUsuario}' no encontrado`);
-      } else {
-        console.log(`❌ Intento de acceso no autorizado`);
-      }
       return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
     }
 
     const user = data[0];
-    
-    // Verificar contraseña
     const passwordMatch = await bcrypt.compare(Password, user.Password);
     
     if (passwordMatch) {
@@ -209,145 +168,15 @@ app.post('/login', async (req, res) => {
         }
       });
     } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`❌ Intento de login fallido: Contraseña incorrecta para '${NombreUsuario}'`);
-      } else {
-        console.log(`❌ Intento de acceso no autorizado`);
-      }
       return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
     }
   } catch (error) {
-    console.error('Error en proceso de login:', error);
+    console.error('Error en login:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-// Ruta para migrar contraseñas existentes a hash (solo usar una vez)
-app.post('/admin/migrate-passwords', async (req, res) => {
-  const { adminKey } = req.body;
-  
-  // Clave simple para proteger esta función crítica
-  if (adminKey !== process.env.ADMIN_MIGRATION_KEY && adminKey !== 'MIGRATE_PASSWORDS_2025') {
-    return res.status(403).json({ error: 'Clave de administrador incorrecta' });
-  }
-
-  try {
-    // Obtener todos los usuarios con contraseñas no hasheadas
-    const query = 'SELECT CodigoUsuario, NombreUsuario, Password FROM usuario';
-    db.query(query, async (err, users) => {
-      if (err) {
-        console.error('Error obteniendo usuarios:', err);
-        return res.status(500).json({ error: 'Error obteniendo usuarios' });
-      }
-
-      let migratedCount = 0;
-      let errors = 0;
-
-      for (const user of users) {
-        try {
-          // Verificar si la contraseña ya está hasheada
-          const isHashed = user.Password.startsWith('$2b$') || user.Password.startsWith('$2a$');
-          
-          if (!isHashed) {
-            // Hashear la contraseña actual
-            const hashedPassword = await bcrypt.hash(user.Password, SALT_ROUNDS);
-            
-            // Actualizar en la base de datos
-            const updateQuery = 'UPDATE usuario SET Password = ? WHERE CodigoUsuario = ?';
-            await new Promise((resolve, reject) => {
-              db.query(updateQuery, [hashedPassword, user.CodigoUsuario], (updateErr) => {
-                if (updateErr) reject(updateErr);
-                else resolve();
-              });
-            });
-            
-            migratedCount++;
-            console.log(`✅ Migrada contraseña para usuario: ${user.NombreUsuario}`);
-          }
-        } catch (userError) {
-          console.error(`❌ Error migrando usuario ${user.NombreUsuario}:`, userError);
-          errors++;
-        }
-      }
-
-      res.json({
-        message: 'Migración completada',
-        totalUsers: users.length,
-        migratedPasswords: migratedCount,
-        errors: errors,
-        timestamp: new Date().toISOString()
-      });
-    });
-  } catch (error) {
-    console.error('Error en migración de contraseñas:', error);
-    res.status(500).json({ error: 'Error en migración de contraseñas' });
-  }
-});
-
-// Ruta para cambiar contraseña de usuario
-app.post('/change-password', async (req, res) => {
-  const { NombreUsuario, CurrentPassword, NewPassword } = req.body;
-
-  // Validar que se proporcionen todos los datos
-  if (!NombreUsuario || !CurrentPassword || !NewPassword) {
-    return res.status(400).json({ error: 'Todos los campos son requeridos.' });
-  }
-
-  // Validar longitud mínima de nueva contraseña
-  if (NewPassword.length < 6) {
-    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
-  }
-
-  try {
-    // Buscar usuario y verificar contraseña actual
-    const query = 'SELECT CodigoUsuario, Password FROM usuario WHERE NombreUsuario = ?';
-    db.query(query, [NombreUsuario], async (err, data) => {
-      if (err) {
-        console.error('Error buscando usuario:', err);
-        return res.status(500).json({ error: 'Error interno del servidor' });
-      }
-
-      if (data.length === 0) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      const user = data[0];
-
-      // Verificar contraseña actual
-      const passwordMatch = await bcrypt.compare(CurrentPassword, user.Password);
-      
-      if (!passwordMatch) {
-        console.log(`❌ Intento de cambio de contraseña fallido: Contraseña actual incorrecta para '${NombreUsuario}'`);
-        return res.status(401).json({ error: 'Contraseña actual incorrecta' });
-      }
-
-      // Hashear nueva contraseña
-      const hashedNewPassword = await bcrypt.hash(NewPassword, SALT_ROUNDS);
-
-      // Actualizar contraseña en la base de datos
-      const updateQuery = 'UPDATE usuario SET Password = ? WHERE CodigoUsuario = ?';
-      db.query(updateQuery, [hashedNewPassword, user.CodigoUsuario], (updateErr) => {
-        if (updateErr) {
-          console.error('Error actualizando contraseña:', updateErr);
-          return res.status(500).json({ error: 'Error al actualizar contraseña' });
-        }
-
-        console.log(`✅ Contraseña cambiada exitosamente para: ${NombreUsuario}`);
-        res.json({ message: 'Contraseña cambiada exitosamente' });
-      });
-    });
-  } catch (error) {
-    console.error('Error en cambio de contraseña:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Ruta para verificar la conexión
-app.get('/test', (req, res) => {
-  res.status(200).json({ message: 'Servidor funcionando correctamente' });
-});
-
-// Ruta para obtener todos los usuarios
+// Obtener usuarios
 app.get('/usuarios', async (req, res) => {
   try {
     const query = 'SELECT CodigoUsuario, NombreUsuario FROM usuario ORDER BY CodigoUsuario';
@@ -355,400 +184,328 @@ app.get('/usuarios', async (req, res) => {
     res.json(results);
   } catch (err) {
     console.error('Error al obtener usuarios:', err);
-    res.status(500).json({ 
-      error: 'Error al obtener usuarios',
-      details: err.message 
-    });
+    res.status(500).json({ error: 'Error al obtener usuarios' });
   }
 });
 
-// ========== RUTAS PARA CLIENTES ==========
+// =============================================
+// 6. Rutas de Clientes
+// =============================================
 
 // Obtener todos los clientes activos
-app.get('/clientes', (req, res) => {
-  const query = 'SELECT * FROM cliente WHERE ClienteActivo = 1 ORDER BY CodigoCliente';
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error al obtener clientes:', err);
-      return res.status(500).json({ error: 'Error al obtener clientes' });
-    }
+app.get('/clientes', async (req, res) => {
+  try {
+    const query = 'SELECT * FROM cliente WHERE ClienteActivo = 1 ORDER BY CodigoCliente';
+    const [results] = await pool.execute(query);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Error al obtener clientes:', err);
+    res.status(500).json({ error: 'Error al obtener clientes' });
+  }
 });
 
 // Obtener cliente por ID
-app.get('/clientes/:id', (req, res) => {
+app.get('/clientes/:id', async (req, res) => {
   const { id } = req.params;
-  const query = 'SELECT * FROM cliente WHERE CodigoCliente = ?';
-  db.query(query, [id], (err, results) => {
-    if (err) {
-      console.error('Error al obtener cliente:', err);
-      return res.status(500).json({ error: 'Error al obtener cliente' });
-    }
+  try {
+    const query = 'SELECT * FROM cliente WHERE CodigoCliente = ?';
+    const [results] = await pool.execute(query, [id]);
+    
     if (results.length === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
     res.json(results[0]);
-  });
+  } catch (err) {
+    console.error('Error al obtener cliente:', err);
+    res.status(500).json({ error: 'Error al obtener cliente' });
+  }
 });
 
-// Solución alternativa: Generar CodigoCliente automáticamente en el servidor
-// Reemplaza la ruta POST /clientes en server.js con este código:
-
-app.post('/clientes', (req, res) => {
+// Crear nuevo cliente
+app.post('/clientes', async (req, res) => {
   const { Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo = 1 } = req.body;
   
-  // Primero, obtener el próximo código disponible
-  const getNextCodeQuery = 'SELECT COALESCE(MAX(CodigoCliente), 0) + 1 AS nextCode FROM cliente';
-  
-  db.query(getNextCodeQuery, (err, results) => {
-    if (err) {
-      console.error('Error al obtener próximo código:', err);
-      return res.status(500).json({ error: 'Error al generar código de cliente' });
-    }
+  try {
+    // Obtener el próximo código disponible
+    const [nextCodeResult] = await pool.execute('SELECT COALESCE(MAX(CodigoCliente), 0) + 1 AS nextCode FROM cliente');
+    const nextCode = nextCodeResult[0].nextCode;
     
-    const nextCode = results[0].nextCode;
+    // Insertar el cliente
+    const query = 'INSERT INTO cliente (CodigoCliente, Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    await pool.execute(query, [nextCode, Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo]);
     
-    // Ahora insertar el cliente con el código generado
-    const insertQuery = 'INSERT INTO cliente (CodigoCliente, Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    
-    db.query(insertQuery, [nextCode, Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo], (err, result) => {
-      if (err) {
-        console.error('Error al crear cliente:', err);
-        return res.status(500).json({ error: 'Error al crear cliente' });
-      }
-      
-      res.status(201).json({ 
-        message: 'Cliente creado exitosamente',
-        CodigoCliente: nextCode
-      });
+    res.status(201).json({ 
+      message: 'Cliente creado exitosamente',
+      CodigoCliente: nextCode
     });
-  });
+  } catch (err) {
+    console.error('Error al crear cliente:', err);
+    res.status(500).json({ error: 'Error al crear cliente' });
+  }
 });
 
-
 // Actualizar cliente
-app.put('/clientes/:id', (req, res) => {
+app.put('/clientes/:id', async (req, res) => {
   const { id } = req.params;
   const { Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo } = req.body;
   
-  const query = 'UPDATE cliente SET Rut = ?, RazonSocial = ?, Telefono = ?, Direccion = ?, Comuna = ?, Giro = ?, ClienteActivo = ? WHERE CodigoCliente = ?';
-  db.query(query, [Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo, id], (err, result) => {
-    if (err) {
-      console.error('Error al actualizar cliente:', err);
-      return res.status(500).json({ error: 'Error al actualizar cliente' });
-    }
+  try {
+    const query = 'UPDATE cliente SET Rut = ?, RazonSocial = ?, Telefono = ?, Direccion = ?, Comuna = ?, Giro = ?, ClienteActivo = ? WHERE CodigoCliente = ?';
+    const [result] = await pool.execute(query, [Rut, RazonSocial, Telefono, Direccion, Comuna, Giro, ClienteActivo, id]);
+    
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
     res.json({ message: 'Cliente actualizado exitosamente' });
-  });
+  } catch (err) {
+    console.error('Error al actualizar cliente:', err);
+    res.status(500).json({ error: 'Error al actualizar cliente' });
+  }
 });
 
 // Eliminar cliente (soft delete)
-app.delete('/clientes/:id', (req, res) => {
+app.delete('/clientes/:id', async (req, res) => {
   const { id } = req.params;
-  const query = 'UPDATE cliente SET ClienteActivo = 0 WHERE CodigoCliente = ?';
-  db.query(query, [id], (err, result) => {
-    if (err) {
-      console.error('Error al eliminar cliente:', err);
-      return res.status(500).json({ error: 'Error al eliminar cliente' });
-    }
+  
+  try {
+    const query = 'UPDATE cliente SET ClienteActivo = 0 WHERE CodigoCliente = ?';
+    const [result] = await pool.execute(query, [id]);
+    
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
     res.json({ message: 'Cliente eliminado exitosamente' });
-  });
+  } catch (err) {
+    console.error('Error al eliminar cliente:', err);
+    res.status(500).json({ error: 'Error al eliminar cliente' });
+  }
 });
 
-// ========== RUTAS PARA PRODUCTOS ==========
+// =============================================
+// 7. Rutas de Productos
+// =============================================
 
 // Obtener todos los productos activos
-app.get('/productos', (req, res) => {
-  const query = 'SELECT * FROM producto WHERE ProductoActivo = 1 ORDER BY CodigoProducto';
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error al obtener productos:', err);
-      return res.status(500).json({ error: 'Error al obtener productos' });
-    }
+app.get('/productos', async (req, res) => {
+  try {
+    const query = 'SELECT * FROM producto WHERE ProductoActivo = 1 ORDER BY CodigoProducto';
+    const [results] = await pool.execute(query);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Error al obtener productos:', err);
+    res.status(500).json({ error: 'Error al obtener productos' });
+  }
 });
 
 // Obtener producto por ID
-app.get('/productos/:id', (req, res) => {
+app.get('/productos/:id', async (req, res) => {
   const { id } = req.params;
-  const query = 'SELECT * FROM producto WHERE CodigoProducto = ?';
-  db.query(query, [id], (err, results) => {
-    if (err) {
-      console.error('Error al obtener producto:', err);
-      return res.status(500).json({ error: 'Error al obtener producto' });
-    }
+  try {
+    const query = 'SELECT * FROM producto WHERE CodigoProducto = ?';
+    const [results] = await pool.execute(query, [id]);
+    
     if (results.length === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
     res.json(results[0]);
-  });
+  } catch (err) {
+    console.error('Error al obtener producto:', err);
+    res.status(500).json({ error: 'Error al obtener producto' });
+  }
 });
 
 // Crear nuevo producto
-app.post('/productos', (req, res) => {
+app.post('/productos', async (req, res) => {
   const { Descripcion, PrecioSala, PrecioDto, ProductoActivo = 1 } = req.body;
   
-  const query = 'INSERT INTO producto (Descripcion, PrecioSala, PrecioDto, ProductoActivo) VALUES (?, ?, ?, ?)';
-
-  db.query(query, [Descripcion, PrecioSala, PrecioDto, ProductoActivo], (err, result) => {
-    if (err) {
-      console.error('Error al crear producto:', err);
-      return res.status(500).json({ error: 'Error al crear producto' });
-    }
+  try {
+    const query = 'INSERT INTO producto (Descripcion, PrecioSala, PrecioDto, ProductoActivo) VALUES (?, ?, ?, ?)';
+    const [result] = await pool.execute(query, [Descripcion, PrecioSala, PrecioDto, ProductoActivo]);
+    
     res.status(201).json({ 
       message: 'Producto creado exitosamente',
       CodigoProducto: result.insertId 
     });
-  });
+  } catch (err) {
+    console.error('Error al crear producto:', err);
+    res.status(500).json({ error: 'Error al crear producto' });
+  }
 });
 
 // Actualizar producto
-app.put('/productos/:id', (req, res) => {
+app.put('/productos/:id', async (req, res) => {
   const { id } = req.params;
   const { Descripcion, PrecioSala, PrecioDto, ProductoActivo } = req.body;
   
-  const query = 'UPDATE producto SET Descripcion = ?, PrecioSala = ?, PrecioDto = ?, ProductoActivo = ? WHERE CodigoProducto = ?';
-  db.query(query, [Descripcion, PrecioSala, PrecioDto, ProductoActivo, id], (err, result) => {
-    if (err) {
-      console.error('Error al actualizar producto:', err);
-      return res.status(500).json({ error: 'Error al actualizar producto' });
-    }
+  try {
+    const query = 'UPDATE producto SET Descripcion = ?, PrecioSala = ?, PrecioDto = ?, ProductoActivo = ? WHERE CodigoProducto = ?';
+    const [result] = await pool.execute(query, [Descripcion, PrecioSala, PrecioDto, ProductoActivo, id]);
+    
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
     res.json({ message: 'Producto actualizado exitosamente' });
-  });
+  } catch (err) {
+    console.error('Error al actualizar producto:', err);
+    res.status(500).json({ error: 'Error al actualizar producto' });
+  }
 });
 
 // Eliminar producto (soft delete)
-app.delete('/productos/:id', (req, res) => {
+app.delete('/productos/:id', async (req, res) => {
   const { id } = req.params;
-  const query = 'UPDATE producto SET ProductoActivo = 0 WHERE CodigoProducto = ?';
-  db.query(query, [id], (err, result) => {
-    if (err) {
-      console.error('Error al eliminar producto:', err);
-      return res.status(500).json({ error: 'Error al eliminar producto' });
-    }
+  
+  try {
+    const query = 'UPDATE producto SET ProductoActivo = 0 WHERE CodigoProducto = ?';
+    const [result] = await pool.execute(query, [id]);
+    
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
     res.json({ message: 'Producto eliminado exitosamente' });
-  });
+  } catch (err) {
+    console.error('Error al eliminar producto:', err);
+    res.status(500).json({ error: 'Error al eliminar producto' });
+  }
 });
 
-// ========== RUTAS PARA BOLETAS ==========
+// =============================================
+// 8. Rutas de Boletas
+// =============================================
 
-// Función para verificar y agregar la columna Observaciones si no existe
-function verificarColumnaObservaciones() {
-  const checkQuery = `
-    SELECT COLUMN_NAME 
-    FROM INFORMATION_SCHEMA.COLUMNS 
-    WHERE TABLE_NAME = 'boleta' AND COLUMN_NAME = 'Observaciones'
-  `;
-  
-  db.query(checkQuery, (err, results) => {
-    if (err) {
-      console.error('Error al verificar columna Observaciones:', err);
-      return;
-    }
-    
-    if (results.length === 0) {
-      // La columna no existe, agregarla
-      const addColumnQuery = 'ALTER TABLE boleta ADD COLUMN Observaciones TEXT';
-      db.query(addColumnQuery, (err) => {
-        if (err) {
-          console.error('Error al agregar columna Observaciones:', err);
-        } else {
-          console.log('Columna Observaciones agregada exitosamente a la tabla boleta');
-        }
-      });
-    } else {
-      console.log('La columna Observaciones ya existe en la tabla boleta');
-    }
-  });
-}
-
-// Ejecutar la verificación al iniciar el servidor
-verificarColumnaObservaciones();
-
-// Obtener todas las boletas con información del cliente
-app.get('/boletas', (req, res) => {
-  const query = `
-    SELECT 
-      b.NumeroBoleta,
-      b.CodigoCliente,
-      c.RazonSocial,
-      b.FechaBoleta,
-      b.FechaVencimiento,
-      b.TotalBoleta
-    FROM boleta b
-    INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
-    ORDER BY b.NumeroBoleta DESC
-  `;
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error al obtener boletas:', err);
-      return res.status(500).json({ error: 'Error al obtener boletas' });
-    }
+// Obtener todas las boletas
+app.get('/boletas', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        b.NumeroBoleta,
+        b.CodigoCliente,
+        c.RazonSocial,
+        b.FechaBoleta,
+        b.FechaVencimiento,
+        b.TotalBoleta
+      FROM boleta b
+      INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
+      ORDER BY b.NumeroBoleta DESC
+    `;
+    const [results] = await pool.execute(query);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Error al obtener boletas:', err);
+    res.status(500).json({ error: 'Error al obtener boletas' });
+  }
 });
 
 // Obtener boleta por número con detalles
-app.get('/boletas/:numero', (req, res) => {
+app.get('/boletas/:numero', async (req, res) => {
   const { numero } = req.params;
   
-  const queryBoleta = `
-    SELECT 
-      b.NumeroBoleta,
-      b.CodigoCliente,
-      c.Rut,
-      c.RazonSocial,
-      c.Telefono,
-      c.Direccion,
-      c.Comuna,
-      b.FechaBoleta,
-      b.FechaVencimiento,
-      b.TotalBoleta,
-      b.Observaciones
-    FROM boleta b
-    INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
-    WHERE b.NumeroBoleta = ?
-  `;
-  
-  const queryDetalles = `
-    SELECT 
-      db.IdDetalle,
-      db.CodigoProducto,
-      p.Descripcion,
-      db.Cantidad,
-      db.PrecioUnitario,
-      db.Subtotal
-    FROM detallesboleta db
-    INNER JOIN producto p ON db.CodigoProducto = p.CodigoProducto
-    WHERE db.NumeroBoleta = ?
-  `;
-  
-  db.query(queryBoleta, [numero], (err, boletaResults) => {
-    if (err) {
-      console.error('Error al obtener boleta:', err);
-      return res.status(500).json({ error: 'Error al obtener boleta' });
-    }
+  try {
+    const queryBoleta = `
+      SELECT 
+        b.NumeroBoleta,
+        b.CodigoCliente,
+        c.Rut,
+        c.RazonSocial,
+        c.Telefono,
+        c.Direccion,
+        c.Comuna,
+        b.FechaBoleta,
+        b.FechaVencimiento,
+        b.TotalBoleta,
+        b.Observaciones
+      FROM boleta b
+      INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
+      WHERE b.NumeroBoleta = ?
+    `;
+    
+    const queryDetalles = `
+      SELECT 
+        db.IdDetalle,
+        db.CodigoProducto,
+        p.Descripcion,
+        db.Cantidad,
+        db.PrecioUnitario,
+        db.Subtotal
+      FROM detallesboleta db
+      INNER JOIN producto p ON db.CodigoProducto = p.CodigoProducto
+      WHERE db.NumeroBoleta = ?
+    `;
+    
+    const [boletaResults] = await pool.execute(queryBoleta, [numero]);
     
     if (boletaResults.length === 0) {
       return res.status(404).json({ error: 'Boleta no encontrada' });
     }
     
-    db.query(queryDetalles, [numero], (err, detallesResults) => {
-      if (err) {
-        console.error('Error al obtener detalles:', err);
-        return res.status(500).json({ error: 'Error al obtener detalles de la boleta' });
-      }
-      
-      res.json({
-        boleta: boletaResults[0],
-        detalles: detallesResults
-      });
+    const [detallesResults] = await pool.execute(queryDetalles, [numero]);
+    
+    res.json({
+      boleta: boletaResults[0],
+      detalles: detallesResults
     });
-  });
+  } catch (err) {
+    console.error('Error al obtener boleta:', err);
+    res.status(500).json({ error: 'Error al obtener boleta' });
+  }
 });
 
 // Crear nueva boleta con detalles
-app.post('/boletas', (req, res) => {
+app.post('/boletas', async (req, res) => {
   const { CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, detalles } = req.body;
   
-  // Iniciar transacción
-  db.beginTransaction((err) => {
-    if (err) {
-      console.error('Error al iniciar transacción:', err);
-      return res.status(500).json({ error: 'Error al crear boleta' });
-    }
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
     
-    // Insertar boleta (incluyendo observaciones)
+    // Insertar boleta
     const queryBoleta = 'INSERT INTO boleta (CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones) VALUES (?, ?, ?, ?, ?)';
-    db.query(queryBoleta, [CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones || ''], (err, result) => {
-      if (err) {
-        return db.rollback(() => {
-          console.error('Error al crear boleta:', err);
-          res.status(500).json({ error: 'Error al crear boleta' });
-        });
-      }
+    const [result] = await connection.execute(queryBoleta, [CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones || '']);
+    
+    const numeroBoleta = result.insertId;
+    
+    // Insertar detalles si existen
+    if (detalles && detalles.length > 0) {
+      const queryDetalle = 'INSERT INTO detallesboleta (NumeroBoleta, CodigoProducto, Cantidad, PrecioUnitario, Subtotal) VALUES (?, ?, ?, ?, ?)';
       
-      const numeroBoleta = result.insertId;
-      
-      // Insertar detalles
-      if (detalles && detalles.length > 0) {
-        const queryDetalle = 'INSERT INTO detallesboleta (NumeroBoleta, CodigoProducto, Cantidad, PrecioUnitario, Subtotal) VALUES ?';
-        const detallesData = detalles.map(detalle => [
+      for (const detalle of detalles) {
+        await connection.execute(queryDetalle, [
           numeroBoleta,
           detalle.CodigoProducto,
           detalle.Cantidad,
           detalle.PrecioUnitario,
           detalle.Subtotal
         ]);
-        
-        db.query(queryDetalle, [detallesData], (err) => {
-          if (err) {
-            return db.rollback(() => {
-              console.error('Error al crear detalles:', err);
-              res.status(500).json({ error: 'Error al crear detalles de la boleta' });
-            });
-          }
-          
-          // Confirmar transacción
-          db.commit((err) => {
-            if (err) {
-              return db.rollback(() => {
-                console.error('Error al confirmar transacción:', err);
-                res.status(500).json({ error: 'Error al crear boleta' });
-              });
-            }
-            
-            res.status(201).json({
-              message: 'Boleta creada exitosamente',
-              NumeroBoleta: numeroBoleta
-            });
-          });
-        });
-      } else {
-        // Si no hay detalles, solo confirmar la boleta
-        db.commit((err) => {
-          if (err) {
-            return db.rollback(() => {
-              console.error('Error al confirmar transacción:', err);
-              res.status(500).json({ error: 'Error al crear boleta' });
-            });
-          }
-          
-          res.status(201).json({
-            message: 'Boleta creada exitosamente',
-            NumeroBoleta: numeroBoleta
-          });
-        });
       }
-    });
-  });
-});
-
-// ========== RUTA AUXILIAR PARA ARTÍCULOS (PRODUCTOS ACTIVOS) ==========
-
-// Obtener productos activos para generar boletas
-app.get('/articulos', (req, res) => {
-  const query = 'SELECT * FROM producto WHERE ProductoActivo = 1 ORDER BY Descripcion';
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error al obtener artículos:', err);
-      return res.status(500).json({ error: 'Error al obtener artículos' });
     }
     
-    // Mapear para que coincida con la estructura esperada en el frontend
+    await connection.commit();
+    
+    res.status(201).json({
+      message: 'Boleta creada exitosamente',
+      NumeroBoleta: numeroBoleta
+    });
+  } catch (err) {
+    await connection.rollback();
+    console.error('Error al crear boleta:', err);
+    res.status(500).json({ error: 'Error al crear boleta' });
+  } finally {
+    connection.release();
+  }
+});
+
+// =============================================
+// 9. Rutas Auxiliares
+// =============================================
+
+// Obtener artículos (productos activos para boletas)
+app.get('/articulos', async (req, res) => {
+  try {
+    const query = 'SELECT * FROM producto WHERE ProductoActivo = 1 ORDER BY Descripcion';
+    const [results] = await pool.execute(query);
+    
+    // Mapear para estructura esperada en frontend
     const articulos = results.map(producto => ({
       CodigoArticulo: producto.CodigoProducto,
       Descripcion: producto.Descripcion,
@@ -758,20 +515,29 @@ app.get('/articulos', (req, res) => {
     }));
     
     res.json(articulos);
-  });
+  } catch (err) {
+    console.error('Error al obtener artículos:', err);
+    res.status(500).json({ error: 'Error al obtener artículos' });
+  }
 });
 
-
+// =============================================
+// 10. Manejo de Errores
+// =============================================
+app.use((err, req, res, next) => {
+  console.error('Error no manejado:', err.stack);
+  res.status(500).json({ error: 'Algo salió mal' });
+});
 
 // =============================================
-// 6. Inicialización del Servidor
+// 11. Inicialización del Servidor
 // =============================================
 async function startServer() {
   await initializeDatabase();
   
   app.listen(PORT, () => {
-    logger.success(`🚀 Servidor escuchando en puerto ${PORT}`);
-    logger.info(`🔗 Frontend permitido: ${FRONTEND_URL}`);
+    console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
+    console.log(`🔗 Frontend permitido: ${FRONTEND_URL}`);
   });
 }
 
