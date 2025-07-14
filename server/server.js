@@ -1,54 +1,18 @@
 // server.js
 require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const { db, connectDatabase } = require('./config/database');
 
 const app = express();
 
 // Configuración para bcrypt
 const SALT_ROUNDS = 12; // Número de rondas de salt (más alto = más seguro pero más lento)
 
-// Configuración de la base de datos usando variables de entorno
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '141205',
-  database: process.env.DB_NAME || 'gestor',
-  port: process.env.DB_PORT || 3001
-});
-
-// Conectar a la base de datos
-db.connect((err) => {
-  if (err) {
-    console.error('Error conectando a la base de datos:', err);
-    console.error('Configuración de conexión:');
-    console.error('- Host:', process.env.DB_HOST);
-    console.error('- Puerto:', process.env.DB_PORT);
-    console.error('- Base de datos:', process.env.DB_NAME);
-    console.error('- Usuario:', process.env.DB_USER);
-    return;
-  }
-  console.log('✅ Conectado exitosamente a la base de datos MySQL');
-  console.log('🔌 Host:', process.env.DB_HOST);
-  console.log('📊 Base de datos:', process.env.DB_NAME);
-
-  // Verificar si existe al menos un usuario
-  const checkUserQuery = 'SELECT COUNT(*) as count FROM usuario';
-  db.query(checkUserQuery, (err, results) => {
-    if (err) {
-      console.error('Error al verificar usuarios:', err);
-      return;
-    }
-    console.log('Base de datos verificada correctamente');
-  });
-});
-
 // Middleware
 app.use(cors({
   origin: [
-    'https://gestorcerronegro.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true
@@ -83,7 +47,7 @@ app.post('/register', async (req, res) => {
         return res.status(500).json({ error: 'Error al registrar el usuario en la base de datos.' });
       }
 
-      console.log(`✅ Usuario registrado: ${NombreUsuario}`);
+      console.log(`✅ Usuario registrado exitosamente: ${NombreUsuario}`);
       res.status(201).json({ message: 'Usuario registrado exitosamente.' });
     });
   } catch (error) {
@@ -111,7 +75,11 @@ app.post('/login', async (req, res) => {
       }
       
       if (data.length === 0) {
-        console.log(`❌ Intento de login fallido: Usuario '${NombreUsuario}' no encontrado`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Intento de acceso: Usuario '${NombreUsuario}' no encontrado`);
+        } else {
+          console.log(`❌ Intento de acceso no autorizado`);
+        }
         return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
       }
 
@@ -121,7 +89,7 @@ app.post('/login', async (req, res) => {
       const passwordMatch = await bcrypt.compare(Password, user.Password);
       
       if (passwordMatch) {
-        console.log(`✅ Login exitoso: ${NombreUsuario}`);
+        console.log(`✅ Acceso autorizado: ${NombreUsuario}`);
         return res.status(200).json({ 
           status: 'success', 
           message: 'Inicio de sesión exitoso',
@@ -131,7 +99,11 @@ app.post('/login', async (req, res) => {
           }
         });
       } else {
-        console.log(`❌ Intento de login fallido: Contraseña incorrecta para '${NombreUsuario}'`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`❌ Intento de login fallido: Contraseña incorrecta para '${NombreUsuario}'`);
+        } else {
+          console.log(`❌ Intento de acceso no autorizado`);
+        }
         return res.status(401).json({ status: 'fail', error: 'Credenciales incorrectas' });
       }
     });
@@ -683,6 +655,41 @@ app.get('/articulos', (req, res) => {
 // El puerto ahora viene de las variables de entorno
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+// Inicializar servidor con conexión a base de datos
+async function startServer() {
+  try {
+    // Conectar a la base de datos primero
+    await connectDatabase();
+    
+    // Iniciar servidor solo después de conectar a la BD
+    app.listen(PORT, () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🚀 =====================================');
+        console.log(`🚀 Servidor de desarrollo - Puerto ${PORT}`);
+        console.log('🚀 =====================================');
+        console.log(`🌐 Frontend: https://gestorcerronegro.vercel.app`);
+        console.log(`🔗 API Local: http://localhost:${PORT}`);
+        console.log('🚀 =====================================');
+      } else {
+        console.log('🚀 =====================================');
+        console.log('🚀 Gestor Cerro Negro - Sistema iniciado');
+        console.log('🚀 =====================================');
+        console.log('✅ API REST disponible');
+        console.log('✅ Sistema de autenticación activo');
+        console.log('✅ Módulo de gestión de clientes activo');
+        console.log('✅ Módulo de gestión de productos activo');
+        console.log('✅ Módulo de facturación activo');
+        console.log('🚀 =====================================');
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error crítico al iniciar el sistema');
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Detalles del error:', error);
+    }
+    process.exit(1);
+  }
+}
+
+// Iniciar el servidor
+startServer();
