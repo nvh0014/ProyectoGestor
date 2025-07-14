@@ -1,23 +1,69 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 const { db, connectDatabase } = require('./config/database');
+const logger = require('./config/logger');
 
 const app = express();
+
+// =============================================
+// 1. Configuración Básica
+// =============================================
+const PORT = process.env.PORT || 3001;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+// =============================================
+// 2. Middlewares
+// =============================================
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true
+}));
+app.use(express.json());
+
+// Logger de solicitudes (útil para debug)
+app.use((req, res, next) => {
+  logger.api(`Solicitud recibida: ${req.method} ${req.path}`);
+  next();
+});
+
+// =============================================
+// 3. Conexión a la Base de Datos
+// =============================================
+async function initializeDatabase() {
+  try {
+    await connectDatabase();
+    logger.success('✅ Base de datos conectada');
+  } catch (error) {
+    logger.error('❌ Fallo al conectar a la base de datos:', error);
+    process.exit(1); // Detener la aplicación si no hay conexión a DB
+  }
+}
+
+// =============================================
+// 4. Rutas (Ejemplo básico)
+// =============================================
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK',
+    database: db.state === 'connected' ? 'connected' : 'disconnected'
+  });
+});
+
+// =============================================
+// 5. Manejo de Errores
+// =============================================
+app.use((err, req, res, next) => {
+  logger.error('Error no manejado:', err.stack);
+  res.status(500).json({ error: 'Algo salió mal' });
+});
+
+
+
 
 // Configuración para bcrypt
 const SALT_ROUNDS = 12; // Número de rondas de salt (más alto = más seguro pero más lento)
 
-// Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:3000'
-  ],
-  credentials: true
-}));
-app.use(express.json());
 
 // Ruta para registrar usuario
 app.post('/register', async (req, res) => {
@@ -652,44 +698,18 @@ app.get('/articulos', (req, res) => {
   });
 });
 
-// El puerto ahora viene de las variables de entorno
-const PORT = process.env.PORT || 3001;
 
-// Inicializar servidor con conexión a base de datos
+
+// =============================================
+// 6. Inicialización del Servidor
+// =============================================
 async function startServer() {
-  try {
-    // Conectar a la base de datos primero
-    await connectDatabase();
-    
-    // Iniciar servidor solo después de conectar a la BD
-    app.listen(PORT, () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🚀 =====================================');
-        console.log(`🚀 Servidor de desarrollo - Puerto ${PORT}`);
-        console.log('🚀 =====================================');
-        console.log(`🌐 Frontend: FRONT`);
-        console.log(`🔗 API Local: http://localhost:${PORT}`);
-        console.log('🚀 =====================================');
-      } else {
-        console.log('🚀 =====================================');
-        console.log('🚀 Gestor Cerro Negro - Sistema iniciado');
-        console.log('🚀 =====================================');
-        console.log('✅ API REST disponible');
-        console.log('✅ Sistema de autenticación activo');
-        console.log('✅ Módulo de gestión de clientes activo');
-        console.log('✅ Módulo de gestión de productos activo');
-        console.log('✅ Módulo de facturación activo');
-        console.log('🚀 =====================================');
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error crítico al iniciar el sistema');
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Detalles del error:', error);
-    }
-    process.exit(1);
-  }
+  await initializeDatabase();
+  
+  app.listen(PORT, () => {
+    logger.success(`🚀 Servidor escuchando en puerto ${PORT}`);
+    logger.info(`🔗 Frontend permitido: ${FRONTEND_URL}`);
+  });
 }
 
-// Iniciar el servidor
 startServer();

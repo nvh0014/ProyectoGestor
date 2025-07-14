@@ -3,11 +3,11 @@ const mysql = require('mysql2');
 
 // Configuración de la base de datos usando variables de entorno
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '141205',
-  database: process.env.DB_NAME || 'gestor',
-  port: process.env.DB_PORT || 3306, // Puerto estándar de MySQL
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'gestor',
+  port: process.env.MYSQLPORT || 3306, // Puerto estándar de MySQL
   // Configuraciones adicionales para producción
   acquireTimeout: 60000,
   timeout: 60000,
