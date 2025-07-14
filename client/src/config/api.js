@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000, // 10 segundos de timeout
-  withCredentials: true, // Importante para CORS con cookies
+  // withCredentials: true, // Temporalmente deshabilitado para resolver CORS
   headers: {
     'Content-Type': 'application/json',
   }
@@ -57,8 +57,28 @@ export const testConnection = async () => {
       console.error('🌐 No se puede resolver el dominio');
     } else if (error.code === 'ETIMEDOUT') {
       console.error('⏰ Tiempo de espera agotado');
+    } else if (error.message.includes('CORS')) {
+      console.error('🚫 Error de CORS - Problema de configuración del servidor');
     }
 
+    return false;
+  }
+};
+
+// Función específica para probar CORS
+export const testCORS = async () => {
+  try {
+    console.log('🧪 Probando CORS con:', API_BASE_URL);
+    
+    const response = await api.get('/api/cors-test', {
+      timeout: 5000
+    });
+
+    console.log('✅ CORS funcionando correctamente');
+    console.log('📊 Respuesta:', response.data);
+    return true;
+  } catch (error) {
+    console.error('❌ Error en prueba CORS:', error.message);
     return false;
   }
 };

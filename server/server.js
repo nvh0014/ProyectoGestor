@@ -40,6 +40,16 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.up.ra
 // =============================================
 // 2. Middlewares
 // =============================================
+
+// Middleware para manejar preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://gestorcerronegro.up.railway.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
+
 app.use(cors({
   origin: [
     'https://gestorcerronegro.up.railway.app',
@@ -51,6 +61,16 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
 }));
+
+// Middleware adicional para headers CORS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://gestorcerronegro.up.railway.app');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  next();
+});
+
 app.use(express.json());
 
 // Logger de solicitudes (útil para debug)
