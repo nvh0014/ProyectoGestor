@@ -73,13 +73,13 @@ function Clientes() {
     // Función para cerrar sesión
     const cerrarSesion = async () => {
         const result = await Swal.fire({
-            title: '¿Cerrar sesión?',
-            text: '¿Estás seguro de que deseas cerrar sesión?',
+            title: 'Confirmar Cierre de Sesión',
+            text: '¿Está seguro de que desea cerrar la sesión actual?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, cerrar sesión',
+            confirmButtonText: 'Cerrar Sesión',
             cancelButtonText: 'Cancelar'
         });
 
@@ -94,9 +94,9 @@ function Clientes() {
 
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Hasta luego!',
-                    text: 'Sesión cerrada exitosamente.',
-                    confirmButtonText: 'Entendido',
+                    title: 'Sesión Cerrada',
+                    text: 'Su sesión ha sido cerrada exitosamente.',
+                    confirmButtonText: 'Continuar',
                     timer: 2000
                 });
 
@@ -105,8 +105,8 @@ function Clientes() {
                 console.error('Error al cerrar sesión:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Error al cerrar sesión. Inténtalo de nuevo.',
+                    title: 'Error del Sistema',
+                    text: 'Ha ocurrido un error al cerrar la sesión. Intente nuevamente.',
                     confirmButtonText: 'Entendido'
                 });
             } finally {
@@ -138,16 +138,16 @@ function Clientes() {
 
             Swal.fire({
                 icon: 'error',
-                title: 'Error de Conexión',
+                title: 'Error de Conectividad',
                 html: `
-                    <p>No se pudieron cargar los clientes.</p>
-                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>No se pudo establecer conexión con el servidor para cargar los datos de clientes.</p>
+                    <p><strong>Detalles:</strong> ${error.message}</p>
                     <p><strong>Estado:</strong> ${error.response?.status || 'Sin respuesta'}</p>
                     <hr>
-                    <small>Verifique que el servidor backend esté ejecutándose en el puerto 3001</small>
+                    <small>Verifique que el servidor esté ejecutándose correctamente en el puerto 3001</small>
                 `,
-                confirmButtonText: 'OK',
-                footer: '<small>Revise la consola del navegador para más detalles</small>'
+                confirmButtonText: 'Entendido',
+                footer: '<small>Consulte la consola del navegador para información técnica adicional</small>'
             });
         } finally {
             setLoading(false);
@@ -159,9 +159,9 @@ function Clientes() {
             if (!clienteForm.Rut || !clienteForm.RazonSocial) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Campos requeridos',
-                    text: 'RUT y Razón Social son obligatorios',
-                    confirmButtonText: 'OK'
+                    title: 'Campos Obligatorios',
+                    text: 'Los campos RUT y Razón Social son obligatorios para registrar un cliente.',
+                    confirmButtonText: 'Entendido'
                 });
                 return;
             }
@@ -169,9 +169,9 @@ function Clientes() {
             await api.post('/clientes', clienteForm);
             Swal.fire({
                 icon: 'success',
-                title: 'Cliente creado',
-                text: 'El cliente se creó exitosamente',
-                confirmButtonText: 'OK'
+                title: 'Cliente Registrado',
+                text: 'El cliente ha sido registrado exitosamente en el sistema.',
+                confirmButtonText: 'Continuar'
             });
 
             setModalIsOpen(false);
@@ -181,9 +181,9 @@ function Clientes() {
             console.error('Error al crear cliente:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al crear el cliente',
-                confirmButtonText: 'OK'
+                title: 'Error de Registro',
+                text: 'No se pudo registrar el cliente. Verifique los datos e intente nuevamente.',
+                confirmButtonText: 'Entendido'
             });
         }
     };
@@ -193,9 +193,9 @@ function Clientes() {
             if (!clienteForm.Rut || !clienteForm.RazonSocial) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Campos requeridos',
-                    text: 'RUT y Razón Social son obligatorios',
-                    confirmButtonText: 'OK'
+                    title: 'Campos Obligatorios',
+                    text: 'Los campos RUT y Razón Social son obligatorios para actualizar un cliente.',
+                    confirmButtonText: 'Entendido'
                 });
                 return;
             }
@@ -203,9 +203,9 @@ function Clientes() {
             await api.put(`/clientes/${editingCliente.CodigoCliente}`, clienteForm);
             Swal.fire({
                 icon: 'success',
-                title: 'Cliente actualizado',
-                text: 'El cliente se actualizó exitosamente',
-                confirmButtonText: 'OK'
+                title: 'Cliente Actualizado',
+                text: 'Los datos del cliente han sido actualizados exitosamente.',
+                confirmButtonText: 'Continuar'
             });
 
             setModalIsOpen(false);
@@ -216,22 +216,22 @@ function Clientes() {
             console.error('Error al actualizar cliente:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al actualizar el cliente',
-                confirmButtonText: 'OK'
+                title: 'Error de Actualización',
+                text: 'No se pudo actualizar el cliente. Verifique los datos e intente nuevamente.',
+                confirmButtonText: 'Entendido'
             });
         }
     };
 
     const eliminarCliente = async (cliente) => {
         const result = await Swal.fire({
-            title: '¿Desactivar cliente?',
-            text: `¿Estás seguro de que deseas desactivar a ${cliente.RazonSocial}? El cliente se marcará como inactivo.`,
+            title: 'Confirmar Desactivación',
+            text: `¿Está seguro de que desea desactivar el cliente ${cliente.RazonSocial}? Esta acción marcará el cliente como inactivo.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, desactivar',
+            confirmButtonText: 'Desactivar Cliente',
             cancelButtonText: 'Cancelar'
         });
 
@@ -244,18 +244,18 @@ function Clientes() {
                 });
                 Swal.fire({
                     icon: 'success',
-                    title: 'Cliente desactivado',
-                    text: 'El cliente se desactivó exitosamente',
-                    confirmButtonText: 'OK'
+                    title: 'Cliente Desactivado',
+                    text: 'El cliente ha sido desactivado exitosamente.',
+                    confirmButtonText: 'Continuar'
                 });
                 obtenerClientes();
             } catch (error) {
                 console.error('Error al desactivar cliente:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Error al desactivar el cliente',
-                    confirmButtonText: 'OK'
+                    title: 'Error de Desactivación',
+                    text: 'No se pudo desactivar el cliente. Intente nuevamente.',
+                    confirmButtonText: 'Entendido'
                 });
             }
         }

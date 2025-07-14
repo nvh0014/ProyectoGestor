@@ -44,8 +44,8 @@ function Login() {
         if (!usuarioLimpio || !passwordLimpio) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Campos incompletos',
-                text: 'Debe completar todos los campos.',
+                title: 'Campos Requeridos',
+                text: 'Por favor, complete todos los campos del formulario para continuar.',
                 confirmButtonText: 'Entendido'
             });
             return;
@@ -65,8 +65,8 @@ function Login() {
                     
                     Swal.fire({
                         icon: 'success',
-                        title: '¡Bienvenido!',
-                        text: 'Inicio de sesión exitoso.',
+                        title: 'Inicio de Sesión Exitoso',
+                        text: 'Bienvenido al sistema de gestión empresarial.',
                         confirmButtonText: 'Continuar'
                     }).then(() => {
                         Navigate('/home');
@@ -74,8 +74,8 @@ function Login() {
                 } else {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Credenciales incorrectas',
-                        text: res.data.error || 'Usuario o contraseña incorrectos.',
+                        title: 'Credenciales Incorrectas',
+                        text: 'Los datos de acceso ingresados no son válidos. Verifique su usuario y contraseña.',
                         confirmButtonText: 'Reintentar'
                     });
                 }
@@ -96,7 +96,7 @@ function Login() {
                 
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error al iniciar sesión',
+                    title: 'Error de Conexión',
                     text: errorMessage,
                     confirmButtonText: 'Reintentar'
                 });

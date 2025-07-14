@@ -51,7 +51,7 @@ function Register() {
     if (errores.length > 0) {
       Swal.fire({
         icon: 'warning',
-        title: 'Errores de validación',
+        title: 'Validación de Datos',
         html: errores.map(error => `• ${error}`).join('<br>'),
         confirmButtonText: 'Corregir'
       });
@@ -65,9 +65,9 @@ function Register() {
       .then((response) => {
         Swal.fire({
           icon: 'success',
-          title: '¡Registro exitoso!',
-          text: response.data.message || 'Usuario registrado exitosamente.',
-          confirmButtonText: 'Excelente'
+          title: 'Registro Completado',
+          text: 'Su cuenta ha sido creada exitosamente. Ahora puede iniciar sesión.',
+          confirmButtonText: 'Continuar'
         }).then(() => {
           navigate('/login');
           limpiarFormulario(); // Limpiar el formulario después del registro exitoso
@@ -77,22 +77,22 @@ function Register() {
         if (error.response) {
           Swal.fire({
             icon: 'error',
-            title: `Error ${error.response.status}`,
-            text: error.response.data,
+            title: 'Error de Servidor',
+            text: 'El servidor ha devuelto un error. Intente nuevamente.',
             confirmButtonText: 'Entendido'
           });
         } else if (error.request) {
           Swal.fire({
             icon: 'error',
-            title: 'Error de conexión',
-            text: 'No se recibió respuesta del servidor.',
+            title: 'Error de Conexión',
+            text: 'No se pudo establecer conexión con el servidor. Verifique su conexión e intente nuevamente.',
             confirmButtonText: 'Reintentar'
           });
         } else {
           Swal.fire({
             icon: 'error',
-            title: 'Error inesperado',
-            text: error.message,
+            title: 'Error Inesperado',
+            text: 'Ha ocurrido un error inesperado. Contacte al administrador del sistema.',
             confirmButtonText: 'Entendido'
           });
         }

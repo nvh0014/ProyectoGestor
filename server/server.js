@@ -667,7 +667,7 @@ async function startServer() {
         console.log('🚀 =====================================');
         console.log(`🚀 Servidor de desarrollo - Puerto ${PORT}`);
         console.log('🚀 =====================================');
-        console.log(`🌐 Frontend: https://gestorcerronegro.vercel.app`);
+        console.log(`🌐 Frontend: FRONT`);
         console.log(`🔗 API Local: http://localhost:${PORT}`);
         console.log('🚀 =====================================');
       } else {

@@ -28,9 +28,9 @@ const ProtectedRoute = ({ children }) => {
         setShowAlert(true);
         Swal.fire({
           icon: 'warning',
-          title: 'Acceso denegado',
-          text: 'Debe iniciar sesión para acceder a esta página.',
-          confirmButtonText: 'Entendido'
+          title: 'Acceso Restringido',
+          text: 'Debe autenticarse para acceder a esta sección del sistema.',
+          confirmButtonText: 'Iniciar Sesión'
         });
       }
     } else {

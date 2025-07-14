@@ -71,13 +71,13 @@ function Productos() {
     // Función para cerrar sesión
     const cerrarSesion = async () => {
         const result = await Swal.fire({
-            title: '¿Cerrar sesión?',
-            text: '¿Estás seguro de que deseas cerrar sesión?',
+            title: 'Confirmar Cierre de Sesión',
+            text: '¿Está seguro de que desea cerrar la sesión actual?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, cerrar sesión',
+            confirmButtonText: 'Cerrar Sesión',
             cancelButtonText: 'Cancelar'
         });
 
@@ -92,9 +92,9 @@ function Productos() {
 
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Hasta luego!',
-                    text: 'Sesión cerrada exitosamente.',
-                    confirmButtonText: 'Entendido',
+                    title: 'Sesión Cerrada',
+                    text: 'Su sesión ha sido cerrada exitosamente.',
+                    confirmButtonText: 'Continuar',
                     timer: 2000
                 });
 
@@ -103,8 +103,8 @@ function Productos() {
                 console.error('Error al cerrar sesión:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Error al cerrar sesión. Inténtalo de nuevo.',
+                    title: 'Error del Sistema',
+                    text: 'Ha ocurrido un error al cerrar la sesión. Intente nuevamente.',
                     confirmButtonText: 'Entendido'
                 });
             } finally {
@@ -124,9 +124,9 @@ function Productos() {
             console.error('Error al obtener productos:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al cargar los productos',
-                confirmButtonText: 'OK'
+                title: 'Error de Conectividad',
+                text: 'No se pudo establecer conexión con el servidor para cargar los productos.',
+                confirmButtonText: 'Entendido'
             });
         } finally {
             setLoading(false);
@@ -138,9 +138,9 @@ function Productos() {
             if (!productoForm.Descripcion || !productoForm.PrecioSala) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Campos requeridos',
-                    text: 'Descripción y Precio Sala son obligatorios',
-                    confirmButtonText: 'OK'
+                    title: 'Campos Obligatorios',
+                    text: 'Los campos Descripción y Precio de Sala son obligatorios para registrar un producto.',
+                    confirmButtonText: 'Entendido'
                 });
                 return;
             }
@@ -154,9 +154,9 @@ function Productos() {
             await api.post('/productos', productoData);
             Swal.fire({
                 icon: 'success',
-                title: 'Producto creado',
-                text: 'El producto se creó exitosamente',
-                confirmButtonText: 'OK'
+                title: 'Producto Registrado',
+                text: 'El producto ha sido registrado exitosamente en el sistema.',
+                confirmButtonText: 'Continuar'
             });
 
             setModalIsOpen(false);
@@ -166,9 +166,9 @@ function Productos() {
             console.error('Error al crear producto:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al crear el producto',
-                confirmButtonText: 'OK'
+                title: 'Error de Registro',
+                text: 'No se pudo registrar el producto. Verifique los datos e intente nuevamente.',
+                confirmButtonText: 'Entendido'
             });
         }
     };
@@ -178,9 +178,9 @@ function Productos() {
             if (!productoForm.Descripcion || !productoForm.PrecioSala) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Campos requeridos',
-                    text: 'Descripción y Precio Sala son obligatorios',
-                    confirmButtonText: 'OK'
+                    title: 'Campos Obligatorios',
+                    text: 'Los campos Descripción y Precio de Sala son obligatorios para actualizar un producto.',
+                    confirmButtonText: 'Entendido'
                 });
                 return;
             }
@@ -194,9 +194,9 @@ function Productos() {
             await api.put(`/productos/${editingProducto.CodigoProducto}`, productoData);
             Swal.fire({
                 icon: 'success',
-                title: 'Producto actualizado',
-                text: 'El producto se actualizó exitosamente',
-                confirmButtonText: 'OK'
+                title: 'Producto Actualizado',
+                text: 'Los datos del producto han sido actualizados exitosamente.',
+                confirmButtonText: 'Continuar'
             });
 
             setModalIsOpen(false);
@@ -207,22 +207,22 @@ function Productos() {
             console.error('Error al actualizar producto:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al actualizar el producto',
-                confirmButtonText: 'OK'
+                title: 'Error de Actualización',
+                text: 'No se pudo actualizar el producto. Verifique los datos e intente nuevamente.',
+                confirmButtonText: 'Entendido'
             });
         }
     };
 
     const eliminarProducto = async (producto) => {
         const result = await Swal.fire({
-            title: '¿Desactivar producto?',
-            text: `¿Estás seguro de que deseas desactivar ${producto.Descripcion}? El producto se marcará como inactivo.`,
+            title: 'Confirmar Desactivación',
+            text: `¿Está seguro de que desea desactivar el producto ${producto.Descripcion}? Esta acción marcará el producto como inactivo.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, desactivar',
+            confirmButtonText: 'Desactivar Producto',
             cancelButtonText: 'Cancelar'
         });
 
@@ -235,18 +235,18 @@ function Productos() {
                 });
                 Swal.fire({
                     icon: 'success',
-                    title: 'Producto desactivado',
-                    text: 'El producto se desactivó exitosamente',
-                    confirmButtonText: 'OK'
+                    title: 'Producto Desactivado',
+                    text: 'El producto ha sido desactivado exitosamente.',
+                    confirmButtonText: 'Continuar'
                 });
                 obtenerProductos();
             } catch (error) {
                 console.error('Error al desactivar producto:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Error al desactivar el producto',
-                    confirmButtonText: 'OK'
+                    title: 'Error de Desactivación',
+                    text: 'No se pudo desactivar el producto. Intente nuevamente.',
+                    confirmButtonText: 'Entendido'
                 });
             }
         }

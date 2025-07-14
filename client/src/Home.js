@@ -68,9 +68,9 @@ const Home = () => {
       // Si no hay cookies de sesión, redirigir al login
       Swal.fire({
         icon: 'warning',
-        title: 'Acceso denegado',
-        text: 'Debe iniciar sesión para acceder al Home.',
-        confirmButtonText: 'Entendido'
+        title: 'Acceso Restringido',
+        text: 'Debe autenticarse para acceder a esta sección del sistema.',
+        confirmButtonText: 'Iniciar Sesión'
       }).then(() => {
         navigate('/login', { replace: true });
       });
@@ -85,10 +85,10 @@ const Home = () => {
       if (!isConnected) {
         Swal.fire({
           icon: 'error',
-          title: 'Error de conexión',
-          text: 'No se puede conectar con el servidor backend. Revise la consola para más detalles.',
+          title: 'Error de Conectividad',
+          text: 'No se puede establecer conexión con el servidor. Verifique el estado del servicio.',
           confirmButtonText: 'Entendido',
-          footer: 'Verifique que el servidor esté ejecutándose en el puerto 3001'
+          footer: 'Asegúrese de que el servidor esté ejecutándose en el puerto 3001'
         });
       }
     };
@@ -130,13 +130,13 @@ const menuItems = [
   // Función mejorada para cerrar sesión
   const cerrarSesion = async () => {
     const result = await Swal.fire({
-      title: '¿Cerrar sesión?',
-      text: '¿Estás seguro de que deseas cerrar sesión?\nSe perderán todos los cambios no guardados.',
+      title: 'Cerrar Sesión',
+      text: '¿Confirma que desea cerrar la sesión actual? Los cambios no guardados se perderán.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Sí, cerrar sesión',
+      confirmButtonText: 'Cerrar Sesión',
       cancelButtonText: 'Cancelar'
     });
 
@@ -159,9 +159,9 @@ const menuItems = [
         // Mostrar mensaje de éxito
         await Swal.fire({
           icon: 'success',
-          title: '¡Hasta luego!',
-          text: 'Sesión cerrada exitosamente.',
-          confirmButtonText: 'Entendido',
+          title: 'Sesión Cerrada',
+          text: 'Su sesión ha sido cerrada exitosamente.',
+          confirmButtonText: 'Continuar',
           timer: 2000
         });
 
@@ -172,8 +172,8 @@ const menuItems = [
         console.error('Error al cerrar sesión:', error);
         Swal.fire({
           icon: 'error',
-          title: 'Error',
-          text: 'Error al cerrar sesión. Inténtalo de nuevo.',
+          title: 'Error del Sistema',
+          text: 'Ha ocurrido un error al cerrar la sesión. Intente nuevamente.',
           confirmButtonText: 'Entendido'
         });
       } finally {
@@ -202,8 +202,8 @@ const menuItems = [
       console.error('Error al navegar:', error);
       Swal.fire({
         icon: 'error',
-        title: 'Error de navegación',
-        text: 'Error al cargar la sección. Inténtalo de nuevo.',
+        title: 'Error de Navegación',
+        text: 'No se pudo acceder a la sección solicitada. Intente nuevamente.',
         confirmButtonText: 'Entendido'
       });
     } finally {

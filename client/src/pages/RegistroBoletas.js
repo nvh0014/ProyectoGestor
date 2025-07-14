@@ -66,13 +66,13 @@ function RegistroBoletas() {
     // Función para cerrar sesión
     const cerrarSesion = async () => {
         const result = await Swal.fire({
-            title: '¿Cerrar sesión?',
-            text: '¿Estás seguro de que deseas cerrar sesión?',
+            title: 'Confirmar Cierre de Sesión',
+            text: '¿Está seguro de que desea cerrar la sesión actual?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, cerrar sesión',
+            confirmButtonText: 'Cerrar Sesión',
             cancelButtonText: 'Cancelar'
         });
 
@@ -87,9 +87,9 @@ function RegistroBoletas() {
 
                 Swal.fire({
                     icon: 'success',
-                    title: '¡Hasta luego!',
-                    text: 'Sesión cerrada exitosamente.',
-                    confirmButtonText: 'Entendido',
+                    title: 'Sesión Cerrada',
+                    text: 'Su sesión ha sido cerrada exitosamente.',
+                    confirmButtonText: 'Continuar',
                     timer: 2000
                 });
 
@@ -98,8 +98,8 @@ function RegistroBoletas() {
                 console.error('Error al cerrar sesión:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Error al cerrar sesión. Inténtalo de nuevo.',
+                    title: 'Error del Sistema',
+                    text: 'Ha ocurrido un error al cerrar la sesión. Intente nuevamente.',
                     confirmButtonText: 'Entendido'
                 });
             } finally {
@@ -118,9 +118,9 @@ function RegistroBoletas() {
             console.error('Error al obtener boletas:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al cargar las boletas',
-                confirmButtonText: 'OK'
+                title: 'Error de Conectividad',
+                text: 'No se pudo establecer conexión con el servidor para cargar las boletas.',
+                confirmButtonText: 'Entendido'
             });
         } finally {
             setLoading(false);
@@ -137,9 +137,9 @@ function RegistroBoletas() {
             console.error('Error al obtener detalle de boleta:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: 'Error al cargar el detalle de la boleta',
-                confirmButtonText: 'OK'
+                title: 'Error de Conectividad',
+                text: 'No se pudo cargar el detalle de la boleta seleccionada.',
+                confirmButtonText: 'Entendido'
             });
         }
     };
