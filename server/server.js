@@ -540,9 +540,23 @@ app.get('/articulos', async (req, res) => {
 // =============================================
 // 10. Manejo de Errores
 // =============================================
+
+// Manejo de rutas no encontradas
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    error: 'Ruta no encontrada',
+    path: req.originalUrl,
+    method: req.method
+  });
+});
+
+// Manejo de errores generales
 app.use((err, req, res, next) => {
   console.error('Error no manejado:', err.stack);
-  res.status(500).json({ error: 'Algo salió mal' });
+  res.status(500).json({ 
+    error: 'Algo salió mal',
+    message: err.message
+  });
 });
 
 // =============================================
@@ -558,16 +572,20 @@ async function startServer() {
     console.log('- MySQL Port:', process.env.MYSQLPORT || 3306);
     console.log('- MySQL Database:', process.env.MYSQLDATABASE || 'gestor');
     console.log('- MySQL User:', process.env.MYSQLUSER || 'root');
+    console.log('- Node Version:', process.version);
     
+    console.log('🔄 Inicializando base de datos...');
     await initializeDatabase();
     
+    console.log('🚀 Iniciando servidor...');
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
+      console.log(`✅ Servidor escuchando en puerto ${PORT}`);
       console.log(`🔗 Frontend permitido: ${FRONTEND_URL}`);
       console.log(`🌐 URL del servidor: http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('❌ Error al iniciar el servidor:', error);
+    console.error('Stack trace:', error.stack);
     process.exit(1);
   }
 }
