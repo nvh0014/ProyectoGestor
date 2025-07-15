@@ -138,17 +138,58 @@ Las rutas están organizadas por funcionalidad:
 - `boletas.js`: `/boletas/*`
 - `api.js`: `/api/*` (rutas generales)
 
-## Comandos Útiles
+## Configuración para Diferentes Entornos
+
+### 📁 Archivos de Configuración
+
+```
+server/
+├── .env              # Variables para Railway (producción)
+├── .env.local        # Variables para desarrollo local
+├── server.js         # Servidor principal modularizado
+├── server-local.js   # Servidor para desarrollo local
+├── server-railway.js # Servidor para Railway
+├── server-auto.js    # Servidor con detección automática
+├── test-local.js     # Test conexión local
+└── test-railway.js   # Test conexión Railway
+```
+
+### 🚀 Comandos Disponibles
 
 ```bash
-# Iniciar servidor en desarrollo
-npm run dev
+# Desarrollo local
+npm run dev          # Servidor local (puerto 3001)
+npm run test         # Test conexión MySQL local
 
-# Iniciar servidor en producción
-npm start
+# Railway/Producción
+npm run railway      # Servidor Railway explícito
+npm run test:railway # Test conexión Railway
 
-# Verificar estructura
-ls -la server/
+# Automático (detecta entorno)
+npm start           # Detección automática de entorno
+```
+
+### 🔧 Variables de Entorno
+
+#### Local (.env.local)
+```env
+MYSQLDATABASE=gestor
+MYSQLHOST=localhost
+MYSQLPASSWORD=tu_password_local
+MYSQLUSER=root
+PORT=3001
+NODE_ENV=development
+```
+
+#### Railway (.env)
+```env
+MYSQLDATABASE=gestor
+MYSQLHOST=mysql.railway.internal
+MYSQLPASSWORD=hFLvosNAYJNeDQXUwCWmsMYooljUkJaw
+MYSQLUSER=root
+PORT=3001
+RAILWAY_ENVIRONMENT=true
+NODE_ENV=production
 ```
 
 ## Migración desde el Archivo Original

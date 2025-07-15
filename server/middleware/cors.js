@@ -5,13 +5,20 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://127.0.0.1:3000',
-  'http://127.0.0.1:5173'
+  'http://127.0.0.1:5173',
+  'http://localhost:3001', // Para pruebas locales
+  'http://127.0.0.1:3001'  // Para pruebas locales
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Permitir requests sin origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
+    
+    // En desarrollo local, ser más permisivo
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
     
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
