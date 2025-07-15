@@ -319,7 +319,7 @@ const menuItems = [
         {/* Información adicional del sistema */}
         <div className="system-info">
           <p className="system-version">
-            Sistema v2.8 | Última actualización: {new Date().toLocaleDateString('es-CL')}
+            Sistema v3.0 | Última actualización: {new Date().toLocaleDateString('es-CL')}
           </p>
         </div>
       </main>
