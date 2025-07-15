@@ -19,9 +19,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.up.ra
 
 // Configuración CORS para producción
 const allowedOrigins = [
-  'https://gestorcerronegro.up.railway.app',
-  'https://proyectogestor-production.up.railway.app', // URL correcta del backend
-  'http://localhost:3000' // Para desarrollo local
+  'https://gestorcerronegro.vercel.app',       // Frontend en Vercel
+  'https://gestorcerronegrobackend.up.railway.app', // Backend en Railway
+  'http://localhost:3000'                      // Desarrollo local
 ];
 
 app.use(cors({
