@@ -5,9 +5,9 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000, // 10 segundos de timeout
-  // withCredentials: true, // Temporalmente deshabilitado para resolver CORS
+  baseURL: process.env.REACT_APP_API_URL,
+  timeout: 30000,
+  withCredentials: true, // Si usas cookies/tokens
   headers: {
     'Content-Type': 'application/json',
   }
