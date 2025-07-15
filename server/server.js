@@ -1,3 +1,4 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // Solo para pruebas
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -17,20 +18,66 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.verce
 // 2. Middlewares
 // =============================================
 
-// Habilita CORS para TODOS los orígenes (solo para pruebas, luego ajusta)
+const allowedOrigins = [
+  'https://gestorcerronegro.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+];
+
+// Configuración CORS más específica
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`❌ Origen no permitido: ${origin}`);
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  credentials: false, // Cambiado a false para evitar problemas
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ],
+  maxAge: 86400 // 24 horas
+};
+
+// Aplicar CORS
+app.use(cors(corsOptions));
+
+// Middleware adicional para headers CORS
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*'); // Cambia * por tu URL en producción
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  // Log de la petición
+  console.log(`${req.method} ${req.path} - Origin: ${origin || 'No origin'}`);
   
   if (req.method === 'OPTIONS') {
-    return res.status(204).end(); // Respuesta para preflight
+    return res.status(200).end();
   }
+  
   next();
 });
 
-app.use(express.json());
+// Middleware para parsear JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logger de solicitudes
 app.use((req, res, next) => {

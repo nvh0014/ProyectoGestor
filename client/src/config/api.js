@@ -1,33 +1,48 @@
 // Configuración de la API
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// IMPORTANTE: Verifica que esta URL sea exactamente la misma que aparece en Railway
+const API_BASE_URL = 'https://gestorcerronegrobackend.up.railway.app'; // Cambiado según tu error
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
-  baseURL: 'https://gestorcerronegrobackend.up.railway.app',
-  withCredentials: false, // Desactívalo temporalmente
-  timeout: 30000,
+  baseURL: API_BASE_URL,
+  withCredentials: false, // Mantener false para evitar problemas CORS
+  timeout: 10000, // Reducido a 10 segundos
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 });
 
+// Interceptor para requests (agregar logs)
+api.interceptors.request.use(
+  (config) => {
+    console.log('🚀 Enviando petición a:', config.baseURL + config.url);
+    return config;
+  },
+  (error) => {
+    console.error('❌ Error en request:', error);
+    return Promise.reject(error);
+  }
+);
+
 // Interceptor para manejo de errores
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ Respuesta exitosa:', response.status);
+    return response;
+  },
   (error) => {
-    console.error('Error en la API:', error);
-    console.error('URL base configurada:', API_BASE_URL);
-
-    if (error.code === 'ECONNREFUSED') {
-      console.error('❌ No se puede conectar al servidor backend');
-      console.error('🔧 Verifique que el servidor esté ejecutándose en:', API_BASE_URL);
-    }
-
-    if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
-      console.error('❌ Error de red - Verifique la conexión');
+    console.error('❌ Error en la API:', error.message);
+    console.error('🔧 URL completa:', error.config?.url);
+    
+    // Información detallada del error
+    if (error.response) {
+      console.error('📊 Status:', error.response.status);
+      console.error('📄 Data:', error.response.data);
+    } else if (error.request) {
+      console.error('🌐 No response received:', error.request);
     }
 
     return Promise.reject(error);
@@ -38,72 +53,110 @@ api.interceptors.response.use(
 export const testConnection = async () => {
   try {
     console.log('🧪 Probando conexión con:', API_BASE_URL);
-
-    // Usar la ruta de test que sabemos que funciona
-    const response = await api.get('/test', {
-      timeout: 5000 // 5 segundos de timeout específico para esta prueba
-    });
-
-    console.log('✅ Conexión exitosa con el backend');
-    console.log('📊 Respuesta del servidor:', response.data);
-    return true;
-  } catch (error) {
-    console.error('❌ Error al conectar con el backend:', error.message);
-    console.error('🔧 URL que se está probando:', `${API_BASE_URL}/test`);
-
-    // Información detallada del error para debugging
-    if (error.code === 'ECONNREFUSED') {
-      console.error('🔌 El servidor no está ejecutándose');
-    } else if (error.code === 'ENOTFOUND') {
-      console.error('🌐 No se puede resolver el dominio');
-    } else if (error.code === 'ETIMEDOUT') {
-      console.error('⏰ Tiempo de espera agotado');
-    } else if (error.message.includes('CORS')) {
-      console.error('🚫 Error de CORS - Problema de configuración del servidor');
-    }
-
-    return false;
-  }
-};
-
-// Función específica para probar CORS
-export const testCORS = async () => {
-  try {
-    console.log('🧪 Probando CORS con:', API_BASE_URL);
     
-    const response = await api.get('/api/cors-test', {
-      timeout: 5000
-    });
-
-    console.log('✅ CORS funcionando correctamente');
-    console.log('📊 Respuesta:', response.data);
+    const response = await api.get('/test');
+    console.log('✅ Conexión exitosa:', response.data);
     return true;
   } catch (error) {
-    console.error('❌ Error en prueba CORS:', error.message);
+    console.error('❌ Error al conectar:', error.message);
     return false;
   }
 };
 
-// Servicio API simplificado
+// Función para login
+export const login = async (credentials) => {
+  try {
+    console.log('🔐 Intentando login para:', credentials.NombreUsuario);
+    const response = await api.post('/login', credentials);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error en login:', error.message);
+    throw error;
+  }
+};
+
+// Función para registro
+export const register = async (userData) => {
+  try {
+    console.log('📝 Registrando usuario:', userData.NombreUsuario);
+    const response = await api.post('/register', userData);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error en registro:', error.message);
+    throw error;
+  }
+};
+
+// Servicio API mejorado
 export const apiService = {
+  // Usuarios
   async getUsers() {
-    try {
-      const response = await api.get('/api/users');
-      return response.data;
-    } catch (error) {
-      console.error('Error al obtener usuarios:', error);
-      throw error;
-    }
+    const response = await api.get('/usuarios');
+    return response.data;
   },
 
-  async createUser(userData) {
-    try {
-      const response = await api.post('/api/users', userData);
-      return response.data;
-    } catch (error) {
-      console.error('Error al crear usuario:', error);
-      throw error;
-    }
+  // Clientes
+  async getClientes() {
+    const response = await api.get('/clientes');
+    return response.data;
+  },
+
+  async createCliente(clienteData) {
+    const response = await api.post('/clientes', clienteData);
+    return response.data;
+  },
+
+  async updateCliente(id, clienteData) {
+    const response = await api.put(`/clientes/${id}`, clienteData);
+    return response.data;
+  },
+
+  async deleteCliente(id) {
+    const response = await api.delete(`/clientes/${id}`);
+    return response.data;
+  },
+
+  // Productos
+  async getProductos() {
+    const response = await api.get('/productos');
+    return response.data;
+  },
+
+  async createProducto(productoData) {
+    const response = await api.post('/productos', productoData);
+    return response.data;
+  },
+
+  async updateProducto(id, productoData) {
+    const response = await api.put(`/productos/${id}`, productoData);
+    return response.data;
+  },
+
+  async deleteProducto(id) {
+    const response = await api.delete(`/productos/${id}`);
+    return response.data;
+  },
+
+  // Boletas
+  async getBoletas() {
+    const response = await api.get('/boletas');
+    return response.data;
+  },
+
+  async getBoleta(numero) {
+    const response = await api.get(`/boletas/${numero}`);
+    return response.data;
+  },
+
+  async createBoleta(boletaData) {
+    const response = await api.post('/boletas', boletaData);
+    return response.data;
+  },
+
+  // Artículos (para boletas)
+  async getArticulos() {
+    const response = await api.get('/articulos');
+    return response.data;
   }
 };
 
