@@ -2,19 +2,14 @@
 const mysql = require('mysql2/promise');
 
 const dbConfig = {
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT,
+  host: process.env.MYSQLHOST,      // "mysql.railway.internal"
+  user: process.env.MYSQLUSER,      // "root"
+  password: process.env.MYSQLPASSWORD, // El password de tu imagen
+  database: process.env.MYSQLDATABASE, // "gestor" (¡importante!)
+  port: process.env.MYSQLPORT || 3306, // 3306
   waitForConnections: true,
   connectionLimit: 10,
-  acquireTimeout: 60000,  // 60 segundos
-  timeout: 60000,         // 60 segundos  
-  reconnect: true,
-  ssl: { 
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false }  // Obligatorio
 };
 
 const pool = mysql.createPool(dbConfig);
