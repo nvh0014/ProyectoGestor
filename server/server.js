@@ -17,21 +17,18 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.verce
 // 2. Middlewares
 // =============================================
 
-// Configuración CORS para producción
-const allowedOrigins = [
-  'https://gestorcerronegro.vercel.app',       // Frontend en Vercel
-  'http://localhost:3000'                      // Desarrollo local
-];
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Manejo explícito de preflight OPTIONS
-app.options('*', cors());
+// Habilita CORS para TODOS los orígenes (solo para pruebas, luego ajusta)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*'); // Cambia * por tu URL en producción
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end(); // Respuesta para preflight
+  }
+  next();
+});
 
 app.use(express.json());
 
