@@ -150,7 +150,10 @@ function Clientes() {
                 footer: '<small>Consulte la consola del navegador para información técnica adicional</small>'
             });
         } finally {
-            setLoading(false);
+            // Agregar tiempo de carga para asegurar que los datos se carguen correctamente
+            setTimeout(() => {
+                setLoading(false);
+            }, 1500);
         }
     };
 

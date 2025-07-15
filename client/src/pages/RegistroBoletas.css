@@ -527,6 +527,13 @@
 }
 
 /* ===== BOTONES DE ACCIÓN ===== */
+.registro-boletas-table-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  justify-content: center;
+}
+
 .registro-boletas-action-button {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: none;
@@ -554,6 +561,20 @@
 }
 
 .registro-boletas-action-button.view:active {
+  transform: translateY(0);
+}
+
+.registro-boletas-action-button.download {
+  background: var(--success);
+  color: var(--white);
+}
+
+.registro-boletas-action-button.download:hover {
+  background: var(--success-dark);
+  transform: translateY(-2px);
+}
+
+.registro-boletas-action-button.download:active {
   transform: translateY(0);
 }
 
@@ -995,6 +1016,10 @@
   .registro-boletas-table td {
     padding: var(--spacing-sm);
     font-size: var(--font-size-xs);
+  }
+  
+  .registro-boletas-table-actions {
+    gap: var(--spacing-xs);
   }
   
   .registro-boletas-action-button {

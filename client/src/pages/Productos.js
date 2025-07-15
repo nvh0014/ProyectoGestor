@@ -129,7 +129,10 @@ function Productos() {
                 confirmButtonText: 'Entendido'
             });
         } finally {
-            setLoading(false);
+            // Agregar tiempo de carga para asegurar que los datos se carguen correctamente
+            setTimeout(() => {
+                setLoading(false);
+            }, 1500);
         }
     };
 

@@ -170,7 +170,10 @@ function GenerarBoleta() {
         }));
       }
       
-      setLoading(false);
+      // Agregar tiempo de carga para asegurar que los datos se carguen correctamente
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       Swal.fire({
@@ -179,7 +182,10 @@ function GenerarBoleta() {
         text: 'No se pudo establecer conexión con el servidor para cargar los datos requeridos.',
         confirmButtonText: 'Entendido'
       });
-      setLoading(false);
+      // Agregar tiempo de carga para el manejo de errores
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
     }
   };
 

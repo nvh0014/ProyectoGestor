@@ -9,6 +9,9 @@ const dbConfig = {
   port: process.env.MYSQLPORT,
   waitForConnections: true,
   connectionLimit: 10,
+  acquireTimeout: 60000,  // 60 segundos
+  timeout: 60000,         // 60 segundos  
+  reconnect: true,
   ssl: { 
     rejectUnauthorized: false
   }
