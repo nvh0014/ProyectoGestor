@@ -7,11 +7,12 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "node server-auto.js",
+    "start": "node debug-railway.js",
     "dev": "node server-local.js",
     "railway": "node server-railway.js",
+    "auto": "node server-auto.js",
     "test": "node test-local.js",
-    "test:railway": "node -e \"require('dotenv').config(); require('./config/database');\""
+    "test:railway": "node test-railway.js"
   },
   "keywords": [],
   "dependencies": {
