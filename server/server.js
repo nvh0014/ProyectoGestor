@@ -35,6 +35,7 @@ const productoRoutes = require('./routes/productos');
 const boletaRoutes = require('./routes/boletas');
 const apiRoutes = require('./routes/api');
 const articulosRoutes = require('./routes/articulos');
+const debugRoutes = require('./routes/debug');
 
 // Ruta raíz
 app.get('/', (req, res) => {
@@ -58,6 +59,7 @@ app.use('/productos', productoRoutes);
 app.use('/boletas', boletaRoutes);
 app.use('/articulos', articulosRoutes);
 app.use('/api', apiRoutes);
+app.use('/debug', debugRoutes);
 
 // =============================================
 // 3. Manejo de Errores y Inicio del Servidor

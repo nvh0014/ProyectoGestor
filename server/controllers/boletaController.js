@@ -82,6 +82,23 @@ const boletaController = {
   createBoleta: async (req, res) => {
     const { CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, detalles } = req.body;
     
+    // Validación de datos requeridos
+    if (!CodigoCliente || !FechaBoleta || !FechaVencimiento || !TotalBoleta) {
+      return res.status(400).json({ 
+        error: 'Datos requeridos faltantes',
+        required: ['CodigoCliente', 'FechaBoleta', 'FechaVencimiento', 'TotalBoleta']
+      });
+    }
+    
+    console.log('📝 Creando boleta con datos:', {
+      CodigoCliente,
+      FechaBoleta,
+      FechaVencimiento,
+      TotalBoleta,
+      Observaciones: Observaciones || '',
+      detalles: detalles?.length || 0
+    });
+    
     const connection = await pool.getConnection();
     
     try {
@@ -92,12 +109,14 @@ const boletaController = {
       const [result] = await connection.execute(queryBoleta, [CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones || '']);
       
       const numeroBoleta = result.insertId;
+      console.log('✅ Boleta creada con ID:', numeroBoleta);
       
       // Insertar detalles si existen
       if (detalles && detalles.length > 0) {
         const queryDetalle = 'INSERT INTO detallesboleta (NumeroBoleta, CodigoProducto, Cantidad, PrecioUnitario, Subtotal) VALUES (?, ?, ?, ?, ?)';
         
         for (const detalle of detalles) {
+          console.log('📦 Insertando detalle:', detalle);
           await connection.execute(queryDetalle, [
             numeroBoleta,
             detalle.CodigoProducto,
@@ -106,9 +125,11 @@ const boletaController = {
             detalle.Subtotal
           ]);
         }
+        console.log('✅ Detalles insertados:', detalles.length);
       }
       
       await connection.commit();
+      console.log('✅ Transacción completada');
       
       res.status(201).json({
         message: 'Boleta creada exitosamente',
@@ -116,8 +137,26 @@ const boletaController = {
       });
     } catch (err) {
       await connection.rollback();
-      console.error('Error al crear boleta:', err);
-      res.status(500).json({ error: 'Error al crear boleta' });
+      console.error('❌ Error al crear boleta:', err);
+      console.error('❌ Error code:', err.code);
+      console.error('❌ Error errno:', err.errno);
+      console.error('❌ SQL State:', err.sqlState);
+      
+      // Enviar error más específico
+      let errorMessage = 'Error al crear boleta';
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        errorMessage = 'Tabla no encontrada en la base de datos';
+      } else if (err.code === 'ER_BAD_FIELD_ERROR') {
+        errorMessage = 'Campo no válido en la tabla';
+      } else if (err.code === 'ER_DUP_ENTRY') {
+        errorMessage = 'Datos duplicados';
+      }
+      
+      res.status(500).json({ 
+        error: errorMessage,
+        details: err.message,
+        code: err.code
+      });
     } finally {
       connection.release();
     }
