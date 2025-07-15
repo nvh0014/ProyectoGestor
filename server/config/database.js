@@ -9,7 +9,9 @@ const dbConfig = {
   port: process.env.MYSQLPORT || 3306, // 3306
   waitForConnections: true,
   connectionLimit: 10,
-  ssl: { rejectUnauthorized: false }  // Obligatorio
+  ssl: { rejectUnauthorized: false },  // Obligatorio
+  socketPath: null,  // Fuerza conexión TCP
+  flags: '-FOUND_ROWS'  // Evita IPv6
 };
 
 const pool = mysql.createPool(dbConfig);
