@@ -34,6 +34,7 @@ const clienteRoutes = require('./routes/clientes');
 const productoRoutes = require('./routes/productos');
 const boletaRoutes = require('./routes/boletas');
 const apiRoutes = require('./routes/api');
+const articulosRoutes = require('./routes/articulos');
 
 // Ruta raíz
 app.get('/', (req, res) => {
@@ -55,6 +56,7 @@ app.use('/', authRoutes);
 app.use('/clientes', clienteRoutes);
 app.use('/productos', productoRoutes);
 app.use('/boletas', boletaRoutes);
+app.use('/articulos', articulosRoutes);
 app.use('/api', apiRoutes);
 
 // =============================================
