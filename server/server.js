@@ -11,7 +11,7 @@ const app = express();
 // 1. Configuración Básica
 // =============================================
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.up.railway.app';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://gestorcerronegro.vercel.app';
 
 // =============================================
 // 2. Middlewares
