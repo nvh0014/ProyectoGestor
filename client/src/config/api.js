@@ -5,12 +5,9 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: 'https://gestorcerronegrobackend.up.railway.app',
   timeout: 30000,
-  withCredentials: true, // Si usas cookies/tokens
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  withCredentials: true
 });
 
 // Interceptor para manejo de errores
