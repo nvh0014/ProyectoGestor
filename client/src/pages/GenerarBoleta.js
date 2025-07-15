@@ -415,7 +415,11 @@ function GenerarBoleta() {
 
       detalles.forEach((detalle) => {
         doc.text(detalle.Descripcion.substring(0, 30), 20, yPosition);
-        doc.text((detalle.Cantidad % 1 === 0 ? detalle.Cantidad.toString() : detalle.Cantidad.toFixed(1)), 100, yPosition);
+        // Formatear la cantidad correctamente para decimales
+        const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
+          ? Number(detalle.Cantidad).toString() 
+          : Number(detalle.Cantidad).toFixed(1);
+        doc.text(cantidadFormateada, 100, yPosition);
         doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 130, yPosition);
         doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
         
@@ -692,7 +696,12 @@ function GenerarBoleta() {
                         step="0.1"
                         className="form-input"
                         value={productoForm.Cantidad}
-                        onChange={(e) => setProductoForm({ ...productoForm, Cantidad: parseFloat(e.target.value) || 0})}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          if (value >= 0) {
+                            setProductoForm({ ...productoForm, Cantidad: value });
+                          }
+                        }}
                       />
                     </div>
                     
