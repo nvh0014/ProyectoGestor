@@ -393,13 +393,16 @@ function GenerarBoleta() {
       doc.setFont('helvetica', 'normal');
       doc.text(`RUT: ${boleta.Rut}`, 20, 80);
       doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 90);
+      if (boleta.Direccion) {
+        doc.text(`Dirección: ${boleta.Direccion}`, 20, 100);
+      }
 
       // Detalle de productos
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('DETALLE DE PRODUCTOS', 20, 110);
+      doc.text('DETALLE DE PRODUCTOS', 20, 115);
 
-      const startY = 120;
+      const startY = 125;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('Descripción', 20, startY);
