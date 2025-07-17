@@ -253,18 +253,26 @@ function RegistroBoletas() {
             let subtotalGeneral = 0;
 
             detalles.forEach((detalle) => {
-                doc.text(detalle.Descripcion.substring(0, 30), 20, yPosition);
-                // Formatear la cantidad correctamente para decimales
-                const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
-                    ? Number(detalle.Cantidad).toString() 
-                    : Number(detalle.Cantidad).toFixed(1);
-                doc.text(cantidadFormateada, 100, yPosition);
-                doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 130, yPosition);
-                doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
-                
-                subtotalGeneral += Number(detalle.Subtotal);
-                yPosition += 10;
-            });
+        doc.text((detalle.Descripcion || detalle.NombreProducto || '').substring(0, 30), 20, yPosition);
+        // Formatear la cantidad correctamente para decimales
+        const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
+          ? Number(detalle.Cantidad).toString() 
+          : Number(detalle.Cantidad).toFixed(1);
+        doc.text(cantidadFormateada, 100, yPosition);
+        doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 130, yPosition);
+        doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
+        // Mostrar la descripción personalizada si existe
+        if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') {
+          yPosition += 5;
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.text(`Nota: ${detalle.DescripcionProducto.substring(0, 100)}`, 25, yPosition);
+          doc.setFontSize(10);
+          doc.setTextColor(0);
+        }
+        subtotalGeneral += Number(detalle.Subtotal);
+        yPosition += 10;
+      });
 
             yPosition += 5;
             doc.line(20, yPosition, 190, yPosition);
