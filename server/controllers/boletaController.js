@@ -54,7 +54,8 @@ const boletaController = {
           p.Descripcion,
           db.Cantidad,
           db.PrecioUnitario,
-          db.Subtotal
+          db.Subtotal,
+          db.DescripcionProducto
         FROM detallesboleta db
         INNER JOIN producto p ON db.CodigoProducto = p.CodigoProducto
         WHERE db.NumeroBoleta = ?
@@ -113,7 +114,7 @@ const boletaController = {
       
       // Insertar detalles si existen
       if (detalles && detalles.length > 0) {
-        const queryDetalle = 'INSERT INTO detallesboleta (NumeroBoleta, CodigoProducto, Cantidad, PrecioUnitario, Subtotal) VALUES (?, ?, ?, ?, ?)';
+        const queryDetalle = 'INSERT INTO detallesboleta (NumeroBoleta, CodigoProducto, Cantidad, PrecioUnitario, Subtotal, DescripcionProducto) VALUES (?, ?, ?, ?, ?, ?)';
         
         for (const detalle of detalles) {
           console.log('📦 Insertando detalle:', detalle);
@@ -122,7 +123,8 @@ const boletaController = {
             detalle.CodigoProducto,
             detalle.Cantidad,
             detalle.PrecioUnitario,
-            detalle.Subtotal
+            detalle.Subtotal,
+            detalle.DescripcionProducto || null
           ]);
         }
         console.log('✅ Detalles insertados:', detalles.length);
