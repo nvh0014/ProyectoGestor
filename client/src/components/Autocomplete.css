@@ -5,6 +5,29 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* Estilos personalizados para el scrollbar */
+.autocomplete-container *::-webkit-scrollbar {
+  width: 12px;
+  background-color: #f5f5f5;
+}
+
+.autocomplete-container *::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background-color: #1e3c72;
+  border: 2px solid #f5f5f5;
+}
+
+.autocomplete-container *::-webkit-scrollbar-track {
+  border-radius: 10px;
+  background-color: #f5f5f5;
+}
+
+/* Estilos para Firefox */
+.autocomplete-container * {
+  scrollbar-width: thin;
+  scrollbar-color: #1e3c72 #f5f5f5;
+}
+
 .autocomplete-input-container {
   position: relative;
   display: flex;
