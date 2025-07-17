@@ -103,7 +103,8 @@ function GenerarBoleta() {
     CodigoProducto: '',
     Cantidad: 1,
     TipoPrecio: 'PrecioUnitario', // 'PrecioUnitario' para Precio Sala, 'PrecioDescuento' para Precio con Descuento
-    PrecioUnitario: 0
+    PrecioUnitario: 0,
+    DescripcionProducto: '' // Nueva descripción personalizada
   });
   
   // Estados para totales
@@ -261,7 +262,8 @@ function GenerarBoleta() {
       PrecioNetoUnitario: productoForm.PrecioUnitario,
       SubtotalNeto: subtotalNeto,
       ImpuestoLinea: 0, // Ya no hay IVA
-      TotalLinea: subtotalNeto // Total es igual al subtotal
+      TotalLinea: subtotalNeto, // Total es igual al subtotal
+      DescripcionProducto: productoForm.DescripcionProducto // Nueva descripción personalizada
     };
 
     setProductosBoleta([...productosBoleta, nuevoProducto]);
@@ -269,7 +271,8 @@ function GenerarBoleta() {
       CodigoProducto: '',
       Cantidad: 1,
       TipoPrecio: 'PrecioUnitario',
-      PrecioUnitario: 0
+      PrecioUnitario: 0,
+      DescripcionProducto: ''
     });
   };
 
@@ -298,7 +301,8 @@ function GenerarBoleta() {
         CodigoProducto: producto.CodigoProducto,
         Cantidad: producto.Cantidad,
         PrecioUnitario: producto.PrecioNetoUnitario,
-        Subtotal: producto.SubtotalNeto
+        Subtotal: producto.SubtotalNeto,
+        DescripcionProducto: producto.DescripcionProducto || ''
       }));
 
       const boletaData = {
@@ -417,7 +421,7 @@ function GenerarBoleta() {
       let subtotalGeneral = 0;
 
       detalles.forEach((detalle) => {
-        doc.text(detalle.Descripcion.substring(0, 30), 20, yPosition);
+        doc.text((detalle.Descripcion || detalle.NombreProducto || '').substring(0, 30), 20, yPosition);
         // Formatear la cantidad correctamente para decimales
         const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
           ? Number(detalle.Cantidad).toString() 
@@ -425,7 +429,15 @@ function GenerarBoleta() {
         doc.text(cantidadFormateada, 100, yPosition);
         doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 130, yPosition);
         doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
-        
+        // Mostrar la descripción personalizada si existe
+        if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') {
+          yPosition += 5;
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.text(`Nota: ${detalle.DescripcionProducto.substring(0, 100)}`, 25, yPosition);
+          doc.setFontSize(10);
+          doc.setTextColor(0);
+        }
         subtotalGeneral += Number(detalle.Subtotal);
         yPosition += 10;
       });
@@ -624,6 +636,19 @@ function GenerarBoleta() {
                   </div>
                   
                   <div className="form-row">
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label className="form-label">Descripción personalizada (opcional)</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={productoForm.DescripcionProducto}
+                        onChange={e => setProductoForm({ ...productoForm, DescripcionProducto: e.target.value })}
+                        placeholder="Ej: Detalle especial para este producto en la boleta"
+                        maxLength={200}
+                      />
+                    </div>
+                  </div>
                     <div className="form-group">
                       <label className="form-label">Medio de Pago</label>
                       <select
