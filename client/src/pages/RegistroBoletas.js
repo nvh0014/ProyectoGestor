@@ -212,7 +212,7 @@ function RegistroBoletas() {
             // Título principal (ajustado para no chocar con el logo)
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.text('NOTA DE VENTA', 105, 20, { align: 'center' });
+            doc.text('TICKET DE VENTA', 105, 20, { align: 'center' });
 
             // Información básica de la boleta
             doc.setFontSize(12);
