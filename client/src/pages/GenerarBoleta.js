@@ -636,19 +636,7 @@ function GenerarBoleta() {
                   </div>
                   
                   <div className="form-row">
-                  <div className="form-row">
-                    <div className="form-group full-width">
-                      <label className="form-label">Descripción personalizada (opcional)</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={productoForm.DescripcionProducto}
-                        onChange={e => setProductoForm({ ...productoForm, DescripcionProducto: e.target.value })}
-                        placeholder="Ej: Detalle especial para este producto en la boleta"
-                        maxLength={200}
-                      />
-                    </div>
-                  </div>
+                  {/* Eliminado campo de descripción personalizada de la sección de clientes */}
                     <div className="form-group">
                       <label className="form-label">Medio de Pago</label>
                       <select
@@ -711,6 +699,19 @@ function GenerarBoleta() {
                         searchKeys={["name"]}
                         maxResults={10}
                         required
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label className="form-label">Descripción personalizada (opcional)</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={productoForm.DescripcionProducto}
+                        onChange={e => setProductoForm({ ...productoForm, DescripcionProducto: e.target.value })}
+                        placeholder="Ej: Detalle especial para este producto en la boleta"
+                        maxLength={200}
                       />
                     </div>
                   </div>
