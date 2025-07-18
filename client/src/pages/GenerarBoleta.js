@@ -377,36 +377,38 @@ function GenerarBoleta() {
         // Continuar sin logo si hay cualquier error
       }
       
+      // Configuración del PDF, será con letras más pequeñas porque si superan la página se cortan
+
       // Título principal (ajustado para no chocar con el logo)
-      doc.setFontSize(18);
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('TICKET DE VENTA', 105, 20, { align: 'center' });
 
       // Información básica de la boleta
-      doc.setFontSize(12);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.text(`Número de Boleta: ${boleta.NumeroBoleta}`, 20, 40);
-      doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 50);
+      doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 45);
       
       // Información del cliente
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('INFORMACIÓN DEL CLIENTE', 20, 70);
-      
-      doc.setFontSize(10);
+      doc.text('INFORMACIÓN DEL CLIENTE', 20, 55);
+
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(`RUT: ${boleta.Rut}`, 20, 80);
-      doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 90);
+      doc.text(`RUT: ${boleta.Rut}`, 20, 65); // 20 80
+      doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 70);
       if (boleta.Direccion) {
-        doc.text(`Dirección: ${boleta.Direccion}`, 20, 100);
+        doc.text(`Dirección: ${boleta.Direccion}`, 20, 75);
       }
 
       // Detalle de productos
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('DETALLE DE PRODUCTOS', 20, 115);
+      doc.text('DETALLE DE PRODUCTOS', 20, 90);
 
-      const startY = 125;
+      const startY = 100;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('Descripción', 20, startY);
@@ -471,12 +473,7 @@ function GenerarBoleta() {
         // Ajustar la posición Y según el número de líneas de observaciones
         yPosition += observacionesLines.length * 6;
       }
-
-      // Texto final (ajustado según si hay observaciones o no)
-      const finalY = yPosition < 260 ? 280 : yPosition + 20;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Gracias por su compra', 105, finalY, { align: 'center' });
+      // 
 
       doc.save(`Boleta_${numeroBoleta}.pdf`);
 
