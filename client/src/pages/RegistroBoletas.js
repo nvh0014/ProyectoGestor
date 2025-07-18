@@ -209,50 +209,52 @@ function RegistroBoletas() {
                 // Continuar sin logo si hay cualquier error
             }
             
-            // Título principal (ajustado para no chocar con el logo)
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text('TICKET DE VENTA', 105, 20, { align: 'center' });
+      // Configuración del PDF, será con letras más pequeñas porque si superan la página se cortan
 
-            // Información básica de la boleta
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Número de Boleta: ${boleta.NumeroBoleta}`, 20, 40);
-            doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 50);
-            
-            // Información del cliente
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text('INFORMACIÓN DEL CLIENTE', 20, 70);
-            
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`RUT: ${boleta.Rut}`, 20, 80);
-            doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 90);
-            if (boleta.Direccion) {
-                doc.text(`Dirección: ${boleta.Direccion}`, 20, 100);
-            }
+      // Título principal (ajustado para no chocar con el logo)
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TICKET DE VENTA', 105, 20, { align: 'center' });
 
-            // Detalle de productos
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text('DETALLE DE PRODUCTOS', 20, 115);
+      // Información básica de la boleta
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Número de Boleta: ${boleta.NumeroBoleta}`, 20, 40);
+      doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 45);
+      
+      // Información del cliente
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INFORMACIÓN DEL CLIENTE', 20, 55);
 
-            const startY = 125;
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Descripción', 20, startY);
-            doc.text('Cantidad', 100, startY);
-            doc.text('Precio Unit.', 130, startY);
-            doc.text('Subtotal', 170, startY);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`RUT: ${boleta.Rut}`, 20, 65); // 20 80
+      doc.text(`Razón Social: ${boleta.RazonSocial}`, 20, 70);
+      if (boleta.Direccion) {
+        doc.text(`Dirección: ${boleta.Direccion}`, 20, 75);
+      }
 
-            doc.line(20, startY + 3, 190, startY + 3);
+      // Detalle de productos
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DETALLE DE PRODUCTOS', 20, 90);
 
-            doc.setFont('helvetica', 'normal');
-            let yPosition = startY + 10;
-            let subtotalGeneral = 0;
+      const startY = 100;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Descripción', 20, startY);
+      doc.text('Cantidad', 100, startY);
+      doc.text('Precio Unit.', 130, startY);
+      doc.text('Subtotal', 170, startY);
 
-            detalles.forEach((detalle) => {
+      doc.line(20, startY + 3, 190, startY + 3);
+
+      doc.setFont('helvetica', 'normal');
+      let yPosition = startY + 10;
+      let subtotalGeneral = 0;
+
+      detalles.forEach((detalle) => {
         doc.text((detalle.Descripcion || detalle.NombreProducto || '').substring(0, 30), 20, yPosition);
         // Formatear la cantidad correctamente para decimales
         const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
@@ -274,43 +276,38 @@ function RegistroBoletas() {
         yPosition += 10;
       });
 
-            yPosition += 5;
-            doc.line(20, yPosition, 190, yPosition);
+      yPosition += 5;
+      doc.line(20, yPosition, 190, yPosition);
 
-            yPosition += 10;
-            doc.setFont('helvetica', 'bold');
-            doc.text('TOTAL:', 130, yPosition);
-            doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
+      yPosition += 10;
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL:', 130, yPosition);
+      doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
 
-            // Agregar observaciones si existen
-            const observaciones = boleta.Observaciones || boleta.observaciones || '';
-            console.log('Observaciones procesadas para PDF:', observaciones);
-            
-            if (observaciones && observaciones.toString().trim() !== '') {
-                yPosition += 20;
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text('OBSERVACIONES:', 20, yPosition);
-                
-                yPosition += 10;
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(10);
-                
-                // Dividir las observaciones en líneas para que no se salgan del PDF
-                const observacionesLines = doc.splitTextToSize(observaciones.toString(), 170);
-                doc.text(observacionesLines, 20, yPosition);
-                
-                // Ajustar la posición Y según el número de líneas de observaciones
-                yPosition += observacionesLines.length * 6;
-            }
+      // Agregar observaciones si existen
+      const observaciones = boleta.Observaciones || boleta.observaciones || '';
+      console.log('Observaciones procesadas para PDF:', observaciones);
+      
+      if (observaciones && observaciones.toString().trim() !== '') {
+        yPosition += 20;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('OBSERVACIONES:', 20, yPosition);
+        
+        yPosition += 10;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        
+        // Dividir las observaciones en líneas para que no se salgan del PDF
+        const observacionesLines = doc.splitTextToSize(observaciones.toString(), 170);
+        doc.text(observacionesLines, 20, yPosition);
+        
+        // Ajustar la posición Y según el número de líneas de observaciones
+        yPosition += observacionesLines.length * 6;
+      }
+      // 
 
-            // Texto final (ajustado según si hay observaciones o no)
-            const finalY = yPosition < 260 ? 280 : yPosition + 20;
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'normal');
-            doc.text('Gracias por su compra', 105, finalY, { align: 'center' });
-
-            doc.save(`Boleta_${numeroBoleta}.pdf`);
+      doc.save(`Boleta_${numeroBoleta}.pdf`);
 
             // Cerrar loading y mostrar éxito
             Swal.close();
