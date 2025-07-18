@@ -381,13 +381,13 @@ function GenerarBoleta() {
       // Información básica de la boleta (más compacta)
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Número: ${boleta.NumeroBoleta}`, 20, 32);
-      doc.text(`Fecha: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 120, 32);
+      doc.text(`Número de boleta: ${boleta.NumeroBoleta}`, 20, 32);
+      doc.text(`Fecha de creación: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 120, 32);
       
       // Información del cliente (más compacta)
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('CLIENTE', 20, 42);
+      doc.text('DATOS DEL CLIENTE', 20, 42);
 
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
@@ -400,7 +400,7 @@ function GenerarBoleta() {
       // Detalle de productos (encabezados más compactos)
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('PRODUCTOS', 20, 66);
+      doc.text('DETALLE DE PRODUCTOS', 20, 66);
 
       const startY = 72;
       doc.setFontSize(7);
