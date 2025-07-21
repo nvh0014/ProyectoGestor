@@ -377,11 +377,6 @@ function RegistroBoletas() {
             cell: ({ getValue }) => formatearFecha(getValue())
         },
         {
-            accessorKey: 'FechaVencimiento',
-            header: 'Fecha Vencimiento',
-            cell: ({ getValue }) => getValue() ? formatearFecha(getValue()) : '-'
-        },
-        {
             accessorKey: 'TotalBoleta',
             header: 'Total',
             cell: ({ getValue }) => formatearPrecio(getValue())
@@ -669,10 +664,6 @@ function RegistroBoletas() {
                                         <div className="registro-boletas-detail-item">
                                             <span className="registro-boletas-detail-label">Fecha Boleta:</span>
                                             <span className="registro-boletas-detail-value">{formatearFecha(boletaSeleccionada.FechaBoleta)}</span>
-                                        </div>
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Fecha Vencimiento:</span>
-                                            <span className="registro-boletas-detail-value">{boletaSeleccionada.FechaVencimiento ? formatearFecha(boletaSeleccionada.FechaVencimiento) : '-'}</span>
                                         </div>
                                         <div className="registro-boletas-detail-item">
                                             <span className="registro-boletas-detail-label">Total:</span>
