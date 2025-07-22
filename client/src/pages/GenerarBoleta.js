@@ -410,11 +410,25 @@ function GenerarBoleta() {
       doc.text('TICKET DE VENTA', 105, 18, { align: 'center' });
       doc.text(`N°: ${boleta.NumeroBoleta}`, 190, 18, { align: 'right' });
 
+      // Función para formatear fecha correctamente
+      const formatearFecha = (fechaString) => {
+        if (!fechaString) return 'N/A';
+        
+        // Si la fecha ya está en formato DD/MM/YYYY, la devolvemos tal como está
+        if (fechaString.includes('/')) {
+          return fechaString;
+        }
+        
+        // Si la fecha está en formato ISO (YYYY-MM-DD), la convertimos evitando el problema de zona horaria
+        const [year, month, day] = fechaString.split('T')[0].split('-');
+        return `${day}/${month}/${year}`;
+      };
+
       // Información básica de la boleta
       // Primero la fecha de creación
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Fecha de creación: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 32);
+      doc.text(`Fecha de creación: ${formatearFecha(boleta.FechaBoleta)}`, 20, 32);
       // Luego el usuario/vendedor que se selecciona en el formulario
       doc.text(`Vendedor: ${boleta.VendedorNombre || 'Vendedor N/A'}`, 125, 32, { align: 'center' });
 
