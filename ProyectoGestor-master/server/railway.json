@@ -1,0 +1,9 @@
+{
+  "build": {
+    "command": "npm install && npm run build",
+    "outputs": ["dist"]
+  },
+  "deploy": {
+    "startCommand": "npm start"
+  }
+}
