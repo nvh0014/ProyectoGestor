@@ -41,9 +41,12 @@ const boletaController = {
           b.FechaBoleta,
           b.FechaVencimiento,
           b.TotalBoleta,
-          b.Observaciones
+          b.Observaciones,
+          b.CodigoUsuario,
+          u.NombreUsuario as VendedorNombre
         FROM boleta b
         INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
+        LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
         WHERE b.NumeroBoleta = ?
       `;
       
@@ -81,18 +84,49 @@ const boletaController = {
 
   // Crear nueva boleta con detalles
   createBoleta: async (req, res) => {
-    const { CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, detalles } = req.body;
+    let { CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, detalles } = req.body;
+    
+    // Limpiar strings vacíos
+    CodigoCliente = CodigoCliente && CodigoCliente.toString().trim() !== '' ? CodigoCliente : null;
+    CodigoUsuario = CodigoUsuario && CodigoUsuario.toString().trim() !== '' ? CodigoUsuario : null;
+    
+    // Log para debugging - ver qué se recibe
+    console.log('🔍 Datos recibidos en createBoleta:', {
+      CodigoCliente: CodigoCliente,
+      CodigoUsuario: CodigoUsuario,
+      CodigoUsuarioType: typeof CodigoUsuario,
+      CodigoUsuarioNull: CodigoUsuario === null,
+      CodigoUsuarioUndef: CodigoUsuario === undefined,
+      CodigoUsuarioEmpty: CodigoUsuario === '',
+      FechaBoleta: FechaBoleta,
+      TotalBoleta: TotalBoleta,
+      bodyKeys: Object.keys(req.body)
+    });
     
     // Validación de datos requeridos
-    if (!CodigoCliente || !FechaBoleta || !FechaVencimiento || !TotalBoleta) {
+    if (!CodigoCliente || !CodigoUsuario || !FechaBoleta || !FechaVencimiento || !TotalBoleta) {
+      console.log('❌ Validación fallida:', {
+        CodigoCliente: !!CodigoCliente,
+        CodigoUsuario: !!CodigoUsuario,
+        FechaBoleta: !!FechaBoleta,
+        FechaVencimiento: !!FechaVencimiento,
+        TotalBoleta: !!TotalBoleta
+      });
       return res.status(400).json({ 
         error: 'Datos requeridos faltantes',
-        required: ['CodigoCliente', 'FechaBoleta', 'FechaVencimiento', 'TotalBoleta']
+        details: {
+          CodigoCliente: !CodigoCliente ? 'Cliente es requerido' : 'OK',
+          CodigoUsuario: !CodigoUsuario ? 'Vendedor es requerido' : 'OK',
+          FechaBoleta: !FechaBoleta ? 'Fecha de boleta es requerida' : 'OK',
+          FechaVencimiento: !FechaVencimiento ? 'Fecha de vencimiento es requerida' : 'OK',
+          TotalBoleta: !TotalBoleta ? 'Total de boleta es requerido' : 'OK'
+        }
       });
     }
     
     console.log('📝 Creando boleta con datos:', {
       CodigoCliente,
+      CodigoUsuario,
       FechaBoleta,
       FechaVencimiento,
       TotalBoleta,
@@ -106,8 +140,8 @@ const boletaController = {
       await connection.beginTransaction();
       
       // Insertar boleta
-      const queryBoleta = 'INSERT INTO boleta (CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones) VALUES (?, ?, ?, ?, ?)';
-      const [result] = await connection.execute(queryBoleta, [CodigoCliente, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones || '']);
+      const queryBoleta = 'INSERT INTO boleta (CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones) VALUES (?, ?, ?, ?, ?, ?)';
+      const [result] = await connection.execute(queryBoleta, [CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones || '']);
       
       const numeroBoleta = result.insertId;
       console.log('✅ Boleta creada con ID:', numeroBoleta);
