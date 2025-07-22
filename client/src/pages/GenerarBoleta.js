@@ -488,7 +488,7 @@ function GenerarBoleta() {
         // Descripción personalizada si existe
         if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') { // Aumentar la posición para la nota
           yPosition += 4; // Aumentar la posición para la nota
-          doc.setFontSize(8); // Tamaño de fuente más pequeño para la nota
+          doc.setFontSize(9); // Tamaño de fuente más pequeño para la nota
           doc.setFont('helvetica', 'bold'); // Fuente en negrita para la nota
           const notaTexto = `Nota: ${detalle.DescripcionProducto.substring(0, 60)}`; // Limitar a 60 caracteres
           doc.text(notaTexto, 25, yPosition); // Aumentar la posición para la nota
