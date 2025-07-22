@@ -286,7 +286,7 @@ function GenerarBoleta() {
 
   const crearBoleta = async () => {
     // Validación más estricta
-    if (!boletaForm.CodigoCliente || !boletaForm.CodigoCliente.trim()) {
+    if (!boletaForm.CodigoCliente || !boletaForm.CodigoCliente.toString().trim()) {
       Swal.fire({
         icon: 'warning',
         title: 'Cliente Requerido',
