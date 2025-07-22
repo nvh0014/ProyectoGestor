@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
@@ -149,8 +148,18 @@ function RegistroBoletas() {
         }
     };
 
-    const formatearFecha = (fecha) => {
-        return new Date(fecha).toLocaleDateString('es-CL');
+    // Función para formatear fecha correctamente (corregir línea 152)
+    const formatearFecha = (fechaString) => {
+        if (!fechaString) return 'N/A';
+        
+        // Si la fecha ya está en formato DD/MM/YYYY, la devolvemos tal como está
+        if (fechaString.includes('/')) {
+            return fechaString;
+        }
+        
+        // Si la fecha está en formato ISO (YYYY-MM-DD), la convertimos evitando el problema de zona horaria
+        const [year, month, day] = fechaString.split('T')[0].split('-');
+        return `${day}/${month}/${year}`;
     };
 
     const formatearPrecio = (precio) => {
@@ -161,180 +170,180 @@ function RegistroBoletas() {
     };
 
     const descargarBoleta = async (numeroBoleta) => {
-    try {
-      const response = await api.get(`/boletas/${numeroBoleta}`);
-      const { boleta, detalles } = response.data;
-      
-      console.log('Datos de la boleta para PDF:', boleta);
-      console.log('Observaciones recibidas:', boleta.Observaciones);
+        try {
+            const response = await api.get(`/boletas/${numeroBoleta}`);
+            const { boleta, detalles } = response.data;
+            
+            console.log('Datos de la boleta para PDF:', boleta);
+            console.log('Observaciones recibidas:', boleta.Observaciones);
 
-      const doc = new jsPDF();
-      
-      // Agregar logo de la distribuidora en la esquina superior izquierda
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-          logoImg.onload = () => {
+            const doc = new jsPDF();
+            
+            // Agregar logo de la distribuidora en la esquina superior izquierda
             try {
-              doc.addImage(logoImg, 'PNG', 10, 10, 15, 15); // Logo más pequeño
-              resolve();
+                const logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                
+                await new Promise((resolve, reject) => {
+                    logoImg.onload = () => {
+                        try {
+                            doc.addImage(logoImg, 'PNG', 10, 10, 15, 15); // Logo más pequeño
+                            resolve();
+                        } catch (error) {
+                            console.warn('Error al agregar logo al PDF:', error);
+                            resolve();
+                        }
+                    };
+                    logoImg.onerror = () => {
+                        console.warn('No se pudo cargar el logo');
+                        resolve();
+                    };
+                    logoImg.src = '/logo512.png';
+                });
             } catch (error) {
-              console.warn('Error al agregar logo al PDF:', error);
-              resolve();
+                console.warn('Error al procesar logo:', error);
             }
-          };
-          logoImg.onerror = () => {
-            console.warn('No se pudo cargar el logo');
-            resolve();
-          };
-          logoImg.src = '/logo512.png';
-        });
-      } catch (error) {
-        console.warn('Error al procesar logo:', error);
-      }
 
-      // Título principal más el número de boleta
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TICKET DE VENTA', 105, 18, { align: 'center' });
-      doc.text(`N°: ${boleta.NumeroBoleta}`, 190, 18, { align: 'right' });
+            // Título principal más el número de boleta
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('TICKET DE VENTA', 105, 18, { align: 'center' });
+            doc.text(`N°: ${boleta.NumeroBoleta}`, 190, 18, { align: 'right' });
 
-      // Información básica de la boleta
-      // Primero la fecha de creación
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Fecha de creación: ${new Date(boleta.FechaBoleta).toLocaleDateString('es-CL')}`, 20, 32);
-      // Luego el usuario/vendedor que se selecciona en el formulario
-      doc.text(`Vendedor: ${boleta.VendedorNombre || 'Vendedor N/A'}`, 125, 32, { align: 'center' });
+            // Información básica de la boleta
+            // Primero la fecha de creación (corregir línea 195)
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Fecha de creación: ${formatearFecha(boleta.FechaBoleta)}`, 20, 32);
+            // Luego el usuario/vendedor que se selecciona en el formulario
+            doc.text(`Vendedor: ${boleta.VendedorNombre || 'Vendedor N/A'}`, 125, 32, { align: 'center' });
 
 
-      // Información del cliente
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DATOS DEL CLIENTE', 20, 40);
+            // Información del cliente
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DATOS DEL CLIENTE', 20, 40);
 
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`RUT: ${boleta.Rut}`, 20, 46);
-      doc.text(`NOMBRE: ${boleta.RazonSocial}`, 20, 52);
-      if (boleta.Direccion) {
-        doc.text(`DIRECCIÓN: ${boleta.Direccion.substring(0, 50)}`, 20, 58);
-      }
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`RUT: ${boleta.Rut}`, 20, 46);
+            doc.text(`NOMBRE: ${boleta.RazonSocial}`, 20, 52);
+            if (boleta.Direccion) {
+                doc.text(`DIRECCIÓN: ${boleta.Direccion.substring(0, 50)}`, 20, 58);
+            }
 
-      // Detalle de productos
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DETALLE DE PRODUCTOS', 20, 70);
+            // Detalle de productos
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DETALLE DE PRODUCTOS', 20, 70);
 
-      const startY = 80; // Posición inicial para los detalles
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Descripción', 20, startY);
-      doc.text('Cant.', 120, startY);
-      doc.text('Precio Unit.', 140, startY);
-      doc.text('Subtotal', 170, startY);
+            const startY = 80; // Posición inicial para los detalles
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Descripción', 20, startY);
+            doc.text('Cant.', 120, startY);
+            doc.text('Precio Unit.', 140, startY);
+            doc.text('Subtotal', 170, startY);
 
-      doc.line(20, startY + 2, 190, startY + 2); // Línea horizontal debajo de los encabezados
+            doc.line(20, startY + 2, 190, startY + 2); // Línea horizontal debajo de los encabezados
 
-      doc.setFont('helvetica', 'normal'); // Cambiar a fuente normal para los detalles
-      let yPosition = startY + 6; // Posición inicial para los detalles de productos
-      let subtotalGeneral = 0; // Inicializar subtotal general
-      const lineHeight = 6; // Altura de línea más pequeña
-      const maxDescriptionLength = 35; // Máximo de caracteres para descripción
+            doc.setFont('helvetica', 'normal'); // Cambiar a fuente normal para los detalles
+            let yPosition = startY + 6; // Posición inicial para los detalles de productos
+            let subtotalGeneral = 0; // Inicializar subtotal general
+            const lineHeight = 6; // Altura de línea más pequeña
+            const maxDescriptionLength = 35; // Máximo de caracteres para descripción
 
-      detalles.forEach((detalle) => {
-        // Verificar si necesitamos una nueva página
-        if (yPosition > 260) { // Límite antes del final de la página
-          doc.addPage();
-          yPosition = 20;
-          
-          // Repetir encabezados en nueva página
-          doc.setFontSize(12);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Descripción', 20, yPosition);
-          doc.text('Cant.', 120, yPosition);
-          doc.text('Precio Unit.', 140, yPosition);
-          doc.text('Subtotal', 170, yPosition);
-          doc.line(20, yPosition + 2, 190, yPosition + 2);
-          yPosition += 6;
-          doc.setFont('helvetica', 'normal');
-        }
+            detalles.forEach((detalle) => {
+                // Verificar si necesitamos una nueva página
+                if (yPosition > 260) { // Límite antes del final de la página
+                    doc.addPage();
+                    yPosition = 20;
+                    
+                    // Repetir encabezados en nueva página
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Descripción', 20, yPosition);
+                    doc.text('Cant.', 120, yPosition);
+                    doc.text('Precio Unit.', 140, yPosition);
+                    doc.text('Subtotal', 170, yPosition);
+                    doc.line(20, yPosition + 2, 190, yPosition + 2);
+                    yPosition += 6;
+                    doc.setFont('helvetica', 'normal');
+                }
 
-        // Descripción del producto
-        const descripcion = (detalle.Descripcion || detalle.NombreProducto || '');
-        doc.text(descripcion, 20, yPosition);
-        
-        // Cantidad formateada
-        const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
-          ? Number(detalle.Cantidad).toString() 
-          : Number(detalle.Cantidad).toFixed(1);
-        doc.text(cantidadFormateada, 120, yPosition);
-        
-        // Precio y total
-        doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 140, yPosition);
-        doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
-        
-        // Descripción personalizada si existe
-        if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') { // Aumentar la posición para la nota
-          yPosition += 4; // Aumentar la posición para la nota
-          doc.setFontSize(9); // Tamaño de fuente más pequeño para la nota
-          doc.setFont('helvetica', 'bold'); // Fuente en negrita para la nota
-          const notaTexto = `Nota: ${detalle.DescripcionProducto.substring(0, 60)}`; // Limitar a 60 caracteres
-          doc.text(notaTexto, 25, yPosition); // Aumentar la posición para la nota
+                // Descripción del producto
+                const descripcion = (detalle.Descripcion || detalle.NombreProducto || '');
+                doc.text(descripcion, 20, yPosition);
+                
+                // Cantidad formateada
+                const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
+                  ? Number(detalle.Cantidad).toString() 
+                  : Number(detalle.Cantidad).toFixed(1);
+                doc.text(cantidadFormateada, 120, yPosition);
+                
+                // Precio y total
+                doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 140, yPosition);
+                doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
+                
+                // Descripción personalizada si existe
+                if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') { // Aumentar la posición para la nota
+                  yPosition += 4; // Aumentar la posición para la nota
+                  doc.setFontSize(9); // Tamaño de fuente más pequeño para la nota
+                  doc.setFont('helvetica', 'bold'); // Fuente en negrita para la nota
+                  const notaTexto = `Nota: ${detalle.DescripcionProducto.substring(0, 60)}`; // Limitar a 60 caracteres
+                  doc.text(notaTexto, 25, yPosition); // Aumentar la posición para la nota
 
-          doc.setFontSize(10); // Restablecer tamaño de fuente
-          doc.setFont('helvetica', 'normal'); // Restablecer fuente
+                  doc.setFontSize(10); // Restablecer tamaño de fuente
+                  doc.setFont('helvetica', 'normal'); // Restablecer fuente
 
-          yPosition += 2; // Aumentar la posición después de la nota
-        }
-        
-        subtotalGeneral += Number(detalle.Subtotal);
-        yPosition += lineHeight;
-      });
+                  yPosition += 2; // Aumentar la posición después de la nota
+                }
+                
+                subtotalGeneral += Number(detalle.Subtotal);
+                yPosition += lineHeight;
+            });
 
-      // Verificar espacio para totales y observaciones
-      if (yPosition > 240) {
-        doc.addPage();
-        yPosition = 20;
-      }
+            // Verificar espacio para totales y observaciones
+            if (yPosition > 240) {
+                doc.addPage();
+                yPosition = 20;
+            }
 
-      yPosition += 3;
-      doc.line(20, yPosition, 190, yPosition);
+            yPosition += 3;
+            doc.line(20, yPosition, 190, yPosition);
 
-      yPosition += 8;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TOTAL:', 140, yPosition);
-      doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
+            yPosition += 8;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('TOTAL:', 140, yPosition);
+            doc.text(`$${subtotalGeneral.toLocaleString('es-CL')}`, 170, yPosition);
 
-      // Observaciones
-      const observaciones = boleta.Observaciones || boleta.observaciones || '';
-      
-      if (observaciones && observaciones.toString().trim() !== '') {
-        yPosition += 12;
-        
-        // Verificar si necesitamos nueva página para observaciones
-        if (yPosition > 250) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('OBSERVACIONES:', 20, yPosition);
-        
-        yPosition += 6;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
+            // Observaciones
+            const observaciones = boleta.Observaciones || boleta.observaciones || '';
+            
+            if (observaciones && observaciones.toString().trim() !== '') {
+                yPosition += 12;
+                
+                // Verificar si necesitamos nueva página para observaciones
+                if (yPosition > 250) {
+                  doc.addPage();
+                  yPosition = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('OBSERVACIONES:', 20, yPosition);
+                
+                yPosition += 6;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
 
-        // Dividir observaciones en líneas más cortas
-        const observacionesLines = doc.splitTextToSize(observaciones.toString(), 160);
-        doc.text(observacionesLines, 20, yPosition);
-      }
+                // Dividir observaciones en líneas más cortas
+                const observacionesLines = doc.splitTextToSize(observaciones.toString(), 160);
+                doc.text(observacionesLines, 20, yPosition);
+            }
 
-      doc.save(`Boleta_${numeroBoleta}.pdf`);
+            doc.save(`Boleta_${numeroBoleta}.pdf`);
 
             // Cerrar loading y mostrar éxito
             Swal.close();
