@@ -66,7 +66,7 @@ function Login() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Inicio de Sesión Exitoso',
-                        text: 'Bienvenido al sistema de gestión empresarial.',
+                        text: '¡¡Bienvenido!!',
                         confirmButtonText: 'Continuar'
                     }).then(() => {
                         Navigate('/home');
