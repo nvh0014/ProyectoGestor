@@ -1,0 +1,11 @@
+VARIABLES QUE FALTAN EN RAILWAY:
+===============================
+
+Ve a tu proyecto Railway → Variables → Agregar estas:
+
+PORT=3001
+FRONTEND_URL=https://gestorcerronegro.vercel.app
+RAILWAY_ENVIRONMENT=true
+NODE_ENV=production
+
+IMPORTANTE: Estas variables son CRÍTICAS para que el servidor inicie correctamente.
