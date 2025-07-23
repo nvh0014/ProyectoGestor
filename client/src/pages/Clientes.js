@@ -228,32 +228,30 @@ function Clientes() {
 
     const eliminarCliente = async (cliente) => {
         const result = await Swal.fire({
-            title: 'Confirmar Desactivación',
-            text: `¿Está seguro de que desea desactivar el cliente ${cliente.RazonSocial}? Esta acción marcará el cliente como inactivo.`,
+            title: 'Confirmar Eliminación',
+            text: `¿Está seguro de que desea eliminar el cliente ${cliente.RazonSocial}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Desactivar Cliente',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Eliminar Cliente',
+            cancelButtonText: 'Cancelar',
+            footer: 'Esta acción no se puede deshacer.'
         });
 
         if (result.isConfirmed) {
             try {
-                // Soft delete: marcar como inactivo en lugar de eliminar
-                await api.put(`/clientes/${cliente.CodigoCliente}`, {
-                    ...cliente,
-                    ClienteActivo: false
-                });
+                // DELETE
+                await api.delete(`/clientes/${cliente.CodigoCliente}`);
                 Swal.fire({
                     icon: 'success',
-                    title: 'Cliente Desactivado',
-                    text: 'El cliente ha sido desactivado exitosamente.',
+                    title: 'Cliente Eliminado',
+                    text: 'El cliente ha sido eliminado exitosamente.',
                     confirmButtonText: 'Continuar'
                 });
                 obtenerClientes();
             } catch (error) {
-                console.error('Error al desactivar cliente:', error);
+                console.error('Error al eliminar cliente:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error de Desactivación',
@@ -339,15 +337,15 @@ function Clientes() {
             header: 'Giro',
             cell: ({ getValue }) => getValue() || '-'
         },
-        {
-            accessorKey: 'ClienteActivo',
-            header: 'Estado',
-            cell: ({ getValue }) => (
-                <span className={`clientes-status-badge ${getValue() ? 'active' : 'inactive'}`}>
-                    {getValue() ? 'Activo' : 'Inactivo'}
-                </span>
-            )
-        },
+        // {
+        //     accessorKey: 'ClienteActivo',
+        //     header: 'Estado',
+        //     cell: ({ getValue }) => (
+        //         <span className={`clientes-status-badge ${getValue() ? 'active' : 'inactive'}`}>
+        //             {getValue() ? 'Activo' : 'Inactivo'}
+        //         </span>
+        //     )
+        // },
         {
             id: 'acciones',
             header: 'Acciones',

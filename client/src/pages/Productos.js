@@ -219,36 +219,34 @@ function Productos() {
 
     const eliminarProducto = async (producto) => {
         const result = await Swal.fire({
-            title: 'Confirmar Desactivación',
-            text: `¿Está seguro de que desea desactivar el producto ${producto.Descripcion}? Esta acción marcará el producto como inactivo.`,
+            title: 'Confirmar eliminación',
+            text: `¿Está seguro de que desea eliminar el producto ${producto.Descripcion}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Desactivar Producto',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Eliminar Producto',
+            cancelButtonText: 'Cancelar',
+            footer: 'Esta acción no se puede deshacer.'
         });
 
         if (result.isConfirmed) {
             try {
-                // Soft delete: marcar como inactivo en lugar de eliminar
-                await api.put(`/productos/${producto.CodigoProducto}`, {
-                    ...producto,
-                    ProductoActivo: false
-                });
+                // Eliminar producto
+                await api.delete(`/productos/${producto.CodigoProducto}`);
                 Swal.fire({
                     icon: 'success',
-                    title: 'Producto Desactivado',
-                    text: 'El producto ha sido desactivado exitosamente.',
+                    title: 'Producto Eliminado',
+                    text: 'El producto ha sido eliminado exitosamente.',
                     confirmButtonText: 'Continuar'
                 });
                 obtenerProductos();
             } catch (error) {
-                console.error('Error al desactivar producto:', error);
+                console.error('Error al eliminar producto:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error de Desactivación',
-                    text: 'No se pudo desactivar el producto. Intente nuevamente.',
+                    title: 'Error de Eliminación',
+                    text: 'No se pudo eliminar el producto. Intente nuevamente.',
                     confirmButtonText: 'Entendido'
                 });
             }
@@ -354,15 +352,15 @@ function Productos() {
                 </span>
             ) : '-'
         },
-        {
-            accessorKey: 'ProductoActivo',
-            header: 'Estado',
-            cell: ({ getValue }) => (
-                <span className={`productos-status-badge ${getValue() ? 'active' : 'inactive'}`}>
-                    {getValue() ? 'Activo' : 'Inactivo'}
-                </span>
-            )
-        },
+        // {
+        //     accessorKey: 'ProductoActivo',
+        //     header: 'Estado',
+        //     cell: ({ getValue }) => (
+        //         <span className={`productos-status-badge ${getValue() ? 'active' : 'inactive'}`}>
+        //             {getValue() ? 'Activo' : 'Inactivo'}
+        //         </span>
+        //     )
+        // },
         {
             id: 'acciones',
             header: 'Acciones',

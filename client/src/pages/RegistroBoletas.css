@@ -550,13 +550,14 @@
   justify-content: center;
 }
 
+/* Botón de visualización */
 .registro-boletas-action-button.view {
-  background: var(--edit-blue);
+  background: #995be9;
   color: var(--white);
 }
 
 .registro-boletas-action-button.view:hover {
-  background: var(--edit-blue-dark);
+  background: #ae38e0;
   transform: translateY(-2px);
 }
 
@@ -564,6 +565,7 @@
   transform: translateY(0);
 }
 
+/* Botón de descarga */
 .registro-boletas-action-button.download {
   background: var(--success);
   color: var(--white);
@@ -575,6 +577,37 @@
 }
 
 .registro-boletas-action-button.download:active {
+  transform: translateY(0);
+}
+
+/* Botón de edición */
+
+.registro-boletas-action-button.edit {
+  background: var(--edit-blue);
+  color: var(--white);
+}
+
+.registro-boletas-action-button.edit:hover {
+  background: var(--edit-blue-dark);
+  transform: translateY(-2px);
+}
+
+.registro-boletas-action-button.edit:active {
+  transform: translateY(0);
+}
+/* Botón de eliminación */
+
+.registro-boletas-action-button.delete {
+  background: var(--error);
+  color: var(--white);
+}
+
+.registro-boletas-action-button.delete:hover {
+  background: var(--error-dark);
+  transform: translateY(-2px);
+}
+
+.registro-boletas-action-button.delete:active {
   transform: translateY(0);
 }
 

@@ -498,36 +498,41 @@
 }
 
 .clientes-action-button.edit {
-  color: var(--edit-blue);
-  background: rgba(52, 152, 219, 0.1);
-  border-color: var(--edit-blue);
+  background: var(--edit-blue);
+  color: var(--white);
 }
 
 .clientes-action-button.edit:hover {
-  background: var(--edit-blue);
-  color: var(--white);
-  border-color: var(--edit-blue-dark);
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+  background: var(--edit-blue-dark);
+  transform: translateY(-2px);
+}
+
+.clientes-action-button:active {
+  transform: translateY(0);
 }
 
 .clientes-action-button.delete {
-  color: var(--error);
-  background: rgba(231, 76, 60, 0.1);
-  border-color: var(--error);
+  background: var(--error);
+  color: var(--white);
 }
 
 .clientes-action-button.delete:hover {
-  background: var(--error);
-  color: var(--white);
-  border-color: var(--error-dark);
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  background: var(--error-dark);
+  transform: translateY(0);
 }
 
-.clientes-action-button:focus {
-  outline: 2px solid var(--primary-blue);
-  outline-offset: 2px;
+.clientes-action-button.delete {
+  background: var(--error);
+  color: var(--white);
+}
+
+.clientes-action-button.delete:hover {
+  background: var(--error-dark);
+  transform: translateY(-2px);
+}
+
+.clientes-action-button.delete:active {
+  transform: translateY(0);
 }
 
 /* ===== PAGINACIÓN ===== */

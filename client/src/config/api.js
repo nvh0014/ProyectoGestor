@@ -1,8 +1,7 @@
 // Configuración de la API
 import axios from 'axios';
 
-// IMPORTANTE: Verifica que esta URL sea exactamente la misma que aparece en Railway
-const API_BASE_URL = 'https://gestorcerronegrobackend.up.railway.app'; // Cambiado según tu error
+const API_BASE_URL = 'https://gestorcerronegrobackend.up.railway.app';
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
@@ -15,7 +14,7 @@ const api = axios.create({
   }
 });
 
-// Interceptor para requests (agregar logs)
+// Interceptor para requests
 api.interceptors.request.use(
   (config) => {
     console.log('🚀 Enviando petición a:', config.baseURL + config.url);

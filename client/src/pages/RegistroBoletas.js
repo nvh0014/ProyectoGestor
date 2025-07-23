@@ -39,6 +39,12 @@ function RegistroBoletas() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [boletaSeleccionada, setBoletaSeleccionada] = useState(null);
     const [detallesBoleta, setDetallesBoleta] = useState([]);
+    // Estado para el modal para editar boleta
+    const [modalEditarIsOpen, setModalEditarIsOpen] = useState(false);
+    const [editingBoleta, setEditingBoleta] = useState(null);
+    // Estado para el modal de confirmación de eliminación
+    const [modalEliminarIsOpen, setModalEliminarIsOpen] = useState(false);
+
 
     // Estados para la tabla
     const [sorting, setSorting] = useState([]);
@@ -130,7 +136,7 @@ function RegistroBoletas() {
             }, 1500);
         }
     };
-
+    // Función para ver detalle de boleta
     const verDetalleBoleta = async (numeroBoleta) => {
         try {
             const response = await api.get(`/boletas/${numeroBoleta}`);
@@ -145,6 +151,61 @@ function RegistroBoletas() {
                 text: 'No se pudo cargar el detalle de la boleta seleccionada.',
                 confirmButtonText: 'Entendido'
             });
+        }
+    };
+    // Función para editar boleta
+    const editarBoleta = async (numeroBoleta) => {
+        // Lógica para editar la boleta
+        await api.get(`/boletas/${numeroBoleta}`)
+            .then(response => {
+                setEditingBoleta(response.data.boleta);
+                setModalEditarIsOpen(true);
+            })
+            .catch(error => {
+                console.error('Error al obtener boleta para editar:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al Cargar Boleta',
+                    text: 'No se pudo cargar la boleta para editar.',
+                    confirmButtonText: 'Entendido'
+                });
+            });
+    };
+
+    // Función para eliminar boleta
+    const eliminarBoleta = async (numeroBoleta) => {
+        const result = await Swal.fire({
+            title: 'Confirmar Eliminación',
+            text: `¿Está seguro de que desea eliminar la boleta N° ${numeroBoleta}? *ESTÁ EN MODO PRUEBA*`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Eliminar Boleta',
+            cancelButtonText: 'Cancelar',
+            footer: 'Esta acción no se puede deshacer.'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                // Eliminar la boleta
+                await api.delete(`/boletas/${numeroBoleta}`);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Boleta Eliminada',
+                    text: `La boleta ${numeroBoleta} ha sido eliminada exitosamente.`,
+                    confirmButtonText: 'Continuar'
+                });
+                obtenerBoletas();
+            } catch (error) {
+                console.error('Error al eliminar boleta:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Eliminación',
+                    text: 'No se pudo eliminar la boleta. Intente nuevamente.',
+                    confirmButtonText: 'Entendido'
+                });
+            }
         }
     };
 
@@ -408,6 +469,24 @@ function RegistroBoletas() {
                     >
                         📥
                         <i className="fas fa-download"></i>
+                    </button>
+                    <button
+                        className="registro-boletas-action-button edit"
+                        onClick={() => editarBoleta(row.original.NumeroBoleta)}
+                        title="Editar boleta"
+                        aria-label="Editar boleta"
+                    >
+                        ✏️
+                        <i className="fas fa-edit"></i>
+                    </button>
+                    <button
+                        className="registro-boletas-action-button delete"
+                        onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
+                        title="Eliminar boleta"
+                        aria-label="Eliminar boleta"
+                    >
+                        🗑️
+                        <i className="fas fa-delete"></i>
                     </button>
                 </div>
             )
@@ -724,6 +803,84 @@ function RegistroBoletas() {
                             </div>
                         </>
                     )}
+                </div>
+            </div>
+            {/* Modal para editar boleta */}
+            <div className={`registro-boletas-modal-overlay ${modalEditarIsOpen ? 'show' : ''}`}>
+                <div className="registro-boletas-modal-content">
+                    {editingBoleta && (
+                        <>
+                            <div className="registro-boletas-modal-header">
+                                <h3 className="registro-boletas-modal-title">
+                                    <i className="fas fa-edit"></i>
+                                    Editar Boleta N° {editingBoleta.NumeroBoleta}
+                                </h3>
+                                <button 
+                                    type="button" 
+                                    className="registro-boletas-modal-close"
+                                    onClick={() => setModalEditarIsOpen(false)}
+                                    aria-label="Cerrar modal"
+                                >
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div className="registro-boletas-modal-body">
+                                {/* Aquí iría el formulario para editar la boleta */}
+                                <p>Formulario de edición de boleta (En progreso...)</p>
+                            </div>
+
+                            <div className="registro-boletas-modal-footer">
+                                <button 
+                                    type="button" 
+                                    className="registro-boletas-modal-button secondary"
+                                    onClick={() => setModalEditarIsOpen(false)}
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+            {/* Modal para eliminar boletas */}
+            <div className={`registro-boletas-modal-overlay ${modalEliminarIsOpen ? 'show' : ''}`}>
+                <div className="registro-boletas-modal-content">
+                    <div className="registro-boletas-modal-header">
+                        <h3 className="registro-boletas-modal-title">
+                            <i className="fas fa-trash"></i>
+                            Eliminar Boleta
+                        </h3>
+                        <button 
+                            type="button" 
+                            className="registro-boletas-modal-close"
+                            onClick={() => setModalEliminarIsOpen(false)}
+                            aria-label="Cerrar modal"
+                        >
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div className="registro-boletas-modal-body">
+                        <p>¿Estás seguro de que deseas eliminar la boleta N° {boletaSeleccionada?.NumeroBoleta}?</p>
+                    </div>
+
+                    <div className="registro-boletas-modal-footer">
+                        <button 
+                            type="button" 
+                            className="registro-boletas-modal-button secondary"
+                            onClick={() => setModalEliminarIsOpen(false)}
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="button" 
+                            className="registro-boletas-modal-button danger"
+                            onClick={() => eliminarBoleta(boletaSeleccionada?.NumeroBoleta)}
+                        >
+                            Eliminar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

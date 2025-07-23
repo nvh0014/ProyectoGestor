@@ -67,12 +67,12 @@ const productoController = {
     }
   },
 
-  // Eliminar producto (soft delete)
+  // Eliminar producto
   deleteProducto: async (req, res) => {
     const { id } = req.params;
     
     try {
-      const query = 'UPDATE producto SET ProductoActivo = 0 WHERE CodigoProducto = ?';
+      const query = 'DELETE FROM producto WHERE CodigoProducto = ?';
       const [result] = await pool.execute(query, [id]);
       
       if (result.affectedRows === 0) {

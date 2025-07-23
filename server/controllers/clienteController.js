@@ -72,12 +72,12 @@ const clienteController = {
     }
   },
 
-  // Eliminar cliente (soft delete)
+  // Eliminar cliente
   deleteCliente: async (req, res) => {
     const { id } = req.params;
     
     try {
-      const query = 'UPDATE cliente SET ClienteActivo = 0 WHERE CodigoCliente = ?';
+      const query = 'DELETE FROM cliente WHERE CodigoCliente = ?';
       const [result] = await pool.execute(query, [id]);
       
       if (result.affectedRows === 0) {

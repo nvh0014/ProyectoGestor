@@ -163,6 +163,7 @@ const boletaController = {
         }
         console.log('✅ Detalles insertados:', detalles.length);
       }
+
       
       await connection.commit();
       console.log('✅ Transacción completada');
@@ -195,6 +196,48 @@ const boletaController = {
       });
     } finally {
       connection.release();
+    }
+  },
+    // Actualizar boleta
+  updateBoleta: async (req, res) => {
+    const { id } = req.params;
+    const { CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones } = req.body;
+
+    try {
+      const query = 'UPDATE boleta SET CodigoCliente = ?, CodigoUsuario = ?, FechaBoleta = ?, FechaVencimiento = ?, TotalBoleta = ?, Observaciones = ? WHERE NumeroBoleta = ?';
+      const [result] = await pool.execute(query, [CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, id]);
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Boleta no encontrada' });
+      }
+      res.json({ message: 'Boleta actualizada exitosamente' });
+    } catch (err) {
+      console.error('Error al actualizar boleta:', err);
+      res.status(500).json({ error: 'Error al actualizar boleta' });
+    }
+  },
+
+  // Eliminar boleta
+  deleteBoleta: async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+      // Se debe eliminar los IdDetalle de la tabla detallesboleta porque son claves foráneas
+      // Primero eliminar los detalles de la boleta
+      console.log('🗑️ Eliminando detalles de la boleta:', id);
+      const deleteDetallesQuery = 'DELETE FROM detallesboleta WHERE NumeroBoleta = ?';
+      await pool.execute(deleteDetallesQuery, [id]);
+      // Ahora eliminar la boleta
+      const query = 'DELETE FROM boleta WHERE NumeroBoleta = ?';
+      const [result] = await pool.execute(query, [id]);
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Boleta no encontrada' });
+      }
+      res.json({ message: 'Boleta eliminada exitosamente' });
+    } catch (err) {
+      console.error('Error al eliminar boleta:', err);
+      res.status(500).json({ error: 'Error al eliminar boleta' });
     }
   }
 };
