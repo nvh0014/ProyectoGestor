@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productoController = require('../controllers/productoController');
+const pool = require('../config/database');
 
 // Obtener todos los productos activos
 router.get('/', productoController.getProductos);
@@ -25,7 +26,7 @@ router.delete('/:id', async (req, res) => {
         
         // Verificar si el producto existe
         const [productoExiste] = await connection.execute(
-            'SELECT CodigoProducto, Descripcion FROM productos WHERE CodigoProducto = ?',
+            'SELECT CodigoProducto, Descripcion FROM producto WHERE CodigoProducto = ?',
             [productoId]
         );
         
@@ -36,8 +37,8 @@ router.delete('/:id', async (req, res) => {
         // Verificar si el producto tiene detalles de boletas asociadas
         const [detallesAsociados] = await connection.execute(
             `SELECT COUNT(*) as count 
-             FROM detalleboletas db 
-             INNER JOIN boletas b ON db.CodigoBoleta = b.CodigoBoleta 
+             FROM detallesboleta db 
+             INNER JOIN boleta b ON db.NumeroBoleta = b.NumeroBoleta 
              WHERE db.CodigoProducto = ?`,
             [productoId]
         );
@@ -45,7 +46,7 @@ router.delete('/:id', async (req, res) => {
         if (detallesAsociados[0].count > 0) {
             // Soft delete: desactivar producto
             await connection.execute(
-                'UPDATE productos SET ProductoActivo = 0 WHERE CodigoProducto = ?',
+                'UPDATE producto SET ProductoActivo = 0 WHERE CodigoProducto = ?',
                 [productoId]
             );
             
@@ -60,7 +61,7 @@ router.delete('/:id', async (req, res) => {
         } else {
             // Hard delete: eliminar completamente
             await connection.execute(
-                'DELETE FROM productos WHERE CodigoProducto = ?',
+                'DELETE FROM producto WHERE CodigoProducto = ?',
                 [productoId]
             );
             
