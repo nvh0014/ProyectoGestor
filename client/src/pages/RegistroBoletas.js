@@ -836,7 +836,7 @@ function RegistroBoletas() {
 
                             <div className="registro-boletas-modal-body">
                                 {/* Aquí iría el formulario para editar la boleta */}
-                                <p>Formulario de edición de boleta (En progreso...)</p>
+                                <p>🚧 Formulario de edición de boleta (En progreso...) 🚧</p>
                             </div>
 
                             <div className="registro-boletas-modal-footer">

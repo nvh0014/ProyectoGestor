@@ -758,6 +758,12 @@
   padding: var(--spacing-xl);
 }
 
+/* Darle color al parrafo del modal, por el momento */
+.registro-boletas-modal-body p {
+  color: #000;
+}
+
+
 .registro-boletas-detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
