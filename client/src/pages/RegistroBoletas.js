@@ -28,7 +28,7 @@ if (typeof document !== 'undefined') {
 
 function RegistroBoletas() {
     const navigate = useNavigate();
-    
+
     // Estados para el header
     const [isLoading, setIsLoading] = useState(false);
     const [usuario, setUsuario] = useState('');
@@ -58,7 +58,7 @@ function RegistroBoletas() {
     const getCookie = (name) => {
         const nameEQ = name + "=";
         const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
+        for (let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) === ' ') c = c.substring(1, c.length);
             if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
@@ -172,7 +172,6 @@ function RegistroBoletas() {
             });
     };
 
-    // Función para eliminar boleta
     const eliminarBoleta = async (numeroBoleta) => {
         const result = await Swal.fire({
             title: 'Confirmar Eliminación',
@@ -188,8 +187,11 @@ function RegistroBoletas() {
 
         if (result.isConfirmed) {
             try {
-                // Corregir la llamada a la API - usar delete en lugar de deleteBoleta
-                await api.delete(`/boletas/${numeroBoleta}`);
+                console.log('🔍 Eliminando boleta:', numeroBoleta, 'Tipo:', typeof numeroBoleta);
+
+                const response = await api.delete(`/boletas/${numeroBoleta}`);
+                console.log('✅ Respuesta del servidor:', response);
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Boleta Eliminada',
@@ -198,11 +200,18 @@ function RegistroBoletas() {
                 });
                 obtenerBoletas();
             } catch (error) {
-                console.error('Error al eliminar boleta:', error);
+                console.error('❌ Error completo:', error);
+                console.error('❌ Error response:', error.response?.data);
+                console.error('❌ Error status:', error.response?.status);
+
+                const errorMsg = error.response?.data?.error || 'No se pudo eliminar la boleta';
+                const errorDetails = error.response?.data?.details || error.message;
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Error de Eliminación',
-                    text: 'No se pudo eliminar la boleta. Intente nuevamente.',
+                    text: errorMsg,
+                    footer: `Detalles: ${errorDetails}`,
                     confirmButtonText: 'Entendido'
                 });
             }
@@ -212,12 +221,12 @@ function RegistroBoletas() {
     // Función para formatear fecha correctamente (corregir línea 152)
     const formatearFecha = (fechaString) => {
         if (!fechaString) return 'N/A';
-        
+
         // Si la fecha ya está en formato DD/MM/YYYY, la devolvemos tal como está
         if (fechaString.includes('/')) {
             return fechaString;
         }
-        
+
         // Si la fecha está en formato ISO (YYYY-MM-DD), la convertimos evitando el problema de zona horaria
         const [year, month, day] = fechaString.split('T')[0].split('-');
         return `${day}/${month}/${year}`;
@@ -234,17 +243,17 @@ function RegistroBoletas() {
         try {
             const response = await api.get(`/boletas/${numeroBoleta}`);
             const { boleta, detalles } = response.data;
-            
+
             console.log('Datos de la boleta para PDF:', boleta);
             console.log('Observaciones recibidas:', boleta.Observaciones);
 
             const doc = new jsPDF();
-            
+
             // Agregar logo de la distribuidora en la esquina superior izquierda
             try {
                 const logoImg = new Image();
                 logoImg.crossOrigin = 'anonymous';
-                
+
                 await new Promise((resolve, reject) => {
                     logoImg.onload = () => {
                         try {
@@ -319,7 +328,7 @@ function RegistroBoletas() {
                 if (yPosition > 260) { // Límite antes del final de la página
                     doc.addPage();
                     yPosition = 20;
-                    
+
                     // Repetir encabezados en nueva página
                     doc.setFontSize(12);
                     doc.setFont('helvetica', 'bold');
@@ -335,31 +344,31 @@ function RegistroBoletas() {
                 // Descripción del producto
                 const descripcion = (detalle.Descripcion || detalle.NombreProducto || '');
                 doc.text(descripcion, 20, yPosition);
-                
+
                 // Cantidad formateada
-                const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
-                  ? Number(detalle.Cantidad).toString() 
-                  : Number(detalle.Cantidad).toFixed(1);
+                const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0
+                    ? Number(detalle.Cantidad).toString()
+                    : Number(detalle.Cantidad).toFixed(1);
                 doc.text(cantidadFormateada, 120, yPosition);
-                
+
                 // Precio y total
                 doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 140, yPosition);
                 doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
-                
+
                 // Descripción personalizada si existe
                 if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') { // Aumentar la posición para la nota
-                  yPosition += 4; // Aumentar la posición para la nota
-                  doc.setFontSize(9); // Tamaño de fuente más pequeño para la nota
-                  doc.setFont('helvetica', 'bold'); // Fuente en negrita para la nota
-                  const notaTexto = `Nota: ${detalle.DescripcionProducto.substring(0, 60)}`; // Limitar a 60 caracteres
-                  doc.text(notaTexto, 25, yPosition); // Aumentar la posición para la nota
+                    yPosition += 4; // Aumentar la posición para la nota
+                    doc.setFontSize(9); // Tamaño de fuente más pequeño para la nota
+                    doc.setFont('helvetica', 'bold'); // Fuente en negrita para la nota
+                    const notaTexto = `Nota: ${detalle.DescripcionProducto.substring(0, 60)}`; // Limitar a 60 caracteres
+                    doc.text(notaTexto, 25, yPosition); // Aumentar la posición para la nota
 
-                  doc.setFontSize(10); // Restablecer tamaño de fuente
-                  doc.setFont('helvetica', 'normal'); // Restablecer fuente
+                    doc.setFontSize(10); // Restablecer tamaño de fuente
+                    doc.setFont('helvetica', 'normal'); // Restablecer fuente
 
-                  yPosition += 2; // Aumentar la posición después de la nota
+                    yPosition += 2; // Aumentar la posición después de la nota
                 }
-                
+
                 subtotalGeneral += Number(detalle.Subtotal);
                 yPosition += lineHeight;
             });
@@ -381,20 +390,20 @@ function RegistroBoletas() {
 
             // Observaciones
             const observaciones = boleta.Observaciones || boleta.observaciones || '';
-            
+
             if (observaciones && observaciones.toString().trim() !== '') {
                 yPosition += 12;
-                
+
                 // Verificar si necesitamos nueva página para observaciones
                 if (yPosition > 250) {
-                  doc.addPage();
-                  yPosition = 20;
+                    doc.addPage();
+                    yPosition = 20;
                 }
-                
+
                 doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
                 doc.text('OBSERVACIONES:', 20, yPosition);
-                
+
                 yPosition += 6;
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(10);
@@ -543,19 +552,19 @@ function RegistroBoletas() {
                             aria-label="Volver al home"
                             title="Volver al home principal"
                         >
-                            <img 
-                                src="/logo512.png" 
-                                alt="Logo Distribuidora" 
+                            <img
+                                src="/logo512.png"
+                                alt="Logo Distribuidora"
                                 className="clientes-logo-image"
                             />
                         </button>
                     </div>
-                    
+
                     <div className="clientes-header-text-group">
                         <h1 className="clientes-header-title">Gestión de boletas emitidas</h1>
                         <p className="clientes-header-subtitle">Administra la información de tus boletas emitidas</p>
                     </div>
-                    
+
                     <div className="clientes-header-actions">
                         {usuario && (
                             <span className="clientes-user-greeting">
@@ -581,7 +590,7 @@ function RegistroBoletas() {
             {/* Main Content */}
             <main className="registro-boletas-main-content">
                 <h2 className="registro-boletas-title">Registro de Boletas Emitidas</h2>
-                
+
                 <div className="registro-boletas-content-card">
                     <div className="registro-boletas-card-header">
                         <h3 className="registro-boletas-card-title">
@@ -593,7 +602,7 @@ function RegistroBoletas() {
                                 <div className="registro-boletas-stat-value">{boletas.length}</div>
                                 <div className="registro-boletas-stat-label">PDF´s Generados</div>
                             </div>
-                            <button 
+                            <button
                                 className="clientes-add-button"
                                 onClick={() => navigate('/generarboleta')}
                             >
@@ -602,7 +611,7 @@ function RegistroBoletas() {
                             </button>
                         </div>
                     </div>
-                    
+
                     <div className="registro-boletas-table-container">
                         {/* Controls */}
                         <div className="registro-boletas-table-controls">
@@ -622,7 +631,7 @@ function RegistroBoletas() {
                                     {table.getHeaderGroups().map(headerGroup => (
                                         <tr key={headerGroup.id}>
                                             {headerGroup.headers.map(header => (
-                                                <th 
+                                                <th
                                                     key={header.id}
                                                     className={header.column.getCanSort() ? 'sortable' : ''}
                                                     onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
@@ -701,8 +710,8 @@ function RegistroBoletas() {
                                     <i className="fas fa-file-invoice"></i>
                                     Detalle Boleta N° {boletaSeleccionada.NumeroBoleta}
                                 </h3>
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="registro-boletas-modal-close"
                                     onClick={() => setModalIsOpen(false)}
                                     aria-label="Cerrar modal"
@@ -739,7 +748,7 @@ function RegistroBoletas() {
                                             <span className="registro-boletas-detail-value">{boletaSeleccionada.Comuna || '-'}</span>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="registro-boletas-detail-section">
                                         <h4 className="registro-boletas-detail-section-title">
                                             <i className="fas fa-file-invoice"></i>
@@ -793,8 +802,8 @@ function RegistroBoletas() {
                             </div>
 
                             <div className="registro-boletas-modal-footer">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="registro-boletas-modal-button secondary"
                                     onClick={() => setModalIsOpen(false)}
                                 >
@@ -815,8 +824,8 @@ function RegistroBoletas() {
                                     <i className="fas fa-edit"></i>
                                     Editar Boleta N° {editingBoleta.NumeroBoleta}
                                 </h3>
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="registro-boletas-modal-close"
                                     onClick={() => setModalEditarIsOpen(false)}
                                     aria-label="Cerrar modal"
@@ -831,8 +840,8 @@ function RegistroBoletas() {
                             </div>
 
                             <div className="registro-boletas-modal-footer">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="registro-boletas-modal-button secondary"
                                     onClick={() => setModalEditarIsOpen(false)}
                                 >
@@ -851,8 +860,8 @@ function RegistroBoletas() {
                             <i className="fas fa-trash"></i>
                             Eliminar Boleta
                         </h3>
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             className="registro-boletas-modal-close"
                             onClick={() => setModalEliminarIsOpen(false)}
                             aria-label="Cerrar modal"
@@ -866,15 +875,15 @@ function RegistroBoletas() {
                     </div>
 
                     <div className="registro-boletas-modal-footer">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             className="registro-boletas-modal-button secondary"
                             onClick={() => setModalEliminarIsOpen(false)}
                         >
                             Cancelar
                         </button>
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             className="registro-boletas-modal-button danger"
                             onClick={() => eliminarBoleta(boletaSeleccionada?.NumeroBoleta)}
                         >

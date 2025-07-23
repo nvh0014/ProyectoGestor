@@ -241,23 +241,50 @@ function Clientes() {
 
         if (result.isConfirmed) {
             try {
-                // DELETE
-                await api.delete(`/clientes/${cliente.CodigoCliente}`);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Cliente Eliminado',
-                    text: 'El cliente ha sido eliminado exitosamente.',
-                    confirmButtonText: 'Continuar'
-                });
+                console.log(`🗑️ Eliminando cliente con ID: ${cliente.CodigoCliente}`);
+                setLoading(true);
+                
+                const response = await api.delete(`/clientes/${cliente.CodigoCliente}`);
+                
+                // Verificar el tipo de eliminación desde la respuesta del servidor
+                if (response.data.tipo === 'soft_delete') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Cliente Desactivado',
+                        text: `El cliente ${cliente.RazonSocial} tiene boletas asociadas y ha sido desactivado en lugar de eliminado completamente.`,
+                        confirmButtonText: 'Entendido'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cliente Eliminado',
+                        text: 'El cliente ha sido eliminado exitosamente.',
+                        confirmButtonText: 'Continuar'
+                    });
+                }
+                
                 obtenerClientes();
             } catch (error) {
                 console.error('Error al eliminar cliente:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de Desactivación',
-                    text: 'No se pudo desactivar el cliente. Intente nuevamente.',
-                    confirmButtonText: 'Entendido'
-                });
+                
+                // Manejo de errores específicos
+                if (error.response?.status === 409) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Cliente en Uso',
+                        text: 'No se puede eliminar el cliente porque tiene boletas asociadas activas.',
+                        confirmButtonText: 'Entendido'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Eliminación',
+                        text: 'No se pudo eliminar el cliente. Intente nuevamente.',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            } finally {
+                setLoading(false);
             }
         }
     };

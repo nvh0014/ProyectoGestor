@@ -11,4 +11,7 @@ router.get('/:numero', boletaController.getBoletaById);
 // Crear nueva boleta con detalles
 router.post('/', boletaController.createBoleta);
 
+// Eliminar boleta por NumeroBoleta
+router.delete('/:numero', boletaController.deleteBoleta);
+
 module.exports = router;

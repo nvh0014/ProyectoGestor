@@ -232,23 +232,50 @@ function Productos() {
 
         if (result.isConfirmed) {
             try {
-                // Eliminar producto
-                await api.delete(`/productos/${producto.CodigoProducto}`);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Producto Eliminado',
-                    text: 'El producto ha sido eliminado exitosamente.',
-                    confirmButtonText: 'Continuar'
-                });
+                setLoading(true);
+                console.log(`🗑️ Eliminando producto con ID: ${producto.CodigoProducto}`);
+                
+                const response = await api.delete(`/productos/${producto.CodigoProducto}`);
+                
+                // Verificar el tipo de eliminación desde la respuesta del servidor
+                if (response.data.tipo === 'soft_delete') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Producto Desactivado',
+                        text: `El producto ${producto.Descripcion} tiene boletas asociadas y ha sido desactivado en lugar de eliminado completamente.`,
+                        confirmButtonText: 'Entendido'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Producto Eliminado',
+                        text: 'El producto ha sido eliminado exitosamente.',
+                        confirmButtonText: 'Continuar'
+                    });
+                }
+                
                 obtenerProductos();
             } catch (error) {
                 console.error('Error al eliminar producto:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de Eliminación',
-                    text: 'No se pudo eliminar el producto. Intente nuevamente.',
-                    confirmButtonText: 'Entendido'
-                });
+                
+                // Manejo de errores específicos
+                if (error.response?.status === 409) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Producto en Uso',
+                        text: 'No se puede eliminar el producto porque está siendo usado en boletas activas.',
+                        confirmButtonText: 'Entendido'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Eliminación',
+                        text: 'No se pudo eliminar el producto. Intente nuevamente.',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            } finally {
+                setLoading(false);
             }
         }
     };
