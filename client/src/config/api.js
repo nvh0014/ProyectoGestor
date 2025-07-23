@@ -151,6 +151,14 @@ export const apiService = {
     const response = await api.post('/boletas', boletaData);
     return response.data;
   },
+  async updateBoleta(numero, boletaData) {
+    const response = await api.put(`/boletas/${numero}`, boletaData);
+    return response.data;
+  },
+  async deleteBoleta(numero) {
+    const response = await api.delete(`/boletas/${numero}`);
+    return response.data;
+  },
 
   // Artículos (para boletas)
   async getArticulos() {
