@@ -176,7 +176,7 @@ function RegistroBoletas() {
     const eliminarBoleta = async (numeroBoleta) => {
         const result = await Swal.fire({
             title: 'Confirmar Eliminación',
-            text: `¿Está seguro de que desea eliminar la boleta N° ${numeroBoleta}? *ESTÁ EN MODO PRUEBA*`,
+            text: `¿Está seguro de que desea eliminar la boleta N° ${numeroBoleta}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -188,7 +188,7 @@ function RegistroBoletas() {
 
         if (result.isConfirmed) {
             try {
-                // Eliminar la boleta
+                // Corregir la llamada a la API - usar delete en lugar de deleteBoleta
                 await api.delete(`/boletas/${numeroBoleta}`);
                 Swal.fire({
                     icon: 'success',

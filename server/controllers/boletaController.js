@@ -198,51 +198,132 @@ const boletaController = {
       connection.release();
     }
   },
-  // Eliminar boleta
+  // Eliminar boleta (optimizada)
   deleteBoleta: async (req, res) => {
     const { id } = req.params;
+    const connection = await pool.getConnection();
 
     try {
-      // Se debe eliminar los IdDetalle de la tabla detallesboleta porque son claves foráneas
-      // Primero eliminar los detalles de la boleta
-      const queryDetalles = 'DELETE FROM detallesboleta WHERE NumeroBoleta = ?';
-      await pool.execute(queryDetalles, [id]);
-      console.log('✅ Detalles de boleta eliminados para el número:', id);
-      // Luego eliminar la boleta
-      console.log('🗑️ Eliminando boleta con número:', id);
-      // Aquí se elimina la boleta
-      const queryBoleta = 'DELETE FROM boleta WHERE NumeroBoleta = ?';
-      const [result] = await pool.execute(queryBoleta, [id]);
-      console.log('✅ Boleta eliminada con número:', id);
-      if (result.affectedRows === 0) {
+      await connection.beginTransaction();
+
+      // Primero verificar que la boleta existe
+      const checkQuery = 'SELECT NumeroBoleta FROM boleta WHERE NumeroBoleta = ?';
+      const [checkResult] = await connection.execute(checkQuery, [id]);
+
+      if (checkResult.length === 0) {
+        await connection.rollback();
         return res.status(404).json({ error: 'Boleta no encontrada' });
       }
-      res.json({ message: 'Boleta eliminada exitosamente' });
+
+      // Eliminar detalles de la boleta (claves foráneas)
+      const queryDetalles = 'DELETE FROM detallesboleta WHERE NumeroBoleta = ?';
+      await connection.execute(queryDetalles, [id]);
+      console.log('✅ Detalles de boleta eliminados para el número:', id);
+
+      // Eliminar la boleta
+      const queryBoleta = 'DELETE FROM boleta WHERE NumeroBoleta = ?';
+      const [result] = await connection.execute(queryBoleta, [id]);
+      console.log('✅ Boleta eliminada con número:', id);
+
+      await connection.commit();
+      res.json({ 
+        message: 'Boleta eliminada exitosamente',
+        NumeroBoleta: id
+      });
+
     } catch (err) {
+      await connection.rollback();
       console.error('Error al eliminar boleta:', err);
-      res.status(500).json({ error: 'Error al eliminar boleta' });
+      res.status(500).json({ 
+        error: 'Error al eliminar boleta',
+        details: err.message
+      });
+    } finally {
+      connection.release();
     }
   },
-  // Actualizar boleta
+
+  // Actualizar boleta (implementación completa)
   // updateBoleta: async (req, res) => {
   //   const { id } = req.params;
-  //   const { CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones } = req.body;
+  //   const { CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, detalles } = req.body;
+    
+  //   const connection = await pool.getConnection();
 
   //   try {
-  //     const query = 'UPDATE boleta SET CodigoCliente = ?, CodigoUsuario = ?, FechaBoleta = ?, FechaVencimiento = ?, TotalBoleta = ?, Observaciones = ? WHERE NumeroBoleta = ?';
-  //     const [result] = await pool.execute(query, [CodigoCliente, CodigoUsuario, FechaBoleta, FechaVencimiento, TotalBoleta, Observaciones, id]);
+  //     await connection.beginTransaction();
 
-  //     if (result.affectedRows === 0) {
+  //     // Verificar que la boleta existe
+  //     const checkQuery = 'SELECT NumeroBoleta FROM boleta WHERE NumeroBoleta = ?';
+  //     const [checkResult] = await connection.execute(checkQuery, [id]);
+
+  //     if (checkResult.length === 0) {
+  //       await connection.rollback();
   //       return res.status(404).json({ error: 'Boleta no encontrada' });
   //     }
-  //     res.json({ message: 'Boleta actualizada exitosamente' });
+
+  //     // Actualizar boleta
+  //     const updateBoletaQuery = `
+  //       UPDATE boleta 
+  //       SET CodigoCliente = ?, CodigoUsuario = ?, FechaBoleta = ?, 
+  //           FechaVencimiento = ?, TotalBoleta = ?, Observaciones = ? 
+  //       WHERE NumeroBoleta = ?
+  //     `;
+      
+  //     await connection.execute(updateBoletaQuery, [
+  //       CodigoCliente, 
+  //       CodigoUsuario, 
+  //       FechaBoleta, 
+  //       FechaVencimiento, 
+  //       TotalBoleta, 
+  //       Observaciones || '', 
+  //       id
+  //     ]);
+
+  //     // Si se proporcionan detalles, actualizar también
+  //     if (detalles && detalles.length > 0) {
+  //       // Eliminar detalles existentes
+  //       const deleteDetallesQuery = 'DELETE FROM detallesboleta WHERE NumeroBoleta = ?';
+  //       await connection.execute(deleteDetallesQuery, [id]);
+
+  //       // Insertar nuevos detalles
+  //       const insertDetalleQuery = `
+  //         INSERT INTO detallesboleta 
+  //         (NumeroBoleta, CodigoProducto, Cantidad, PrecioUnitario, Subtotal, DescripcionProducto) 
+  //         VALUES (?, ?, ?, ?, ?, ?)
+  //       `;
+
+  //       for (const detalle of detalles) {
+  //         await connection.execute(insertDetalleQuery, [
+  //           id,
+  //           detalle.CodigoProducto,
+  //           detalle.Cantidad,
+  //           detalle.PrecioUnitario,
+  //           detalle.Subtotal,
+  //           detalle.DescripcionProducto || null
+  //         ]);
+  //       }
+  //     }
+
+  //     await connection.commit();
+  //     console.log('✅ Boleta actualizada con número:', id);
+
+  //     res.json({ 
+  //       message: 'Boleta actualizada exitosamente',
+  //       NumeroBoleta: id
+  //     });
+
   //   } catch (err) {
+  //     await connection.rollback();
   //     console.error('Error al actualizar boleta:', err);
-  //     res.status(500).json({ error: 'Error al actualizar boleta' });
+  //     res.status(500).json({ 
+  //       error: 'Error al actualizar boleta',
+  //       details: err.message
+  //     });
+  //   } finally {
+  //     connection.release();
   //   }
-  // },
-
-
+  // }
 };
 
 module.exports = boletaController;
