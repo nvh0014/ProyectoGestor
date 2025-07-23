@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const clienteController = require('../controllers/clienteController');
+const pool = require('../config/database');
 
 // Obtener todos los clientes activos
 router.get('/', clienteController.getClientes);
@@ -25,7 +26,7 @@ router.delete('/:id', async (req, res) => {
         
         // Verificar si el cliente existe
         const [clienteExiste] = await connection.execute(
-            'SELECT CodigoCliente, RazonSocial FROM clientes WHERE CodigoCliente = ?',
+            'SELECT CodigoCliente, RazonSocial FROM cliente WHERE CodigoCliente = ?',
             [clienteId]
         );
         
@@ -35,14 +36,14 @@ router.delete('/:id', async (req, res) => {
         
         // Verificar si el cliente tiene boletas asociadas
         const [boletasAsociadas] = await connection.execute(
-            'SELECT COUNT(*) as count FROM boletas WHERE CodigoCliente = ?',
+            'SELECT COUNT(*) as count FROM boleta WHERE CodigoCliente = ?',
             [clienteId]
         );
         
         if (boletasAsociadas[0].count > 0) {
             // Soft delete: desactivar cliente
             await connection.execute(
-                'UPDATE clientes SET ClienteActivo = 0 WHERE CodigoCliente = ?',
+                'UPDATE cliente SET ClienteActivo = 0 WHERE CodigoCliente = ?',
                 [clienteId]
             );
             
@@ -57,7 +58,7 @@ router.delete('/:id', async (req, res) => {
         } else {
             // Hard delete: eliminar completamente
             await connection.execute(
-                'DELETE FROM clientes WHERE CodigoCliente = ?',
+                'DELETE FROM cliente WHERE CodigoCliente = ?',
                 [clienteId]
             );
             
