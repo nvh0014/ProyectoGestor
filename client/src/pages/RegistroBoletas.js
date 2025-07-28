@@ -1201,7 +1201,7 @@ function RegistroBoletas() {
                                                                     value={detalle.DescripcionProducto || ''}
                                                                     onChange={(e) => actualizarDetalle(index, 'DescripcionProducto', e.target.value)}
                                                                     className="registro-boletas-edit-textarea"
-                                                                    placeholder="Observaciones del producto..."
+                                                                    placeholder="Obs"
                                                                     rows="2"
                                                                 />
                                                             </td>

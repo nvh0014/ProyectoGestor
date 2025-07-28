@@ -1335,6 +1335,17 @@
   box-shadow: 0 0 0 2px rgba(30, 60, 114, 0.2);
 }
 
+/* Mejorar la descripción del producto */
+.registro-boletas-product-description {
+  font-weight: 600;
+  color: var(--dark-gray);
+  max-width: 200px;
+  word-wrap: break-word;
+  min-height: 40px; /* Altura mínima para mejor visualización */
+  padding: var(--spacing-xs);
+  line-height: 1.3;
+}
+
 .registro-boletas-precios-info {
   margin-top: 2px;
   font-size: 15px; /* Aumentado de 9px a 15px */
@@ -1482,15 +1493,32 @@
     min-width: 70px; /* Reducido de 90px a 70px para tablets */
   }
   
-  /* Clases específicas para tablets */
+  /* Clases específicas para tablets - MEJORAR LEGIBILIDAD */
   .registro-boletas-edit-input-cantidad {
-    max-width: 45px;
-    min-width: 40px;
+    max-width: 50px; /* Ligeramente más grande */
+    min-width: 45px;
+    font-size: 13px; /* Fuente más grande */
+    padding: var(--spacing-xs);
   }
   
   .registro-boletas-edit-input-tipo-precio {
-    max-width: 85px;
-    min-width: 75px;
+    max-width: 90px; /* Más ancho */
+    min-width: 80px;
+    font-size: 11px; /* Fuente más grande */
+    padding: var(--spacing-xs);
+  }
+  
+  /* Mejorar descripción en tablets */
+  .registro-boletas-product-description {
+    max-width: 180px; /* Más ancho */
+    font-size: 12px; /* Fuente más grande */
+    min-height: 45px;
+  }
+  
+  /* Inputs generales más grandes en tablets */
+  .registro-boletas-edit-input {
+    font-size: 13px;
+    min-height: 40px;
   }
   
   .registro-boletas-precios-info {
@@ -1531,51 +1559,99 @@
     padding: 2px 3px; /* Reducido padding lateral */
   }
   
-  /* Clases específicas para móviles - MÁS COMPACTAS */
+  /* Clases específicas para móviles - MÁS COMPACTAS Y VISIBLES */
   .registro-boletas-edit-input-cantidad {
-    max-width: 40px; /* Muy pequeño para móvil */
-    min-width: 35px;
-    padding: 2px 3px;
-    font-size: 11px;
+    max-width: 50px; /* Ligeramente más grande para mejor visibilidad */
+    min-width: 45px;
+    padding: var(--spacing-sm); /* Más padding para mejor toque */
+    font-size: 14px; /* Fuente más grande */
     border-radius: var(--radius-lg); /* Bordes muy redondeados en móvil */
     text-align: center;
+    height: 44px; /* Altura específica para mejor toque */
   }
   
   .registro-boletas-edit-input-tipo-precio {
-    max-width: 70px; /* Compacto para móvil */
-    min-width: 65px;
-    padding: 2px 3px;
-    font-size: 9px;
+    max-width: 85px; /* Más ancho para mejor legibilidad */
+    min-width: 80px;
+    padding: var(--spacing-sm); /* Más padding */
+    font-size: 12px; /* Fuente más grande */
     border-radius: var(--radius-lg); /* Bordes muy redondeados en móvil */
+    height: 44px; /* Altura específica para mejor toque */
   }
   
-  /* Hacer la tabla más compacta en móvil */
+  /* Mejorar inputs generales en móvil */
+  .registro-boletas-edit-input {
+    font-size: 14px; /* Fuente más grande */
+    padding: var(--spacing-sm); /* Más padding */
+    min-height: 44px; /* Altura mínima para mejor toque */
+  }
+  
+  /* Mejorar la descripción en móvil */
+  .registro-boletas-product-description {
+    max-width: 150px; /* Más ancho que antes */
+    font-size: 12px; /* Fuente más grande */
+    min-height: 50px; /* Más altura */
+    padding: var(--spacing-sm);
+    line-height: 1.4;
+  }
+  
+  /* Reorganizar botón de eliminar - moverlo abajo */
+  .registro-boletas-edit-products-table {
+    position: relative;
+  }
+  
+  .registro-boletas-actions {
+    width: 100%;
+    text-align: center;
+    padding: var(--spacing-sm) 0;
+    border-top: 1px solid var(--light-gray);
+    background: rgba(231, 76, 60, 0.05);
+  }
+  
+  .registro-boletas-btn-delete {
+    width: 100%; /* Botón de ancho completo */
+    max-width: 120px;
+    height: 40px; /* Más alto para mejor toque */
+    font-size: 12px;
+    border-radius: var(--radius-md);
+    margin: 0 auto;
+  }
+  
+  /* Hacer la tabla más espaciosa en móvil */
   .registro-boletas-edit-products-table th,
   .registro-boletas-edit-products-table td {
-    padding: 4px 6px; /* Reducido el padding */
+    padding: var(--spacing-sm); /* Más padding para mejor visualización */
+    font-size: 12px; /* Fuente más grande */
   }
   
-  /* Columna de descripción más estrecha en móvil */
-  .registro-boletas-product-description {
-    max-width: 120px; /* Reducido de 200px */
-    font-size: 10px;
+  /* Mejorar headers de tabla en móvil */
+  .registro-boletas-edit-products-table th {
+    font-size: 11px;
+    padding: var(--spacing-md) var(--spacing-sm);
   }
   
-  /* Textarea más compacta */
+  /* Textarea más espaciosa */
   .registro-boletas-edit-textarea {
-    min-height: 25px;
-    font-size: 10px;
-    padding: 2px 4px;
+    min-height: 50px; /* Más alto */
+    font-size: 14px; /* Fuente más grande */
+    padding: var(--spacing-sm); /* Más padding */
+    border-radius: var(--radius-md);
   }
   
-  /* Información de precios más compacta */
+  /* Mejorar información de precios en móvil */
   .registro-boletas-precios-info {
-    font-size: 8px; /* Aumentado de 7px a 8px para mejor legibilidad */
-    line-height: 1.2; /* Mejor espaciado */
+    font-size: 10px; /* Fuente legible */
+    line-height: 1.3; /* Mejor espaciado */
+    margin-top: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    background: rgba(30, 60, 114, 0.05);
+    border-radius: var(--radius-sm);
+    display: block; /* Mostrar en móviles */
   }
   
-  .registro-boletas-precios-info {
-    display: none; /* Ocultar en pantallas muy pequeñas */
+  /* Contenedor de productos más espacioso */
+  .registro-boletas-edit-products-container {
+    max-height: 350px; /* Más altura en móvil */
   }
 }
 
@@ -1588,40 +1664,66 @@
     font-size: 10px;
   }
   
-  .registro-boletas-edit-input.tipo-precio {
+  .registro-boletas-edit-input-tipo-precio {
     max-width: 65px; /* Reducido para pantallas muy pequeñas */
     min-width: 60px;
-    font-size: 8px;
+    font-size: 13px;
     padding: 1px 2px; /* Padding mínimo */
   }
   
-  /* Clases específicas para pantallas EXTRA pequeñas - MÁXIMA COMPACIDAD */
+  /* Clases específicas para pantallas EXTRA pequeñas - OPTIMIZADAS PARA TOQUE */
   .registro-boletas-edit-input-cantidad {
-    max-width: 35px; /* Extremadamente compacto */
-    min-width: 30px;
-    padding: 1px 2px;
-    font-size: 10px;
+    max-width: 48px; /* Ligeramente más grande para mejor toque */
+    min-width: 42px;
+    padding: var(--spacing-xs);
+    font-size: 13px; /* Fuente legible */
     border-radius: var(--radius-xl); /* Bordes súper redondeados */
     text-align: center;
+    height: 42px; /* Altura específica para toque */
   }
   
   .registro-boletas-edit-input-tipo-precio {
-    max-width: 60px; /* Muy compacto */
-    min-width: 55px;
-    padding: 1px 2px;
-    font-size: 8px;
+    max-width: 75px; /* Más ancho para legibilidad */
+    min-width: 70px;
+    padding: var(--spacing-xs);
+    font-size: 11px; /* Fuente legible */
     border-radius: var(--radius-xl); /* Bordes súper redondeados */
+    height: 42px; /* Altura específica para toque */
   }
   
-  /* Hacer columnas aún más compactas */
+  /* Inputs generales más accesibles */
+  .registro-boletas-edit-input {
+    min-height: 42px;
+    font-size: 13px;
+    padding: var(--spacing-xs);
+  }
+  
+  /* Descripción más grande en pantallas extra pequeñas */
+  .registro-boletas-product-description {
+    max-width: 130px; /* Más ancho que antes */
+    font-size: 11px; /* Fuente más grande */
+    min-height: 45px;
+    padding: var(--spacing-xs);
+  }
+  
+  /* Hacer tabla más espaciosa en pantallas extra pequeñas */
   .registro-boletas-edit-products-table th,
   .registro-boletas-edit-products-table td {
-    padding: 2px 3px; /* Padding mínimo */
+    padding: var(--spacing-xs); /* Más padding para mejor toque */
+    font-size: 11px; /* Fuente más grande */
   }
   
-  .registro-boletas-product-description {
-    max-width: 100px; /* Más estrecho */
-    font-size: 9px;
+  /* Headers de tabla más visibles */
+  .registro-boletas-edit-products-table th {
+    font-size: 10px;
+    padding: var(--spacing-sm) var(--spacing-xs);
+  }
+  
+  /* Botón eliminar más accesible en pantallas extra pequeñas */
+  .registro-boletas-btn-delete {
+    height: 38px; /* Altura mínima para toque */
+    font-size: 11px;
+    min-width: 100px;
   }
 }
 
