@@ -586,6 +586,7 @@ function RegistroBoletas() {
             doc.setFont('helvetica', 'bold');
             doc.text('Descripción', 20, startY);
             doc.text('Cant.', 120, startY);
+            doc.text('Precio Unit.', 145, startY);
             doc.text('Subtotal', 170, startY);
 
             doc.line(20, startY + 2, 190, startY + 2); // Línea horizontal debajo de los encabezados
@@ -603,10 +604,11 @@ function RegistroBoletas() {
                     yPosition = 20;
 
                     // Repetir encabezados en nueva página
-                    doc.setFontSize(12);
+                    doc.setFontSize(10);
                     doc.setFont('helvetica', 'bold');
                     doc.text('Descripción', 20, yPosition);
                     doc.text('Cant.', 120, yPosition);
+                    doc.text('Precio Unit.', 145, yPosition);
                     doc.text('Subtotal', 170, yPosition);
                     doc.line(20, yPosition + 2, 190, yPosition + 2);
                     yPosition += 6;
@@ -622,6 +624,9 @@ function RegistroBoletas() {
                     ? Number(detalle.Cantidad).toString()
                     : Number(detalle.Cantidad).toFixed(1);
                 doc.text(cantidadFormateada, 120, yPosition);
+
+                // Precio Unitario
+                doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 145, yPosition);
 
                 // Subtotal
                 doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
@@ -1110,7 +1115,7 @@ function RegistroBoletas() {
                                 <div className="registro-boletas-edit-section">
                                     <h4 className="registro-boletas-detail-section-title">
                                         <i className="fas fa-user"></i>
-                                        Información del Cliente (Solo lectura)
+                                        Información del Cliente
                                     </h4>
                                     <div className="registro-boletas-client-info">
                                         <div className="registro-boletas-detail-item">
@@ -1142,7 +1147,7 @@ function RegistroBoletas() {
                                                     <th>Cantidad</th>
                                                     <th>Tipo Precio</th>
                                                     <th>Subtotal</th>
-                                                    <th>Observaciones</th>
+                                                    <th>Descripción</th>
                                                     <th>Acciones</th>
                                                 </tr>
                                             </thead>
@@ -1163,14 +1168,14 @@ function RegistroBoletas() {
                                                                     min="0.5"
                                                                     value={detalle.Cantidad || ''}
                                                                     onChange={(e) => actualizarDetalle(index, 'Cantidad', e.target.value)}
-                                                                    className="registro-boletas-edit-input cantidad"
+                                                                    className="registro-boletas-edit-input-cantidad"
                                                                 />
                                                             </td>
                                                             <td>
                                                                 <select
                                                                     value={tipoPrecioActual}
                                                                     onChange={(e) => handleTipoPrecioCambio(index, e.target.value)}
-                                                                    className="registro-boletas-edit-input tipo-precio"
+                                                                    className="registro-boletas-edit-input-tipo-precio"
                                                                     disabled={!producto}
                                                                 >
                                                                     <option value="PrecioUnitario">Precio Sala</option>
@@ -1181,10 +1186,10 @@ function RegistroBoletas() {
                                                                         <small>
                                                                             Actual: ${parseFloat(detalle.PrecioUnitario || 0).toLocaleString('es-CL')}
                                                                         </small>
-                                                                        <small>
+                                                                        {/* <small>
                                                                             Sala: ${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} |
                                                                             Dsto: ${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')}
-                                                                        </small>
+                                                                        </small> */}
                                                                     </div>
                                                                 )}
                                                             </td>
@@ -1207,6 +1212,7 @@ function RegistroBoletas() {
                                                                     className="registro-boletas-btn-delete"
                                                                     title="Eliminar producto"
                                                                 >
+                                                                    🗑️
                                                                     <i className="fas fa-trash"></i>
                                                                 </button>
                                                             </td>
@@ -1233,9 +1239,9 @@ function RegistroBoletas() {
                                         Agregar Nuevo Producto
                                     </h4>
                                     <div className="registro-boletas-nuevo-producto-form">
-                                        <div className="registro-boletas-form-row">
-                                            <div className="registro-boletas-form-group">
-                                                <label className="form-label">Producto *</label>
+                                        <div className="registro-boletas-edit-form-row">
+                                            <div className="registro-boletas-edit-form-group">
+                                                <label className='registro-boletas-label'>Producto *</label>
                                                 <Autocomplete
                                                     options={productos.map(producto => ({
                                                         value: producto.CodigoArticulo,
@@ -1253,7 +1259,7 @@ function RegistroBoletas() {
                                                     required
                                                 />
                                             </div>
-                                            <div className="registro-boletas-form-group">
+                                            <div className="registro-boletas-edit-products-form-group">
                                                 <label>Cantidad:</label>
                                                 <input
                                                     type="number"
@@ -1264,7 +1270,7 @@ function RegistroBoletas() {
                                                     className="registro-boletas-edit-input"
                                                 />
                                             </div>
-                                            <div className="registro-boletas-form-group">
+                                            <div className="registro-boletas-edit-products-form-group">
                                                 <label>Tipo Precio:</label>
                                                 <select
                                                     value={nuevoProductoForm.TipoPrecio}
@@ -1290,17 +1296,17 @@ function RegistroBoletas() {
                                                     ) : null;
                                                 })()}
                                             </div>
-                                            <div className="registro-boletas-form-group">
-                                                <label>Observaciones:</label>
+                                            <div className="registro-boletas-edit-products-form-group">
+                                                <label>Descripción personalizada (opcional)</label>
                                                 <input
                                                     type="text"
                                                     value={nuevoProductoForm.DescripcionProducto}
                                                     onChange={(e) => handleNuevoProductoChange('DescripcionProducto', e.target.value)}
                                                     className="registro-boletas-edit-input"
-                                                    placeholder="Observaciones del producto..."
+                                                    placeholder="Descripción especial para el producto..."
                                                 />
                                             </div>
-                                            <div className="registro-boletas-form-group">
+                                            <div className="registro-boletas-edit-products-form-group-btnagregar">
                                                 <button
                                                     type="button"
                                                     onClick={agregarNuevoProducto}
@@ -1308,7 +1314,7 @@ function RegistroBoletas() {
                                                     disabled={!nuevoProductoForm.CodigoProducto || !nuevoProductoForm.Cantidad}
                                                 >
                                                     <i className="fas fa-plus"></i>
-                                                    Agregar
+                                                    ➕ Agregar Producto
                                                 </button>
                                             </div>
                                         </div>
@@ -1319,13 +1325,13 @@ function RegistroBoletas() {
                                 <div className="registro-boletas-edit-section">
                                     <h4 className="registro-boletas-detail-section-title">
                                         <i className="fas fa-comment"></i>
-                                        Observaciones Generales
+                                        Observaciones
                                     </h4>
                                     <textarea
                                         value={observacionesGenerales}
                                         onChange={(e) => setObservacionesGenerales(e.target.value)}
                                         className="registro-boletas-edit-observaciones"
-                                        placeholder="Observaciones generales de la boleta..."
+                                        placeholder="Ingrese observaciones adicionales para la boleta..."
                                         rows="3"
                                     />
                                 </div>
@@ -1338,15 +1344,6 @@ function RegistroBoletas() {
                                     onClick={() => setModalEditarIsOpen(false)}
                                 >
                                     Cancelar
-                                </button>
-                                <button
-                                    type="button"
-                                    className="registro-boletas-modal-button secondary"
-                                    onClick={() => descargarBoleta(editingBoleta.NumeroBoleta)}
-                                    title="Descargar PDF con datos actuales"
-                                >
-                                    <i className="fas fa-download"></i>
-                                    Descargar PDF
                                 </button>
                                 <button
                                     type="button"

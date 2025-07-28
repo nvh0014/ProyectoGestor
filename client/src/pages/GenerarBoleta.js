@@ -794,7 +794,7 @@ function GenerarBoleta() {
                         className="form-input"
                         value={productoForm.DescripcionProducto}
                         onChange={e => setProductoForm({ ...productoForm, DescripcionProducto: e.target.value })}
-                        placeholder="Ej: Detalle especial para este producto en la boleta"
+                        placeholder="Descripción especial para el producto..."
                         maxLength={200}
                       />
                     </div>
