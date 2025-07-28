@@ -5,6 +5,8 @@ import Swal from 'sweetalert2';
 import Modal from 'react-modal';
 import { jsPDF } from 'jspdf';
 import './RegistroBoletas.css';
+import Autocomplete from '../components/Autocomplete';
+
 
 
 import {
@@ -42,6 +44,19 @@ function RegistroBoletas() {
     // Estado para el modal para editar boleta
     const [modalEditarIsOpen, setModalEditarIsOpen] = useState(false);
     const [editingBoleta, setEditingBoleta] = useState(null);
+    const [editingDetalles, setEditingDetalles] = useState([]);
+    const [observacionesGenerales, setObservacionesGenerales] = useState('');
+    const [productos, setProductos] = useState([]); // Para cargar precios de productos
+
+    // Estados para agregar nuevos productos en edición
+    const [nuevoProductoForm, setNuevoProductoForm] = useState({
+        CodigoProducto: '',
+        Cantidad: 1,
+        TipoPrecio: 'PrecioUnitario',
+        PrecioUnitario: 0,
+        DescripcionProducto: ''
+    });
+
     // Estado para el modal de confirmación de eliminación
     const [modalEliminarIsOpen, setModalEliminarIsOpen] = useState(false);
 
@@ -153,23 +168,282 @@ function RegistroBoletas() {
             });
         }
     };
+
+    // const handleTipoPrecioChange = (tipoPrecio) => {
+    //     setProductoForm(prev => {
+    //         const producto = productos.find(p => p.CodigoArticulo === prev.CodigoProducto);
+    //         let nuevoPrecio = 0;
+
+    //         if (producto) {
+    //             nuevoPrecio = tipoPrecio === 'PrecioUnitario'
+    //                 ? parseFloat(producto.PrecioUnitario || 0)
+    //                 : parseFloat(producto.PrecioDescuento || 0);
+    //         }
+
+    //         return {
+    //             ...prev,
+    //             TipoPrecio: tipoPrecio,
+    //             PrecioUnitario: nuevoPrecio
+    //         };
+    //     });
+    // };
     // Función para editar boleta
     const editarBoleta = async (numeroBoleta) => {
-        // Lógica para editar la boleta
-        await api.get(`/boletas/${numeroBoleta}`)
-            .then(response => {
-                setEditingBoleta(response.data.boleta);
-                setModalEditarIsOpen(true);
-            })
-            .catch(error => {
-                console.error('Error al obtener boleta para editar:', error);
+        try {
+            // Cargar datos de la boleta y productos en paralelo
+            const [boletaResponse, productosResponse] = await Promise.all([
+                api.get(`/boletas/${numeroBoleta}`),
+                api.get('/articulos')
+            ]);
+
+            setEditingBoleta(boletaResponse.data.boleta);
+            setEditingDetalles(boletaResponse.data.detalles || []);
+            setObservacionesGenerales(boletaResponse.data.boleta.Observaciones || '');
+
+            // Filtrar solo productos activos
+            const productosActivos = productosResponse.data.filter(producto =>
+                producto.ArticuloActivo === true || producto.ArticuloActivo === 1
+            );
+            setProductos(productosActivos);
+
+            setModalEditarIsOpen(true);
+        } catch (error) {
+            console.error('Error al obtener boleta para editar:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al Cargar Boleta',
+                text: 'No se pudo cargar la boleta para editar.',
+                confirmButtonText: 'Entendido'
+            });
+        }
+    };
+
+    // Función para actualizar un detalle específico
+    const actualizarDetalle = (index, campo, valor) => {
+        const nuevosDetalles = [...editingDetalles];
+
+        // Asegurar que el detalle tenga TipoPrecio inicializado
+        if (!nuevosDetalles[index].TipoPrecio) {
+            nuevosDetalles[index].TipoPrecio = 'PrecioUnitario';
+        }
+
+        nuevosDetalles[index] = {
+            ...nuevosDetalles[index],
+            [campo]: valor
+        };
+
+        // Recalcular subtotal si se cambió cantidad o precio
+        if (campo === 'Cantidad' || campo === 'PrecioUnitario') {
+            const cantidad = campo === 'Cantidad' ? parseFloat(valor) || 0 : parseFloat(nuevosDetalles[index].Cantidad) || 0;
+            const precio = campo === 'PrecioUnitario' ? parseFloat(valor) || 0 : parseFloat(nuevosDetalles[index].PrecioUnitario) || 0;
+            nuevosDetalles[index].Subtotal = cantidad * precio;
+        }
+
+        setEditingDetalles(nuevosDetalles);
+    };
+
+    // Función para manejar cambio de tipo de precio
+    const handleTipoPrecioCambio = (index, tipoPrecio) => {
+        const nuevosDetalles = [...editingDetalles];
+        const detalle = nuevosDetalles[index];
+
+        // Buscar el producto en la lista de productos para obtener los precios
+        const producto = productos.find(p => p.CodigoArticulo === detalle.CodigoProducto);
+
+        if (producto) {
+            const nuevoPrecio = tipoPrecio === 'PrecioUnitario'
+                ? parseFloat(producto.PrecioUnitario || 0)
+                : parseFloat(producto.PrecioDescuento || 0);
+
+            nuevosDetalles[index] = {
+                ...detalle,
+                PrecioUnitario: nuevoPrecio,
+                Subtotal: parseFloat(detalle.Cantidad || 0) * nuevoPrecio,
+                TipoPrecio: tipoPrecio // Guardar el tipo de precio seleccionado
+            };
+
+            setEditingDetalles(nuevosDetalles);
+        }
+    };
+
+    // Función para manejar cambio de producto en el formulario de agregar
+    const handleNuevoProductoChange = (campo, valor) => {
+        if (campo === 'producto') {
+            const producto = productos.find(p => p.CodigoArticulo === valor);
+            if (producto) {
+                const precioSeleccionado = nuevoProductoForm.TipoPrecio === 'PrecioUnitario'
+                    ? parseFloat(producto.PrecioUnitario || 0)
+                    : parseFloat(producto.PrecioDescuento || 0);
+
+                setNuevoProductoForm({
+                    ...nuevoProductoForm,
+                    CodigoProducto: valor,
+                    PrecioUnitario: precioSeleccionado
+                });
+            }
+        } else {
+            // Para otros campos (cantidad, observaciones, etc.)
+            setNuevoProductoForm(prev => ({
+                ...prev,
+                [campo]: valor
+            }));
+        }
+    };
+
+    // Función para manejar cambio de tipo de precio en el formulario de agregar
+    const handleNuevoTipoPrecioCambio = (tipoPrecio) => {
+        setNuevoProductoForm(prev => {
+            const producto = productos.find(p => p.CodigoArticulo === prev.CodigoProducto);
+            let nuevoPrecio = 0;
+
+            if (producto) {
+                nuevoPrecio = tipoPrecio === 'PrecioUnitario'
+                    ? parseFloat(producto.PrecioUnitario || 0)
+                    : parseFloat(producto.PrecioDescuento || 0);
+            }
+
+            return {
+                ...prev,
+                TipoPrecio: tipoPrecio,
+                PrecioUnitario: nuevoPrecio
+            };
+        });
+    };
+
+    // Función para agregar nuevo producto a la boleta
+    const agregarNuevoProducto = () => {
+        if (!nuevoProductoForm.CodigoProducto || nuevoProductoForm.Cantidad <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Datos Incompletos',
+                text: 'Por favor, seleccione un producto y especifique una cantidad válida.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        const producto = productos.find(p => p.CodigoArticulo === nuevoProductoForm.CodigoProducto);
+
+        // Verificar si el producto ya existe en la boleta
+        const productoExistente = editingDetalles.find(detalle => detalle.CodigoProducto === nuevoProductoForm.CodigoProducto);
+        if (productoExistente) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Producto Duplicado',
+                text: 'Este producto ya existe en la boleta. Puede editar la cantidad directamente en la tabla.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        const subtotal = nuevoProductoForm.Cantidad * nuevoProductoForm.PrecioUnitario;
+
+        const nuevoDetalle = {
+            IdDetalleBoleta: `nuevo_${Date.now()}`, // ID temporal para productos nuevos
+            CodigoProducto: nuevoProductoForm.CodigoProducto,
+            Descripcion: producto.NombreArticulo || producto.Descripcion || 'Sin descripción',
+            Cantidad: nuevoProductoForm.Cantidad,
+            PrecioUnitario: nuevoProductoForm.PrecioUnitario,
+            Subtotal: subtotal,
+            DescripcionProducto: nuevoProductoForm.DescripcionProducto,
+            TipoPrecio: nuevoProductoForm.TipoPrecio,
+            esNuevo: true // Marcar como producto nuevo
+        };
+
+        setEditingDetalles([...editingDetalles, nuevoDetalle]);
+
+        // Limpiar formulario
+        setNuevoProductoForm({
+            CodigoProducto: '',
+            Cantidad: 1,
+            TipoPrecio: 'PrecioUnitario',
+            PrecioUnitario: 0,
+            DescripcionProducto: ''
+        });
+    };
+
+    // Función para eliminar producto de la boleta
+    const eliminarProductoDeBoleta = (index) => {
+        Swal.fire({
+            title: 'Confirmar Eliminación',
+            text: '¿Está seguro de que desea eliminar este producto de la boleta?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const nuevosDetalles = editingDetalles.filter((_, i) => i !== index);
+                setEditingDetalles(nuevosDetalles);
+            }
+        });
+    };
+
+    // Función para calcular total de la boleta
+    const calcularTotalBoleta = () => {
+        return editingDetalles.reduce((total, detalle) => total + (parseFloat(detalle.Subtotal) || 0), 0);
+    };
+
+    // Función para guardar cambios en la boleta
+    const guardarCambiosBoleta = async () => {
+        try {
+            // Validar que todos los campos requeridos estén completos
+            const detallesValidos = editingDetalles.every(detalle =>
+                detalle.Cantidad > 0 && detalle.PrecioUnitario > 0
+            );
+
+            if (!detallesValidos) {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error al Cargar Boleta',
-                    text: 'No se pudo cargar la boleta para editar.',
+                    icon: 'warning',
+                    title: 'Datos Incompletos',
+                    text: 'Todos los productos deben tener cantidad y precio mayor a 0.',
                     confirmButtonText: 'Entendido'
                 });
+                return;
+            }
+
+            const totalCalculado = calcularTotalBoleta();
+
+            const datosActualizados = {
+                numeroBoleta: editingBoleta.NumeroBoleta,
+                detalles: editingDetalles.map(detalle => ({
+                    IdDetalleBoleta: detalle.esNuevo ? null : detalle.IdDetalleBoleta, // null para productos nuevos
+                    CodigoProducto: detalle.CodigoProducto,
+                    Cantidad: parseFloat(detalle.Cantidad),
+                    PrecioUnitario: parseFloat(detalle.PrecioUnitario),
+                    Subtotal: parseFloat(detalle.Subtotal),
+                    DescripcionProducto: detalle.DescripcionProducto || '',
+                    esNuevo: detalle.esNuevo || false
+                })),
+                totalBoleta: totalCalculado,
+                observaciones: observacionesGenerales
+            };
+
+            const response = await api.put(`/boletas/${editingBoleta.NumeroBoleta}`, datosActualizados);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Boleta Actualizada',
+                text: 'Los cambios han sido guardados exitosamente.',
+                confirmButtonText: 'Continuar'
             });
+
+            setModalEditarIsOpen(false);
+            obtenerBoletas(); // Recargar la lista de boletas
+
+        } catch (error) {
+            console.error('Error al actualizar boleta:', error);
+            const errorMsg = error.response?.data?.error || 'No se pudo actualizar la boleta';
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al Actualizar',
+                text: errorMsg,
+                confirmButtonText: 'Entendido'
+            });
+        }
     };
 
     const eliminarBoleta = async (numeroBoleta) => {
@@ -312,7 +586,6 @@ function RegistroBoletas() {
             doc.setFont('helvetica', 'bold');
             doc.text('Descripción', 20, startY);
             doc.text('Cant.', 120, startY);
-            doc.text('Precio Unit.', 140, startY);
             doc.text('Subtotal', 170, startY);
 
             doc.line(20, startY + 2, 190, startY + 2); // Línea horizontal debajo de los encabezados
@@ -334,7 +607,6 @@ function RegistroBoletas() {
                     doc.setFont('helvetica', 'bold');
                     doc.text('Descripción', 20, yPosition);
                     doc.text('Cant.', 120, yPosition);
-                    doc.text('Precio Unit.', 140, yPosition);
                     doc.text('Subtotal', 170, yPosition);
                     doc.line(20, yPosition + 2, 190, yPosition + 2);
                     yPosition += 6;
@@ -351,8 +623,7 @@ function RegistroBoletas() {
                     : Number(detalle.Cantidad).toFixed(1);
                 doc.text(cantidadFormateada, 120, yPosition);
 
-                // Precio y total
-                doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 140, yPosition);
+                // Subtotal
                 doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
 
                 // Descripción personalizada si existe
@@ -835,8 +1106,229 @@ function RegistroBoletas() {
                             </div>
 
                             <div className="registro-boletas-modal-body">
-                                {/* Aquí iría el formulario para editar la boleta */}
-                                <p>Formulario de edición de boleta (En progreso...)</p>
+                                {/* Información del cliente (solo lectura) */}
+                                <div className="registro-boletas-edit-section">
+                                    <h4 className="registro-boletas-detail-section-title">
+                                        <i className="fas fa-user"></i>
+                                        Información del Cliente (Solo lectura)
+                                    </h4>
+                                    <div className="registro-boletas-client-info">
+                                        <div className="registro-boletas-detail-item">
+                                            <span className="registro-boletas-detail-label">RUT:</span>
+                                            <span className="registro-boletas-detail-value">{editingBoleta.Rut}</span>
+                                        </div>
+                                        <div className="registro-boletas-detail-item">
+                                            <span className="registro-boletas-detail-label">Razón Social:</span>
+                                            <span className="registro-boletas-detail-value">{editingBoleta.RazonSocial}</span>
+                                        </div>
+                                        <div className="registro-boletas-detail-item">
+                                            <span className="registro-boletas-detail-label">Fecha Boleta:</span>
+                                            <span className="registro-boletas-detail-value">{formatearFecha(editingBoleta.FechaBoleta)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Edición de productos */}
+                                <div className="registro-boletas-edit-section">
+                                    <h4 className="registro-boletas-detail-section-title">
+                                        <i className="fas fa-list"></i>
+                                        Editar Productos
+                                    </h4>
+                                    <div className="registro-boletas-edit-products-container">
+                                        <table className="registro-boletas-edit-products-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Descripción</th>
+                                                    <th>Cantidad</th>
+                                                    <th>Tipo Precio</th>
+                                                    <th>Subtotal</th>
+                                                    <th>Observaciones</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {editingDetalles.map((detalle, index) => {
+                                                    const producto = productos.find(p => p.CodigoArticulo === detalle.CodigoProducto);
+                                                    const tipoPrecioActual = detalle.TipoPrecio || 'PrecioUnitario';
+
+                                                    return (
+                                                        <tr key={index}>
+                                                            <td className="registro-boletas-product-description">
+                                                                {detalle.Descripcion || detalle.NombreProducto}
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.5"
+                                                                    min="0.5"
+                                                                    value={detalle.Cantidad || ''}
+                                                                    onChange={(e) => actualizarDetalle(index, 'Cantidad', e.target.value)}
+                                                                    className="registro-boletas-edit-input cantidad"
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <select
+                                                                    value={tipoPrecioActual}
+                                                                    onChange={(e) => handleTipoPrecioCambio(index, e.target.value)}
+                                                                    className="registro-boletas-edit-input tipo-precio"
+                                                                    disabled={!producto}
+                                                                >
+                                                                    <option value="PrecioUnitario">Precio Sala</option>
+                                                                    <option value="PrecioDescuento">Precio Dsto.</option>
+                                                                </select>
+                                                                {producto && (
+                                                                    <div className="registro-boletas-precios-info">
+                                                                        <small>
+                                                                            Actual: ${parseFloat(detalle.PrecioUnitario || 0).toLocaleString('es-CL')}
+                                                                        </small>
+                                                                        <small>
+                                                                            Sala: ${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} |
+                                                                            Dsto: ${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')}
+                                                                        </small>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="registro-boletas-subtotal">
+                                                                {formatearPrecio(detalle.Subtotal || 0)}
+                                                            </td>
+                                                            <td>
+                                                                <textarea
+                                                                    value={detalle.DescripcionProducto || ''}
+                                                                    onChange={(e) => actualizarDetalle(index, 'DescripcionProducto', e.target.value)}
+                                                                    className="registro-boletas-edit-textarea"
+                                                                    placeholder="Observaciones del producto..."
+                                                                    rows="2"
+                                                                />
+                                                            </td>
+                                                            <td className="registro-boletas-actions">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => eliminarProductoDeBoleta(index)}
+                                                                    className="registro-boletas-btn-delete"
+                                                                    title="Eliminar producto"
+                                                                >
+                                                                    <i className="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr className="registro-boletas-edit-total">
+                                                    <th colSpan="3">Total General:</th>
+                                                    <th>{formatearPrecio(calcularTotalBoleta())}</th>
+                                                    <th></th>
+                                                    <th></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Agregar nuevo producto */}
+                                <div className="registro-boletas-edit-section">
+                                    <h4 className="registro-boletas-detail-section-title">
+                                        <i className="fas fa-plus"></i>
+                                        Agregar Nuevo Producto
+                                    </h4>
+                                    <div className="registro-boletas-nuevo-producto-form">
+                                        <div className="registro-boletas-form-row">
+                                            <div className="registro-boletas-form-group">
+                                                <label className="form-label">Producto *</label>
+                                                <Autocomplete
+                                                    options={productos.map(producto => ({
+                                                        value: producto.CodigoArticulo,
+                                                        name: `${producto.CodigoArticulo} - ${producto.NombreArticulo || producto.Descripcion || 'Sin descripción'}`,
+                                                        subtitle: `Sala: $${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} | Descuento: $${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')} | Stock: ${producto.Stock || 'N/A'}`
+                                                    }))}
+                                                    value={nuevoProductoForm.CodigoProducto}
+                                                    onChange={(codigoProducto) => handleNuevoProductoChange('producto', codigoProducto)}
+                                                    placeholder="Buscar producto..."
+                                                    className="form-input"
+                                                    displayKey="name"
+                                                    valueKey="value"
+                                                    searchKeys={["name"]}
+                                                    maxResults={10}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="registro-boletas-form-group">
+                                                <label>Cantidad:</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.5"
+                                                    min="0.5"
+                                                    value={nuevoProductoForm.Cantidad}
+                                                    onChange={(e) => handleNuevoProductoChange('Cantidad', e.target.value)}
+                                                    className="registro-boletas-edit-input"
+                                                />
+                                            </div>
+                                            <div className="registro-boletas-form-group">
+                                                <label>Tipo Precio:</label>
+                                                <select
+                                                    value={nuevoProductoForm.TipoPrecio}
+                                                    onChange={(e) => handleNuevoTipoPrecioCambio(e.target.value)}
+                                                    className="registro-boletas-edit-input"
+                                                    disabled={!nuevoProductoForm.CodigoProducto}
+                                                >
+                                                    <option value="PrecioUnitario">Precio Sala</option>
+                                                    <option value="PrecioDescuento">Precio con Descuento</option>
+                                                </select>
+                                                {nuevoProductoForm.CodigoProducto && (() => {
+                                                    const productoSeleccionado = productos.find(p => p.CodigoArticulo === nuevoProductoForm.CodigoProducto);
+                                                    return productoSeleccionado ? (
+                                                        <div className="registro-boletas-precios-info">
+                                                            <small>
+                                                                Precio Actual: ${parseFloat(nuevoProductoForm.PrecioUnitario || 0).toLocaleString('es-CL')}
+                                                            </small>
+                                                            <small>
+                                                                Sala: ${parseFloat(productoSeleccionado.PrecioUnitario || 0).toLocaleString('es-CL')} | 
+                                                                Dsto: ${parseFloat(productoSeleccionado.PrecioDescuento || 0).toLocaleString('es-CL')}
+                                                            </small>
+                                                        </div>
+                                                    ) : null;
+                                                })()}
+                                            </div>
+                                            <div className="registro-boletas-form-group">
+                                                <label>Observaciones:</label>
+                                                <input
+                                                    type="text"
+                                                    value={nuevoProductoForm.DescripcionProducto}
+                                                    onChange={(e) => handleNuevoProductoChange('DescripcionProducto', e.target.value)}
+                                                    className="registro-boletas-edit-input"
+                                                    placeholder="Observaciones del producto..."
+                                                />
+                                            </div>
+                                            <div className="registro-boletas-form-group">
+                                                <button
+                                                    type="button"
+                                                    onClick={agregarNuevoProducto}
+                                                    className="registro-boletas-btn-add"
+                                                    disabled={!nuevoProductoForm.CodigoProducto || !nuevoProductoForm.Cantidad}
+                                                >
+                                                    <i className="fas fa-plus"></i>
+                                                    Agregar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Observaciones generales */}
+                                <div className="registro-boletas-edit-section">
+                                    <h4 className="registro-boletas-detail-section-title">
+                                        <i className="fas fa-comment"></i>
+                                        Observaciones Generales
+                                    </h4>
+                                    <textarea
+                                        value={observacionesGenerales}
+                                        onChange={(e) => setObservacionesGenerales(e.target.value)}
+                                        className="registro-boletas-edit-observaciones"
+                                        placeholder="Observaciones generales de la boleta..."
+                                        rows="3"
+                                    />
+                                </div>
                             </div>
 
                             <div className="registro-boletas-modal-footer">
@@ -845,7 +1337,24 @@ function RegistroBoletas() {
                                     className="registro-boletas-modal-button secondary"
                                     onClick={() => setModalEditarIsOpen(false)}
                                 >
-                                    Cerrar
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    className="registro-boletas-modal-button secondary"
+                                    onClick={() => descargarBoleta(editingBoleta.NumeroBoleta)}
+                                    title="Descargar PDF con datos actuales"
+                                >
+                                    <i className="fas fa-download"></i>
+                                    Descargar PDF
+                                </button>
+                                <button
+                                    type="button"
+                                    className="registro-boletas-modal-button primary"
+                                    onClick={guardarCambiosBoleta}
+                                >
+                                    <i className="fas fa-save"></i>
+                                    Guardar Cambios
                                 </button>
                             </div>
                         </>

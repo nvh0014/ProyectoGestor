@@ -144,7 +144,7 @@ function Clientes() {
                     <p><strong>Detalles:</strong> ${error.message}</p>
                     <p><strong>Estado:</strong> ${error.response?.status || 'Sin respuesta'}</p>
                     <hr>
-                    <small>Verifique que el servidor esté ejecutándose correctamente en el puerto 3001</small>
+                    <small>Verifique que el servidor esté ejecutándose correctamente</small>
                 `,
                 confirmButtonText: 'Entendido',
                 footer: '<small>Consulte la consola del navegador para información técnica adicional</small>'

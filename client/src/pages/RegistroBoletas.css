@@ -1175,3 +1175,407 @@
     display: none !important;
   }
 }
+
+/* ==============================
+   ESTILOS PARA MODAL DE EDICIÓN
+   ============================== */
+
+.registro-boletas-edit-section {
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.registro-boletas-edit-section h4 {
+  background: var(--gradient-card);
+  color: var(--white);
+  padding: var(--spacing-md);
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.registro-boletas-client-info {
+  padding: var(--spacing-md);
+  background: var(--light-blue);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.registro-boletas-edit-products-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--light-gray);
+}
+
+.registro-boletas-edit-products-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.registro-boletas-edit-products-table th {
+  background: var(--primary-blue);
+  color: var(--white);
+  padding: var(--spacing-sm);
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.registro-boletas-edit-products-table td {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--light-gray);
+  vertical-align: top;
+}
+
+.registro-boletas-edit-products-table tbody tr:hover {
+  background-color: var(--light-blue);
+}
+
+.registro-boletas-product-description {
+  font-weight: 600;
+  color: var(--dark-gray);
+  max-width: 200px;
+  word-wrap: break-word;
+}
+
+.registro-boletas-edit-input {
+  width: 100%;
+  padding: var(--spacing-xs);
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.registro-boletas-edit-input:focus {
+  border-color: var(--primary-blue);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(30, 60, 114, 0.2);
+}
+
+.registro-boletas-edit-input.cantidad {
+  max-width: 80px;
+}
+
+.registro-boletas-edit-input.precio {
+  max-width: 100px;
+}
+
+.registro-boletas-edit-input.tipo-precio {
+  max-width: 130px;
+  font-size: 11px;
+}
+
+.registro-boletas-precios-info {
+  margin-top: 2px;
+  font-size: 9px;
+  color: var(--medium-gray);
+  line-height: 1.2;
+}
+
+.registro-boletas-precios-info small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-bottom: 1px;
+}
+
+.registro-boletas-precios-info small:first-child {
+  font-weight: 600;
+  color: var(--primary-blue);
+}
+
+.registro-boletas-edit-textarea {
+  width: 100%;
+  padding: var(--spacing-xs);
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  resize: vertical;
+  min-height: 40px;
+  font-family: var(--font-family);
+  transition: all 0.3s ease;
+}
+
+.registro-boletas-edit-textarea:focus {
+  border-color: var(--primary-blue);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(30, 60, 114, 0.2);
+}
+
+.registro-boletas-subtotal {
+  font-weight: 600;
+  color: var(--success);
+  text-align: right;
+}
+
+.registro-boletas-edit-total {
+  background: var(--light-gray);
+}
+
+.registro-boletas-edit-total th {
+  background: var(--success) !important;
+  color: var(--white);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.registro-boletas-edit-observaciones {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-family);
+  resize: vertical;
+  min-height: 80px;
+  transition: all 0.3s ease;
+}
+
+.registro-boletas-edit-observaciones:focus {
+  border-color: var(--primary-blue);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(30, 60, 114, 0.2);
+}
+
+/* Botón primario en el modal */
+.registro-boletas-modal-button.primary {
+  background: var(--gradient-main);
+  color: var(--white);
+  border: none;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.registro-boletas-modal-button.primary:hover {
+  background: var(--gradient-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.registro-boletas-modal-button.primary:active {
+  transform: translateY(0);
+}
+
+/* Estilo para botón de descarga en modal */
+.registro-boletas-modal-button.secondary {
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  border: 1px solid var(--medium-gray);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.registro-boletas-modal-button.secondary:hover {
+  background: var(--medium-gray);
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Responsive para el modal de edición */
+@media (max-width: 768px) {
+  .registro-boletas-edit-products-container {
+    max-height: 300px;
+  }
+  
+  .registro-boletas-edit-products-table {
+    font-size: 11px;
+  }
+  
+  .registro-boletas-edit-products-table th,
+  .registro-boletas-edit-products-table td {
+    padding: var(--spacing-xs);
+  }
+  
+  .registro-boletas-client-info {
+    grid-template-columns: 1fr;
+  }
+  
+  .registro-boletas-edit-input.cantidad,
+  .registro-boletas-edit-input.tipo-precio {
+    max-width: none;
+    min-width: 90px;
+  }
+  
+  .registro-boletas-precios-info {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .registro-boletas-edit-products-table {
+    font-size: 10px;
+  }
+  
+  .registro-boletas-edit-textarea {
+    min-height: 30px;
+  }
+  
+  .registro-boletas-modal-button.primary {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 14px;
+  }
+  
+  .registro-boletas-edit-input.tipo-precio {
+    font-size: 10px;
+  }
+  
+  .registro-boletas-precios-info {
+    display: none; /* Ocultar en pantallas muy pequeñas */
+  }
+}
+
+/* Estilos para acciones en la tabla de productos */
+.registro-boletas-actions {
+  text-align: center;
+  vertical-align: middle;
+  min-width: 60px;
+}
+
+.registro-boletas-btn-delete {
+  background: var(--error);
+  color: white;
+  border: none;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.registro-boletas-btn-delete:hover {
+  background: var(--error-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.registro-boletas-btn-delete:active {
+  transform: translateY(0);
+}
+
+/* Estilos para el formulario de nuevo producto */
+.registro-boletas-nuevo-producto-form {
+  background: var(--light-gray);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid #d5dbdb;
+}
+
+.registro-boletas-form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.5fr 2fr auto;
+  gap: var(--spacing-md);
+  align-items: end;
+}
+
+.registro-boletas-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.registro-boletas-form-group label {
+  font-weight: 600;
+  color: var(--dark-gray);
+  margin-bottom: var(--spacing-xs);
+  font-size: 14px;
+}
+
+.registro-boletas-btn-add {
+  background: var(--success);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: 42px;
+}
+
+.registro-boletas-btn-add:hover:not(:disabled) {
+  background: var(--success-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.registro-boletas-btn-add:disabled {
+  background: var(--medium-gray);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.registro-boletas-btn-add i {
+  font-size: 12px;
+}
+
+/* Responsividad para el formulario de nuevo producto */
+@media (max-width: 768px) {
+  .registro-boletas-form-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .registro-boletas-btn-add {
+    justify-self: center;
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .registro-boletas-actions {
+    min-width: 50px;
+  }
+  
+  .registro-boletas-btn-delete {
+    min-width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .registro-boletas-nuevo-producto-form {
+    padding: var(--spacing-md);
+  }
+  
+  .registro-boletas-form-group label {
+    font-size: 12px;
+  }
+  
+  .registro-boletas-btn-add {
+    font-size: 12px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    min-height: 36px;
+  }
+}

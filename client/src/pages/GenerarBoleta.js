@@ -102,9 +102,9 @@ function GenerarBoleta() {
   const [productoForm, setProductoForm] = useState({
     CodigoProducto: '',
     Cantidad: 1,
-    TipoPrecio: 'PrecioUnitario', // 'PrecioUnitario' para Precio Sala, 'PrecioDescuento' para Precio con Descuento
+    TipoPrecio: 'PrecioUnitario',
     PrecioUnitario: 0,
-    DescripcionProducto: '' // Nueva descripción personalizada
+    DescripcionProducto: '' 
   });
   
   // Estados para totales
