@@ -120,9 +120,9 @@ function Usuarios() {
       console.log('🔍 Iniciando obtenerUsuarios...');
       setLoading(true);
 
-      console.log('🚀 Haciendo petición a: /auth/usuarios');
+      console.log('🚀 Haciendo petición a: /usuarios');
 
-      const response = await api.get('/auth/usuarios');
+      const response = await api.get('/usuarios');
 
       console.log('✅ Respuesta recibida:', response);
       console.log('📊 Datos recibidos:', response.data);
@@ -174,7 +174,7 @@ function Usuarios() {
     if (result.isConfirmed) {
       try {
         console.log('Eliminando usuario:', usuario.id);
-        await api.delete(`/auth/usuarios/${usuario.id}`);
+        await api.delete(`/usuarios/${usuario.id}`);
         
         Swal.fire({
           icon: 'success',
@@ -245,7 +245,7 @@ function Usuarios() {
           updateData.Password = usuarioForm.Password;
         }
         
-        await api.put(`/auth/usuarios/${editingUsuario.id}`, updateData);
+        await api.put(`/usuarios/${editingUsuario.id}`, updateData);
         
         Swal.fire({
           icon: 'success',
@@ -254,7 +254,7 @@ function Usuarios() {
         });
       } else {
         // Crear nuevo usuario
-        await api.post('/auth/register', {
+        await api.post('/register', {
           NombreUsuario: usuarioForm.NombreUsuario,
           Password: usuarioForm.Password,
           RolAdmin: usuarioForm.RolAdmin ? 1 : 0
