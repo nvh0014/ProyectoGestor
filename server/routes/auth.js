@@ -11,4 +11,10 @@ router.post('/login', authController.login);
 // Obtener usuarios
 router.get('/usuarios', authController.getUsers);
 
+// Actualizar usuario
+router.put('/usuarios/:id', authController.updateUser);
+
+// Eliminar usuario
+router.delete('/usuarios/:id', authController.deleteUser);
+
 module.exports = router;

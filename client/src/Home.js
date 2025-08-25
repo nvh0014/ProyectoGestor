@@ -50,14 +50,19 @@ const Icons = {
   Logout: () => (
     <div className="icon-logout" role="img" aria-label="Cerrar sesión">
     </div>
+  ),
+  User: () => (
+    <div className="icon-user" role="img" aria-label="Usuarios">
+      👤
+    </div>
   )
 };
-
 const Home = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingCard, setLoadingCard] = useState(null);
   const [usuario, setUsuario] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Verificar autenticación al cargar el componente
   useEffect(() => {
@@ -78,6 +83,26 @@ const Home = () => {
     }
     
     setUsuario(usuarioLogueado);
+
+    // Verificar rol de administrador
+    const userData = localStorage.getItem('userData');
+    console.log('🔍 userData raw desde localStorage:', userData);
+    if (userData) {
+      try {
+        const userInfo = JSON.parse(userData);
+        console.log('🔍 userInfo parseado:', userInfo);
+        console.log('🔍 userInfo.RolAdmin:', userInfo.RolAdmin);
+        console.log('🔍 userInfo.RolAdmin === 1:', userInfo.RolAdmin === 1);
+        setIsAdmin(userInfo.RolAdmin === 1);
+        console.log('🔍 setIsAdmin llamado con:', userInfo.RolAdmin === 1);
+      } catch (error) {
+        console.error('Error al parsear userData:', error);
+        setIsAdmin(false);
+      }
+    } else {
+      console.log('❌ No se encontró userData en localStorage');
+      setIsAdmin(false);
+    }
 
     // Probar conexión con el backend
     const checkBackendConnection = async () => {
@@ -124,6 +149,13 @@ const menuItems = [
     icon: Icons.FileText,
     description: 'Historial de ventas realizadas',
     route: '/registro-boletas'
+  },
+  {
+    id: 'usuarios',
+    title: 'USUARIOS',
+    icon: Icons.User,
+    description: 'Administrar usuarios del sistema',
+    route: '/usuarios'
   }
 ];
 
@@ -284,7 +316,16 @@ const menuItems = [
         </div>
 
         <div className="cards-grid" role="grid">
-          {menuItems.map((item, index) => {
+          {menuItems
+            .filter(item => {
+              // Solo mostrar la opción de Usuarios a los administradores
+              if (item.id === 'usuarios') {
+                console.log('🔍 Filtro usuarios - isAdmin:', isAdmin);
+                return isAdmin;
+              }
+              return true;
+            })
+            .map((item, index) => {
             const IconComponent = item.icon;
             const isCardLoading = loadingCard === item.id;
 
@@ -319,7 +360,7 @@ const menuItems = [
         {/* Información adicional del sistema */}
         <div className="system-info">
           <p className="system-version">
-            Sistema v3.4r | Última actualización: {new Date().toLocaleDateString('es-CL')}
+            Sistema v4 | Última actualización: {new Date().toLocaleDateString('es-CL')}
           </p>
         </div>
       </main>

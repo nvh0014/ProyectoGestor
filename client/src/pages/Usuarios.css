@@ -1,0 +1,494 @@
+/* Usuarios.css - Estilos para el componente Usuarios */
+
+/* Variables CSS para mantenimiento fácil */
+:root {
+  /* Colores principales */
+  --primary-blue: #1e3c72;
+  --secondary-blue: #2a5298;
+  --light-blue: #e8f1ff;
+  --dark-gray: #2c3e50;
+  --medium-gray: #5a6c7d;
+  --light-gray: #e0e6ed;
+  --white: #ffffff;
+  --success: #27ae60;
+  --error: #e74c3c;
+  --warning: #f39c12;
+  --edit-blue: #3498db;
+  
+  /* Gradientes */
+  --gradient-main: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 50%, var(--primary-blue) 100%);
+  
+  /* Espaciado */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Bordes */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  
+  /* Sombras */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 15px rgba(30, 60, 114, 0.15);
+  --shadow-lg: 0 8px 25px rgba(30, 60, 114, 0.2);
+  
+  /* Tipografía */
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-size-sm: 0.85rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  
+  /* Transiciones */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+}
+
+/* Container principal */
+.usuarios-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-family);
+  background: var(--gradient-main);
+  color: var(--dark-gray);
+}
+
+/* Main content */
+.usuarios-main-content {
+  flex: 1;
+  padding: var(--spacing-xl);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.usuarios-title {
+  color: var(--white);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Card content */
+.usuarios-content-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.usuarios-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--light-gray);
+}
+
+.usuarios-card-title {
+  color: var(--primary-blue);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.usuarios-add-button {
+  background: var(--success);
+  color: var(--white);
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.usuarios-add-button:hover {
+  background: var(--success);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Tabla */
+.usuarios-table-container {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.usuarios-table-controls {
+  padding: var(--spacing-md);
+  background: var(--light-blue);
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.usuarios-search-input {
+  width: 100%;
+  max-width: 300px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+}
+
+.usuarios-search-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+}
+
+.usuarios-table-wrapper {
+  overflow-x: auto;
+}
+
+.usuarios-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.usuarios-table th {
+  background: var(--primary-blue);
+  color: var(--white);
+  padding: var(--spacing-md);
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.usuarios-table th.sortable {
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.usuarios-table th.sortable:hover {
+  background: var(--secondary-blue);
+}
+
+.usuarios-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--light-gray);
+  vertical-align: middle;
+}
+
+.usuarios-table tbody tr:hover {
+  background: rgba(30, 60, 114, 0.05);
+}
+
+/* Badges de rol */
+.rol-badge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  min-width: 60px;
+}
+
+.rol-badge.admin {
+  background: var(--success);
+  color: var(--white);
+}
+
+.rol-badge.usuario {
+  background: var(--medium-gray);
+  color: var(--white);
+}
+
+/* Botones de acciones */
+.acciones-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+  justify-content: center;
+}
+
+.accion-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+  font-size: var(--font-size-sm);
+}
+
+.edit-button {
+  background: var(--edit-blue);
+  color: var(--white);
+}
+
+.edit-button:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+.delete-button {
+  background: var(--error);
+  color: var(--white);
+}
+
+.delete-button:hover {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+/* Paginación */
+.usuarios-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--light-blue);
+  border-top: 1px solid var(--light-gray);
+}
+
+.usuarios-pagination-info {
+  font-size: var(--font-size-sm);
+  color: var(--medium-gray);
+}
+
+.usuarios-pagination-controls {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.usuarios-pagination-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--light-gray);
+  background: var(--white);
+  color: var(--medium-gray);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+  font-size: var(--font-size-sm);
+}
+
+.usuarios-pagination-button:hover:not(:disabled) {
+  background: var(--primary-blue);
+  color: var(--white);
+  border-color: var(--primary-blue);
+}
+
+.usuarios-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.usuarios-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.usuarios-modal {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  outline: none;
+}
+
+.usuarios-modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.usuarios-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--light-gray);
+  background: var(--light-blue);
+}
+
+.usuarios-modal-header h3 {
+  color: var(--primary-blue);
+  font-weight: 600;
+  margin: 0;
+}
+
+.usuarios-modal-close {
+  background: none;
+  border: none;
+  font-size: var(--font-size-lg);
+  color: var(--medium-gray);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-base);
+}
+
+.usuarios-modal-close:hover {
+  background: var(--light-gray);
+  color: var(--error);
+}
+
+.usuarios-modal-body {
+  flex: 1;
+  padding: var(--spacing-lg);
+}
+
+.usuarios-form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.usuarios-form-group label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 600;
+  color: var(--dark-gray);
+}
+
+.usuarios-form-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  transition: var(--transition-base);
+}
+
+.usuarios-form-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+}
+
+.usuarios-checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  margin-bottom: 0 !important;
+}
+
+.usuarios-checkbox {
+  width: auto !important;
+  margin: 0;
+}
+
+.usuarios-checkbox-text {
+  font-weight: normal;
+}
+
+.usuarios-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--light-gray);
+  background: var(--light-blue);
+}
+
+.usuarios-button {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-base);
+  font-size: var(--font-size-base);
+}
+
+.usuarios-button-primary {
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.usuarios-button-primary:hover {
+  background: var(--secondary-blue);
+  transform: translateY(-1px);
+}
+
+.usuarios-button-secondary {
+  background: var(--medium-gray);
+  color: var(--white);
+}
+
+.usuarios-button-secondary:hover {
+  background: var(--dark-gray);
+  transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .usuarios-main-content {
+    padding: var(--spacing-md);
+  }
+  
+  .usuarios-content-card {
+    padding: var(--spacing-md);
+  }
+  
+  .usuarios-card-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: stretch;
+  }
+  
+  .usuarios-table-wrapper {
+    font-size: var(--font-size-sm);
+  }
+  
+  .usuarios-table th,
+  .usuarios-table td {
+    padding: var(--spacing-sm);
+  }
+  
+  .usuarios-pagination {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .usuarios-modal {
+    width: 95%;
+  }
+  
+  .acciones-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .usuarios-table th,
+  .usuarios-table td {
+    padding: var(--spacing-xs);
+    font-size: 0.75rem;
+  }
+  
+  .usuarios-card-title {
+    font-size: var(--font-size-base);
+  }
+  
+  .usuarios-add-button {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+}

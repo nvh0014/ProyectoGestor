@@ -58,10 +58,20 @@ function Login() {
             Password: passwordLimpio
         })
             .then((res) => {
+                console.log('🔍 Respuesta completa del servidor:', res.data);
                 if (res.data.status === 'success') {
                     // Guardar el usuario en una cookie por 7 días (sin espacios)
                     setCookie('usuario', usuarioLimpio, 7);
                     setCookie('isLoggedIn', 'true', 7);
+                    
+                    // Guardar información del usuario en localStorage para verificación de roles
+                    if (res.data.user) {
+                        localStorage.setItem('userData', JSON.stringify(res.data.user));
+                        console.log('✅ Datos de usuario guardados en localStorage:', res.data.user);
+                        console.log('✅ RolAdmin del usuario:', res.data.user.RolAdmin);
+                    } else {
+                        console.error('❌ No se recibió información del usuario en la respuesta');
+                    }
                     
                     Swal.fire({
                         icon: 'success',

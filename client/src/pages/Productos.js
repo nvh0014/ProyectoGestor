@@ -31,6 +31,7 @@ function Productos() {
     // Estados para el header
     const [isLoading, setIsLoading] = useState(false);
     const [usuario, setUsuario] = useState('');
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // Estados para el CRUD de productos
     const [productos, setProductos] = useState([]);
@@ -393,26 +394,33 @@ function Productos() {
             header: 'Acciones',
             cell: ({ row }) => (
                 <div className="productos-table-actions">
-                    <button
-                        className="productos-action-button edit"
-                        onClick={() => abrirModalEditar(row.original)}
-                        title="Editar"
-                    >
-                        ✏️
-                        <i className="fas fa-edit"></i>
-                    </button>
-                    <button
-                        className="productos-action-button delete"
-                        onClick={() => eliminarProducto(row.original)}
-                        title="Desactivar"
-                    >
-                        🗑️
-                        <i className="fas fa-ban"></i>
-                    </button>
+                    {isAdmin && (
+                        <>
+                            <button
+                                className="productos-action-button edit"
+                                onClick={() => abrirModalEditar(row.original)}
+                                title="Editar"
+                            >
+                                ✏️
+                                <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                                className="productos-action-button delete"
+                                onClick={() => eliminarProducto(row.original)}
+                                title="Desactivar"
+                            >
+                                🗑️
+                                <i className="fas fa-ban"></i>
+                            </button>
+                        </>
+                    )}
+                    {!isAdmin && (
+                        <span className="productos-no-permissions">Solo lectura</span>
+                    )}
                 </div>
             )
         }
-    ], []);
+    ], [isAdmin]);
 
     // Configuración de la tabla
     const table = useReactTable({
@@ -438,6 +446,19 @@ function Productos() {
         if (usuarioLogueado) {
             setUsuario(usuarioLogueado);
         }
+
+        // Verificar rol de administrador
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+            try {
+                const userInfo = JSON.parse(userData);
+                setIsAdmin(userInfo.RolAdmin === 1);
+            } catch (error) {
+                console.error('Error al parsear userData:', error);
+                setIsAdmin(false);
+            }
+        }
+
         obtenerProductos();
     }, []);
 
@@ -509,13 +530,15 @@ function Productos() {
                             <i className="fas fa-list"></i>
                             Lista de Productos
                         </h3>
-                        <button
-                            className="productos-add-button"
-                            onClick={abrirModalCrear}
-                        >
-                            <i className="fas fa-plus"></i>
-                            Nuevo Producto
-                        </button>
+                        {isAdmin && (
+                            <button
+                                className="productos-add-button"
+                                onClick={abrirModalCrear}
+                            >
+                                <i className="fas fa-plus"></i>
+                                Nuevo Producto
+                            </button>
+                        )}
                     </div>
 
                     <div className="productos-table-container">

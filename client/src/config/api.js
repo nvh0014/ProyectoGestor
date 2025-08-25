@@ -92,6 +92,7 @@ export const apiService = {
   async getUsers() {
     const response = await api.get('/usuarios');
     return response.data;
+  
   },
 
   // Clientes

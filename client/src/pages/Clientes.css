@@ -1348,6 +1348,17 @@
   border-radius: var(--radius-sm);
 }
 
+/* Estilo para texto "Solo lectura" */
+.clientes-no-permissions {
+  font-size: var(--font-size-xs);
+  color: var(--medium-gray);
+  font-style: italic;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(90, 108, 125, 0.1);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
 .clientes-table-container::-webkit-scrollbar-thumb:hover {
   background: var(--secondary-blue);
 }
@@ -1376,4 +1387,14 @@
 
 .clientes-table-wrapper::-webkit-scrollbar-thumb:active {
   background: var(--primary-blue);
+}
+/* Estilo para texto de solo lectura */
+.clientes-no-permissions {
+  color: var(--medium-gray);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--light-gray);
+  border-radius: var(--radius-sm);
+  display: inline-block;
 }

@@ -1264,3 +1264,19 @@
     transform: scale(0.95); /* Añadido transform active */
   }
 }
+
+/* Estilo para texto "Solo lectura" */
+.productos-no-permissions {
+  font-size: var(--font-size-xs);
+  color: var(--medium-gray);
+  font-style: italic;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(90, 108, 125, 0.1);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* Estilo para texto de solo lectura */
+.productos-no-permissions {
+  color: var(--medium-gray); font-style: italic; font-size: var(--font-size-sm); padding: var(--spacing-xs) var(--spacing-sm); background: var(--light-gray); border-radius: var(--radius-sm); display: inline-block;
+}

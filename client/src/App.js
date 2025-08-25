@@ -4,12 +4,14 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Register from './Register';
 import Login from './Login';
 import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute';
 
 import GenerarBoleta from './pages/GenerarBoleta';
 import Clientes from './pages/Clientes';
 import Productos from './pages/Productos';
 import RegistroBoletas from './pages/RegistroBoletas';
 import Home from './Home';
+import Usuarios from './pages/Usuarios';
 
 function App() {
   return (
@@ -49,6 +51,13 @@ function App() {
             <RegistroBoletas />
           </ProtectedRoute>
         } />
+        {/* Nueva ruta para usuarios - Solo administradores */}
+        <Route path="/usuarios" element={
+          <AdminRoute>
+            <Usuarios />
+          </AdminRoute>
+        } />
+
       </Routes>
     </Router>
   );

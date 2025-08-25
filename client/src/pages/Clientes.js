@@ -30,6 +30,7 @@ function Clientes() {
     // Estados para el header
     const [isLoading, setIsLoading] = useState(false);
     const [usuario, setUsuario] = useState('');
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // Estados para el CRUD de clientes
     const [clientes, setClientes] = useState([]);
@@ -378,26 +379,33 @@ function Clientes() {
             header: 'Acciones',
             cell: ({ row }) => (
                 <div className="clientes-table-actions">
-                    <button
-                        className="clientes-action-button edit"
-                        onClick={() => abrirModalEditar(row.original)}
-                        title="Editar"
-                    >
-                        ✏️
-                        <i className="fas fa-edit"></i>
-                    </button>
-                    <button
-                        className="clientes-action-button delete"
-                        onClick={() => eliminarCliente(row.original)}
-                        title="Desactivar"
-                    >
-                        🗑️
-                        <i className="fas fa-ban"></i>
-                    </button>
+                    {isAdmin && (
+                        <>
+                            <button
+                                className="clientes-action-button edit"
+                                onClick={() => abrirModalEditar(row.original)}
+                                title="Editar"
+                            >
+                                ✏️
+                                <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                                className="clientes-action-button delete"
+                                onClick={() => eliminarCliente(row.original)}
+                                title="Desactivar"
+                            >
+                                🗑️
+                                <i className="fas fa-ban"></i>
+                            </button>
+                        </>
+                    )}
+                    {!isAdmin && (
+                        <span className="clientes-no-permissions">Solo lectura</span>
+                    )}
                 </div>
             )
         }
-    ], []);
+    ], [isAdmin]);
 
     // Configuración de la tabla
     const table = useReactTable({
@@ -419,13 +427,24 @@ function Clientes() {
 
     // Efecto para cargar datos iniciales
     useEffect(() => {
-        console.log('🚀 Componente Clientes montado, cargando datos...');
         const usuarioLogueado = getCookie('usuario');
         if (usuarioLogueado) {
             console.log('👤 Usuario logueado encontrado:', usuarioLogueado);
             setUsuario(usuarioLogueado);
         } else {
             console.warn('⚠️ No se encontró usuario logueado');
+        }
+
+        // Verificar rol de administrador
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+            try {
+                const userInfo = JSON.parse(userData);
+                setIsAdmin(userInfo.RolAdmin === 1);
+            } catch (error) {
+                console.error('Error al parsear userData:', error);
+                setIsAdmin(false);
+            }
         }
 
         console.log('📞 Llamando a obtenerClientes()...');
@@ -504,13 +523,15 @@ function Clientes() {
                             <i className="fas fa-list"></i>
                             Lista de Clientes
                         </h3>
-                        <button
-                            className="clientes-add-button"
-                            onClick={abrirModalCrear}
-                        >
-                            <i className="fas fa-plus"></i>
-                            Nuevo Cliente
-                        </button>
+                        {isAdmin && (
+                            <button
+                                className="clientes-add-button"
+                                onClick={abrirModalCrear}
+                            >
+                                <i className="fas fa-plus"></i>
+                                Nuevo Cliente
+                            </button>
+                        )}
                     </div>
 
                     <div className="clientes-table-container">
