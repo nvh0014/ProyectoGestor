@@ -447,9 +447,22 @@ function Usuarios() {
           </div>
         </div>
       </header>
+      <div>
+        {/* En Progreso... */}
+        <h1>En progreso...</h1>
+        {/* Estilo para ponerle color blanco */}
+        <style jsx>{`
+          h1 {
+            color: white;
+          }
+        `}</style>
+      </div>
 
+      {/* En Progreso... */}
+
+      {/* COMENTADO DESDE LINEA 451 
       {/* Main Content */}
-      <main className="usuarios-main-content">
+      {/*<main className="usuarios-main-content">
         <h2 className="usuarios-title">Usuarios del Sistema</h2>
 
         <div className="usuarios-content-card">
@@ -477,7 +490,7 @@ function Usuarios() {
 
           <div className="usuarios-table-container">
             {/* Controls */}
-            <div className="usuarios-table-controls">
+            {/*<div className="usuarios-table-controls">
               <input
                 type="text"
                 className="usuarios-search-input"
@@ -488,7 +501,7 @@ function Usuarios() {
             </div>
 
             {/* Table */}
-            <div className="usuarios-table-wrapper">
+            {/*<div className="usuarios-table-wrapper">
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '2rem' }}>
                   <i className="fas fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
@@ -543,7 +556,7 @@ function Usuarios() {
             </div>
 
             {/* Pagination */}
-            {!loading && (
+            {/*!loading && (
               <div className="usuarios-pagination">
                 <div className="usuarios-pagination-info">
                   Mostrando {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} - {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} de {table.getFilteredRowModel().rows.length} usuarios
@@ -585,7 +598,7 @@ function Usuarios() {
       </main>
 
       {/* Modal para editar usuario */}
-      <Modal
+      {/*<Modal
         isOpen={modalIsOpen}
         onRequestClose={() => setModalIsOpen(false)}
         className="usuarios-modal"
@@ -671,7 +684,7 @@ function Usuarios() {
             </button>
           </div>
         </div>
-      </Modal>
+      </Modal>*/}
     </div>
   );
 }
