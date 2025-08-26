@@ -524,6 +524,17 @@
   border-bottom: none;
 }
 
+/* Estilo para fila seleccionada en pantallas táctiles */
+.registro-boletas-table tbody tr.selected {
+  background: rgba(173, 216, 230, 0.4) !important; /* Color celeste */
+  border: 2px solid rgba(135, 206, 235, 0.6);
+  transform: none; /* Evitar conflicto con el hover */
+}
+
+.registro-boletas-table tbody tr.selected td {
+  background: inherit;
+}
+
 /* ===== BOTONES DE ACCIÓN ===== */
 .registro-boletas-table-actions {
   display: flex;
@@ -1947,5 +1958,35 @@
   .registro-boletas-edit-products-form-group .registro-boletas-precios-info {
     font-size: 11px; /* Aumentado para mejor legibilidad en móvil */
     padding: 2px 4px;
+  }
+}
+
+/* ===== SOPORTE PARA PANTALLAS TÁCTILES ===== */
+@media (hover: none) and (pointer: coarse) {
+  .registro-boletas-content-card:hover {
+    transform: none;
+  }
+  
+  .registro-boletas-table tbody tr:hover {
+    transform: none;
+  }
+  
+  .registro-boletas-action-button:hover {
+    transform: none;
+  }
+  
+  /* Mejorar selección táctil para filas */
+  .registro-boletas-table tbody tr {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(173, 216, 230, 0.3);
+  }
+  
+  .registro-boletas-table tbody tr:active {
+    background: rgba(173, 216, 230, 0.2);
+  }
+  
+  .registro-boletas-action-button {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

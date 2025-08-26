@@ -8,7 +8,7 @@ import './GenerarBoleta.css';
 
 function GenerarBoleta() {
   const navigate = useNavigate();
-  
+
   // Estados para el header
   const [isLoading, setIsLoading] = useState(false);
   const [usuario, setUsuario] = useState('');
@@ -17,7 +17,7 @@ function GenerarBoleta() {
   const getCookie = (name) => {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
-    for(let i = 0; i < ca.length; i++) {
+    for (let i = 0; i < ca.length; i++) {
       let c = ca[i];
       while (c.charAt(0) === ' ') c = c.substring(1, c.length);
       if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
@@ -45,12 +45,12 @@ function GenerarBoleta() {
     if (result.isConfirmed) {
       try {
         setIsLoading(true);
-        
+
         // Limpiar datos de autenticación
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
         sessionStorage.clear();
-        
+
         // Eliminar cookies de sesión
         deleteCookie('usuario');
         deleteCookie('isLoggedIn');
@@ -85,7 +85,7 @@ function GenerarBoleta() {
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
-  
+
   // Estados del formulario de boleta
   const [boletaForm, setBoletaForm] = useState({
     CodigoCliente: '',
@@ -93,10 +93,10 @@ function GenerarBoleta() {
     MedioPago: 'Efectivo',
     Observaciones: ''
   });
-  
+
   // Estados para la información del cliente seleccionado
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
-  
+
   // Estados para los productos de la boleta
   const [productosBoleta, setProductosBoleta] = useState([]);
   const [productoForm, setProductoForm] = useState({
@@ -104,22 +104,22 @@ function GenerarBoleta() {
     Cantidad: 1,
     TipoPrecio: 'PrecioUnitario',
     PrecioUnitario: 0,
-    DescripcionProducto: '' 
+    DescripcionProducto: ''
   });
-  
+
   // Estados para totales
   const [totales, setTotales] = useState({
     subtotalNeto: 0,
     totalImpuestos: 0,
     totalBruto: 0
   });
-  
+
   const [loading, setLoading] = useState(true);
 
   // Función para calcular totales
   const calcularTotales = useCallback(() => {
     const subtotalNeto = productosBoleta.reduce((sum, item) => sum + item.SubtotalNeto, 0);
-    
+
     setTotales({
       subtotalNeto,
       totalImpuestos: 0, // Ya no calculamos IVA
@@ -149,31 +149,49 @@ function GenerarBoleta() {
         api.get('/articulos'),
         api.get('/usuarios')
       ]);
-      
+
       // El backend ya filtra solo clientes activos
       setClientes(clientesRes.data);
       console.log('Clientes cargados:', clientesRes.data.length, 'clientes');
       console.log('Estructura de cliente ejemplo:', clientesRes.data[0]);
-      
-      const productosActivos = productosRes.data.filter(producto => 
+
+      const productosActivos = productosRes.data.filter(producto =>
         producto.ArticuloActivo === true || producto.ArticuloActivo === 1
       );
       setProductos(productosActivos);
       console.log('Productos activos:', productosActivos.length, 'productos');
-      
+
       setUsuarios(usuariosRes.data);
       console.log('Usuarios cargados:', usuariosRes.data.length, 'usuarios');
-      
-      // Establecer primer usuario como por defecto si existe
-      if (usuariosRes.data.length > 0) {
-        const primerUsuario = usuariosRes.data[0].CodigoUsuario;
-        console.log('Estableciendo usuario por defecto:', primerUsuario);
+
+      // Obtener el usuario logueado y establecerlo como usuario de la boleta
+      const userData = localStorage.getItem('userData');
+      let usuarioLogueado = null;
+
+      if (userData) {
+        try {
+          const userInfo = JSON.parse(userData);
+          usuarioLogueado = userInfo.CodigoUsuario;
+          console.log('Usuario logueado obtenido de localStorage:', usuarioLogueado);
+        } catch (error) {
+          console.error('Error al parsear userData:', error);
+        }
+      }
+
+      // Si no se pudo obtener el usuario logueado, usar el primer usuario como respaldo
+      if (!usuarioLogueado && usuariosRes.data.length > 0) {
+        usuarioLogueado = usuariosRes.data[0].CodigoUsuario;
+        console.log('Usando primer usuario como respaldo:', usuarioLogueado);
+      }
+
+      if (usuarioLogueado) {
+        console.log('Estableciendo usuario para la boleta:', usuarioLogueado);
         setBoletaForm(prev => ({
           ...prev,
-          CodigoUsuario: primerUsuario
+          CodigoUsuario: usuarioLogueado
         }));
       }
-      
+
       // Agregar tiempo de carga para asegurar que los datos se carguen correctamente
       setTimeout(() => {
         setLoading(false);
@@ -195,7 +213,7 @@ function GenerarBoleta() {
 
   const handleClienteChange = async (codigoCliente) => {
     setBoletaForm({ ...boletaForm, CodigoCliente: codigoCliente });
-    
+
     if (codigoCliente) {
       try {
         const response = await api.get(`/clientes/${codigoCliente}`);
@@ -213,10 +231,10 @@ function GenerarBoleta() {
   const handleProductoChange = (codigoProducto) => {
     const producto = productos.find(p => p.CodigoArticulo === codigoProducto);
     if (producto) {
-      const precioSeleccionado = productoForm.TipoPrecio === 'PrecioUnitario' 
+      const precioSeleccionado = productoForm.TipoPrecio === 'PrecioUnitario'
         ? parseFloat(producto.PrecioUnitario || 0)
         : parseFloat(producto.PrecioDescuento || 0);
-        
+
       setProductoForm({
         ...productoForm,
         CodigoProducto: codigoProducto,
@@ -229,13 +247,13 @@ function GenerarBoleta() {
     setProductoForm(prev => {
       const producto = productos.find(p => p.CodigoArticulo === prev.CodigoProducto);
       let nuevoPrecio = 0;
-      
+
       if (producto) {
-        nuevoPrecio = tipoPrecio === 'PrecioUnitario' 
+        nuevoPrecio = tipoPrecio === 'PrecioUnitario'
           ? parseFloat(producto.PrecioUnitario || 0)
           : parseFloat(producto.PrecioDescuento || 0);
       }
-      
+
       return {
         ...prev,
         TipoPrecio: tipoPrecio,
@@ -257,7 +275,7 @@ function GenerarBoleta() {
 
     const producto = productos.find(p => p.CodigoArticulo === productoForm.CodigoProducto);
     const subtotalNeto = productoForm.Cantidad * productoForm.PrecioUnitario;
-    
+
     const nuevoProducto = {
       CodigoProducto: productoForm.CodigoProducto,
       NombreProducto: producto.NombreArticulo || producto.Descripcion || 'Sin descripción',
@@ -296,11 +314,12 @@ function GenerarBoleta() {
       return;
     }
 
+    // Verificar que se tenga el usuario logueado
     if (!boletaForm.CodigoUsuario || !boletaForm.CodigoUsuario.toString().trim()) {
       Swal.fire({
         icon: 'warning',
-        title: 'Vendedor Requerido',
-        text: 'Por favor, seleccione un vendedor para la boleta.',
+        title: 'Usuario No Identificado',
+        text: 'No se pudo identificar el usuario logueado. Por favor, inicie sesión nuevamente.',
         confirmButtonText: 'Entendido'
       });
       return;
@@ -320,7 +339,7 @@ function GenerarBoleta() {
       const fechaBoleta = new Date().toISOString().split('T')[0];
       const fechaVencimiento = new Date();
       fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
-      
+
       const detalles = productosBoleta.map(producto => ({
         CodigoProducto: producto.CodigoProducto,
         Cantidad: producto.Cantidad,
@@ -339,11 +358,13 @@ function GenerarBoleta() {
         detalles: detalles
       };
 
-      // Log para debugging
+      // Log para debugging - confirmando que se usa el usuario logueado
       console.log('📤 Enviando datos de boleta:', {
         ...boletaData,
-        detallesCount: detalles.length
+        detallesCount: detalles.length,
+        usuarioLogueado: boletaForm.CodigoUsuario
       });
+      console.log('👤 Boleta será guardada con el usuario:', boletaForm.CodigoUsuario);
 
       const boletaResponse = await api.post('/boletas', boletaData);
       const numeroBoleta = boletaResponse.data.NumeroBoleta;
@@ -373,17 +394,17 @@ function GenerarBoleta() {
     try {
       const response = await api.get(`/boletas/${numeroBoleta}`);
       const { boleta, detalles } = response.data;
-      
+
       console.log('Datos de la boleta para PDF:', boleta);
       console.log('Observaciones recibidas:', boleta.Observaciones);
 
       const doc = new jsPDF();
-      
+
       // Agregar logo de la distribuidora en la esquina superior izquierda
       try {
         const logoImg = new Image();
         logoImg.crossOrigin = 'anonymous';
-        
+
         await new Promise((resolve, reject) => {
           logoImg.onload = () => {
             try {
@@ -413,12 +434,12 @@ function GenerarBoleta() {
       // Función para formatear fecha correctamente
       const formatearFecha = (fechaString) => {
         if (!fechaString) return 'N/A';
-        
+
         // Si la fecha ya está en formato DD/MM/YYYY, la devolvemos tal como está
         if (fechaString.includes('/')) {
           return fechaString;
         }
-        
+
         // Si la fecha está en formato ISO (YYYY-MM-DD), la convertimos evitando el problema de zona horaria
         const [year, month, day] = fechaString.split('T')[0].split('-');
         return `${day}/${month}/${year}`;
@@ -472,7 +493,7 @@ function GenerarBoleta() {
         if (yPosition > 260) { // Límite antes del final de la página
           doc.addPage();
           yPosition = 20;
-          
+
           // Repetir encabezados en nueva página
           doc.setFontSize(12);
           doc.setFont('helvetica', 'bold');
@@ -488,17 +509,17 @@ function GenerarBoleta() {
         // Descripción del producto
         const descripcion = (detalle.Descripcion || detalle.NombreProducto || '');
         doc.text(descripcion, 20, yPosition);
-        
+
         // Cantidad formateada
-        const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0 
-          ? Number(detalle.Cantidad).toString() 
+        const cantidadFormateada = Number(detalle.Cantidad) % 1 === 0
+          ? Number(detalle.Cantidad).toString()
           : Number(detalle.Cantidad).toFixed(1);
         doc.text(cantidadFormateada, 120, yPosition);
-        
+
         // Precio y total
         doc.text(`$${Number(detalle.PrecioUnitario).toLocaleString('es-CL')}`, 140, yPosition);
         doc.text(`$${Number(detalle.Subtotal).toLocaleString('es-CL')}`, 170, yPosition);
-        
+
         // Descripción personalizada si existe
         if (detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '') { // Aumentar la posición para la nota
           yPosition += 4; // Aumentar la posición para la nota
@@ -512,7 +533,7 @@ function GenerarBoleta() {
 
           yPosition += 2; // Aumentar la posición después de la nota
         }
-        
+
         subtotalGeneral += Number(detalle.Subtotal);
         yPosition += lineHeight;
       });
@@ -534,20 +555,20 @@ function GenerarBoleta() {
 
       // Observaciones
       const observaciones = boleta.Observaciones || boleta.observaciones || '';
-      
+
       if (observaciones && observaciones.toString().trim() !== '') {
         yPosition += 12;
-        
+
         // Verificar si necesitamos nueva página para observaciones
         if (yPosition > 250) {
           doc.addPage();
           yPosition = 20;
         }
-        
+
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text('OBSERVACIONES:', 20, yPosition);
-        
+
         yPosition += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
@@ -571,9 +592,23 @@ function GenerarBoleta() {
   };
 
   const limpiarFormulario = () => {
-    const usuarioPorDefecto = usuarios.length > 0 ? usuarios[0].CodigoUsuario : '';
-    console.log('Limpiando formulario, usuario por defecto:', usuarioPorDefecto);
-    
+    // Obtener el usuario logueado para mantenerlo después de limpiar
+    const userData = localStorage.getItem('userData');
+    let usuarioLogueado = null;
+
+    if (userData) {
+      try {
+        const userInfo = JSON.parse(userData);
+        usuarioLogueado = userInfo.CodigoUsuario;
+      } catch (error) {
+        console.error('Error al parsear userData:', error);
+      }
+    }
+
+    // Si no se pudo obtener el usuario logueado, usar el primer usuario como respaldo
+    const usuarioPorDefecto = usuarioLogueado || (usuarios.length > 0 ? usuarios[0].CodigoUsuario : '');
+    console.log('Limpiando formulario, manteniendo usuario:', usuarioPorDefecto);
+
     setBoletaForm({
       CodigoCliente: '',
       CodigoUsuario: usuarioPorDefecto,
@@ -607,49 +642,49 @@ function GenerarBoleta() {
   return (
     <div className="generar-boleta-container">
       {/* Header */}
-            <header className="clientes-header">
-                <div className="clientes-header-content">
-                    <div className="clientes-header-logo">
-                        <button
-                            onClick={() => navigate('/home')}
-                            className="clientes-logo-button"
-                            aria-label="Volver al home"
-                            title="Volver al home principal"
-                        >
-                            <img 
-                                src="/logo512.png" 
-                                alt="Logo Distribuidora" 
-                                className="clientes-logo-image"
-                            />
-                        </button>
-                    </div>
-                    
-                    <div className="clientes-header-text-group">
-                        <h1 className="clientes-header-title">Generar Boleta</h1>
-                        <p className="clientes-header-subtitle">Crea PDF´s de venta</p>
-                    </div>
-                    
-                    <div className="clientes-header-actions">
-                        {usuario && (
-                            <span className="clientes-user-greeting">
-                                <i className="fas fa-user"></i> {usuario}
-                            </span>
-                        )}
-                        <button
-                            onClick={cerrarSesion}
-                            className="clientes-logout-button"
-                            disabled={isLoading}
-                            aria-label="Cerrar sesión"
-                        >
-                            {isLoading ? (
-                                <span>Cerrando...</span>
-                            ) : (
-                                <span>CERRAR SESIÓN</span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </header>
+      <header className="clientes-header">
+        <div className="clientes-header-content">
+          <div className="clientes-header-logo">
+            <button
+              onClick={() => navigate('/home')}
+              className="clientes-logo-button"
+              aria-label="Volver al home"
+              title="Volver al home principal"
+            >
+              <img
+                src="/logo512.png"
+                alt="Logo Distribuidora"
+                className="clientes-logo-image"
+              />
+            </button>
+          </div>
+
+          <div className="clientes-header-text-group">
+            <h1 className="clientes-header-title">Generar Boleta</h1>
+            <p className="clientes-header-subtitle">Crea PDF´s de venta</p>
+          </div>
+
+          <div className="clientes-header-actions">
+            {usuario && (
+              <span className="clientes-user-greeting">
+                <i className="fas fa-user"></i> {usuario}
+              </span>
+            )}
+            <button
+              onClick={cerrarSesion}
+              className="clientes-logout-button"
+              disabled={isLoading}
+              aria-label="Cerrar sesión"
+            >
+              {isLoading ? (
+                <span>Cerrando...</span>
+              ) : (
+                <span>CERRAR SESIÓN</span>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="gb-main-content">
 
@@ -660,7 +695,7 @@ function GenerarBoleta() {
             <div className="gb-form-section">
               <div className="gb-form-card">
                 <div className="gb-card-header">
-                  <h3 className="gb-card-title">Información de la Boleta</h3>
+                  <h3 className="gb-card-title">Selección de cliente</h3>
                 </div>
                 <div className="gb-card-body">
                   <div className="gb-form-row">
@@ -682,7 +717,7 @@ function GenerarBoleta() {
                         searchKeys={["name"]}
                         required
                       />
-                      
+
                       {/* Versión con select - comentada pero disponible si necesitas */}
                       {/*
                       <select
@@ -699,38 +734,6 @@ function GenerarBoleta() {
                         ))}
                       </select>
                       */}
-                    </div>
-                    
-                    <div className="gb-form-group">
-                      <label className="gb-form-label">Vendedor *</label>
-                      <select
-                        className="gb-form-input"
-                        value={boletaForm.CodigoUsuario}
-                        onChange={(e) => setBoletaForm({ ...boletaForm, CodigoUsuario: e.target.value })}
-                        required
-                      >
-                        <option value="">Seleccione un vendedor</option>
-                        {usuarios.map((usuario) => (
-                          <option key={usuario.CodigoUsuario} value={usuario.CodigoUsuario}>
-                            {usuario.CodigoUsuario} - {usuario.NombreUsuario}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="form-row">
-                  {/* Eliminado campo de descripción personalizada de la sección de clientes */}
-                    <div className="form-group">
-                      <label className="form-label">Medio de Pago</label>
-                      <select
-                        className="form-input"
-                        value={boletaForm.MedioPago}
-                        onChange={(e) => setBoletaForm({ ...boletaForm, MedioPago: e.target.value })}
-                      >
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Transferencia">Transferencia</option>
-                      </select>
                     </div>
                   </div>
 
@@ -759,10 +762,10 @@ function GenerarBoleta() {
                 </div>
               </div>
 
-              {/* Agregar Productos */}
+              {/* Selección de productos */}
               <div className="form-card">
                 <div className="card-header">
-                  <h3 className="gb-card-title">Agregar Productos</h3>
+                  <h3 className="gb-card-title">Selección de productos</h3>
                 </div>
                 <div className="card-body">
                   <div className="form-row">
@@ -788,7 +791,7 @@ function GenerarBoleta() {
                   </div>
                   <div className="form-row">
                     <div className="form-group full-width">
-                      <label className="form-label">Descripción personalizada (opcional)</label>
+                      <label className="form-label">Descripción personalizada (Opcional)</label>
                       <input
                         type="text"
                         className="form-input"
@@ -799,7 +802,7 @@ function GenerarBoleta() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Cantidad</label>
@@ -817,7 +820,7 @@ function GenerarBoleta() {
                         }}
                       />
                     </div>
-                    
+
                     <div className="form-group">
                       <label className="form-label">Tipo de Precio</label>
                       <select
@@ -831,7 +834,7 @@ function GenerarBoleta() {
                       </select>
                     </div>
                   </div>
-                  
+
                   {/* Mostrar el precio seleccionado */}
                   {productoForm.CodigoProducto && (
                     <div className="form-row">
@@ -852,7 +855,7 @@ function GenerarBoleta() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="form-actions">
                     <button onClick={agregarProducto} className="generar-boleta-button primary">
                       ➕ Agregar Producto
@@ -864,11 +867,11 @@ function GenerarBoleta() {
               {/* Panel de Observaciones */}
               <div className="form-card">
                 <div className="card-header">
-                  <h3 className="gb-card-title">Observaciones</h3>
+                  <h3 className="gb-card-title">Observaciones generales</h3>
                 </div>
                 <div className="card-body">
                   <div className="form-group">
-                    <label className="form-label">Observaciones de la Boleta</label>
+                    <label className="form-label">Observaciones de la Boleta (Opcional)</label>
                     <textarea
                       className="form-input"
                       value={boletaForm.Observaciones}
@@ -944,9 +947,9 @@ function GenerarBoleta() {
                     >
                       📄 Crear Boleta y Generar PDF
                     </button>
-                    
-                    <button 
-                      onClick={limpiarFormulario} 
+
+                    <button
+                      onClick={limpiarFormulario}
                       className="generar-boleta-button secondary"
                     >
                       🧹 Limpiar

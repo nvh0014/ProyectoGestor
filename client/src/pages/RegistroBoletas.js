@@ -513,6 +513,25 @@ function RegistroBoletas() {
         }).format(precio);
     };
 
+    // Función para manejar clic en fila de la tabla
+    const handleRowClick = (event, rowId) => {
+        // Evitar selección si se hace clic en un botón de acción
+        if (event.target.closest('.registro-boletas-action-button')) {
+            return;
+        }
+        
+        const row = event.currentTarget;
+        
+        // Remover selección anterior
+        const previousSelected = document.querySelector('.registro-boletas-table tbody tr.selected');
+        if (previousSelected) {
+            previousSelected.classList.remove('selected');
+        }
+        
+        // Añadir selección a la fila actual
+        row.classList.add('selected');
+    };
+
     const descargarBoleta = async (numeroBoleta) => {
         try {
             const response = await api.get(`/boletas/${numeroBoleta}`);
@@ -924,7 +943,11 @@ function RegistroBoletas() {
                                 </thead>
                                 <tbody>
                                     {table.getRowModel().rows.map(row => (
-                                        <tr key={row.id}>
+                                        <tr 
+                                            key={row.id}
+                                            onClick={(event) => handleRowClick(event, row.id)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
                                             {row.getVisibleCells().map(cell => (
                                                 <td key={cell.id}>
                                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

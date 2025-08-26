@@ -360,7 +360,7 @@ const menuItems = [
         {/* Información adicional del sistema */}
         <div className="system-info">
           <p className="system-version">
-            Sistema v4 | Última actualización: {new Date().toLocaleDateString('es-CL')}
+            Sistema v4.1 | Última actualización: {new Date().toLocaleDateString('es-CL')}
           </p>
         </div>
       </main>

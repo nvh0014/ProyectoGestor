@@ -458,6 +458,17 @@
   border-bottom: none;
 }
 
+/* Estilo para fila seleccionada en pantallas táctiles */
+.clientes-table tbody tr.selected {
+  background: rgba(173, 216, 230, 0.4) !important; /* Color celeste */
+  border: 2px solid rgba(135, 206, 235, 0.6);
+  transform: none; /* Evitar conflicto con el hover */
+}
+
+.clientes-table tbody tr.selected td {
+  background: inherit;
+}
+
 .clientes-status-badge {
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-sm);
@@ -1326,6 +1337,16 @@
   
   .clientes-logout-button:hover {
     transform: none;
+  }
+  
+  /* Mejorar selección táctil para filas */
+  .clientes-table tbody tr {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(173, 216, 230, 0.3);
+  }
+  
+  .clientes-table tbody tr:active {
+    background: rgba(173, 216, 230, 0.2);
   }
   
   .clientes-logout-button:active {

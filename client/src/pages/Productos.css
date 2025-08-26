@@ -476,6 +476,17 @@
   border-bottom: none;
 }
 
+/* Estilo para fila seleccionada en pantallas táctiles */
+.productos-table tbody tr.selected {
+  background: rgba(173, 216, 230, 0.4) !important; /* Color celeste */
+  border: 2px solid rgba(135, 206, 235, 0.6);
+  transform: none; /* Evitar conflicto con el hover */
+}
+
+.productos-table tbody tr.selected td {
+  background: inherit;
+}
+
 .productos-price-cell {
   font-weight: 600;
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -1262,6 +1273,16 @@
   
   .productos-logout-button:active {
     transform: scale(0.95); /* Añadido transform active */
+  }
+  
+  /* Mejorar selección táctil para filas */
+  .productos-table tbody tr {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(173, 216, 230, 0.3);
+  }
+  
+  .productos-table tbody tr:active {
+    background: rgba(173, 216, 230, 0.2);
   }
 }
 

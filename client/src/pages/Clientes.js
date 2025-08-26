@@ -331,6 +331,25 @@ function Clientes() {
         }));
     };
 
+    // Función para manejar clic en fila de la tabla
+    const handleRowClick = (event, rowId) => {
+        // Evitar selección si se hace clic en un botón de acción
+        if (event.target.closest('.clientes-action-button')) {
+            return;
+        }
+        
+        const row = event.currentTarget;
+        
+        // Remover selección anterior
+        const previousSelected = document.querySelector('.clientes-table tbody tr.selected');
+        if (previousSelected) {
+            previousSelected.classList.remove('selected');
+        }
+        
+        // Añadir selección a la fila actual
+        row.classList.add('selected');
+    };
+
     // Configuración de columnas de la tabla
     const columns = useMemo(() => [
         {
@@ -581,7 +600,11 @@ function Clientes() {
                                         </tr>
                                     ) : (
                                         table.getRowModel().rows.map(row => (
-                                            <tr key={row.id}>
+                                            <tr 
+                                                key={row.id}
+                                                onClick={(event) => handleRowClick(event, row.id)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
                                                 {row.getVisibleCells().map(cell => (
                                                     <td key={cell.id}>
                                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -739,19 +762,6 @@ function Clientes() {
                                 onChange={handleInputChange}
                                 placeholder="Giro comercial de la empresa"
                             />
-                        </div>
-
-                        <div className="clientes-form-group">
-                            <div className="clientes-form-checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    className="clientes-form-checkbox"
-                                    name="ClienteActivo"
-                                    checked={clienteForm.ClienteActivo}
-                                    onChange={handleInputChange}
-                                />
-                                <label className="clientes-form-label">Cliente Activo</label>
-                            </div>
                         </div>
 
                         <div className="clientes-modal-footer">

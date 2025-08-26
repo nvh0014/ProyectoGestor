@@ -948,3 +948,22 @@ textarea.form-input {
         color: #000 !important;
     }
 }
+
+/* ===== AUTOCOMPLETE FIXES ===== */
+/* Asegurar que el autocomplete no se corte en las tarjetas */
+.gb-form-card .autocomplete-container,
+.form-card .autocomplete-container {
+    position: relative;
+    z-index: 10;
+}
+
+/* Asegurar que no hay overflow hidden que pueda cortar el dropdown */
+.gb-form-section,
+.form-section {
+    overflow: visible !important;
+}
+
+.gb-form-card,
+.form-card {
+    overflow: visible !important;
+}

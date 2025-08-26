@@ -345,6 +345,25 @@ function Productos() {
         }
     };
 
+    // Función para manejar clic en fila de la tabla
+    const handleRowClick = (event, rowId) => {
+        // Evitar selección si se hace clic en un botón de acción
+        if (event.target.closest('.productos-action-button')) {
+            return;
+        }
+        
+        const row = event.currentTarget;
+        
+        // Remover selección anterior
+        const previousSelected = document.querySelector('.productos-table tbody tr.selected');
+        if (previousSelected) {
+            previousSelected.classList.remove('selected');
+        }
+        
+        // Añadir selección a la fila actual
+        row.classList.add('selected');
+    };
+
     const formatearPrecio = (precio) => {
         return new Intl.NumberFormat('es-CL', {
             style: 'currency',
@@ -588,7 +607,11 @@ function Productos() {
                                     </tr>
                                 ) : (
                                     table.getRowModel().rows.map(row => (
-                                        <tr key={row.id}>
+                                        <tr 
+                                            key={row.id}
+                                            onClick={(event) => handleRowClick(event, row.id)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
                                             {row.getVisibleCells().map(cell => (
                                                 <td key={cell.id}>
                                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -705,19 +728,6 @@ function Productos() {
                                     onChange={handleInputChange}
                                     placeholder="$$$"
                                 />
-                            </div>
-                        </div>
-
-                        <div className="productos-form-group">
-                            <div className="productos-form-checkbox-group">
-                                <input
-                                    type="checkbox"
-                                    className="productos-form-checkbox"
-                                    name="ProductoActivo"
-                                    checked={productoForm.ProductoActivo}
-                                    onChange={handleInputChange}
-                                />
-                                <label className="productos-form-label">Producto Activo</label>
                             </div>
                         </div>
 

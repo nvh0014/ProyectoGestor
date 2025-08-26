@@ -3,6 +3,8 @@
   position: relative;
   width: 100%;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  z-index: 1000; /* Asegurar que el contenedor tenga prioridad */
+  isolation: isolate; /* Crear contexto de apilamiento propio */
 }
 
 /* Estilos personalizados para el scrollbar */
@@ -39,7 +41,7 @@
   padding: 12px 40px 12px 12px;
   border: 2px solid #ddd;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 18px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #fff;
   transition: all 0.3s ease;
@@ -65,7 +67,7 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
   color: #666;
   padding: 2px 4px;
@@ -98,17 +100,49 @@
   border: 2px solid #ddd;
   border-top: none;
   border-radius: 0 0 8px 8px;
-  max-height: 200px;
+  max-height: 250px; /* Altura aumentada para escritorio */
   overflow-y: auto;
-  z-index: 1000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 999999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* Sombra más sutil */
+  min-width: 300px; /* Ancho mínimo reducido */
+  width: max-content;
+  max-width: 450px; /* Máximo reducido */
+  isolation: isolate;
+  margin-top: 2px; /* Pequeño espacio entre input y dropdown */
+}
+
+/* Cuando se usa como portal (position: fixed) */
+.autocomplete-dropdown[style*="position: fixed"] {
+  position: fixed !important;
+  border-top: 2px solid #ddd;
+  border-radius: 8px;
+  margin-top: 0; /* Sin margen cuando es fixed */
+}
+
+/* Clase específica para móviles aplicada dinámicamente */
+.autocomplete-dropdown.mobile {
+  position: fixed !important;
+  border: 2px solid #ddd !important;
+  border-radius: 8px !important;
+  max-height: 40vh !important;
+  min-width: 280px !important;
+  max-width: calc(100vw - 20px) !important;
+  left: 10px !important;
+  right: auto !important;
+  width: calc(100vw - 20px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  margin-top: 0 !important;
 }
 
 .autocomplete-option {
-  padding: 12px;
+  padding: 10px 12px; /* Padding más compacto */
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
   transition: background-color 0.2s ease;
+  min-height: 44px; /* Altura más compacta */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .autocomplete-option:hover,
@@ -123,12 +157,21 @@
 .option-main {
   font-weight: 500;
   color: #333;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.3; /* Línea más compacta */
+  font-size: 14px; /* Tamaño de fuente optimizado */
 }
 
 .option-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: #666;
-  margin-top: 2px;
+  margin-top: 1px; /* Margen reducido */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 .autocomplete-no-results {
@@ -141,25 +184,113 @@
 /* Estilos responsivos */
 @media (max-width: 768px) {
   .autocomplete-input {
-    padding: 10px 35px 10px 10px;
-    font-size: 14px;
+    padding: 12px 35px 12px 12px;
+    font-size: 16px;
+    min-height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 8px;
   }
   
   .autocomplete-clear-button {
-    right: 30px;
-    font-size: 14px;
+    right: 35px;
+    font-size: 16px;
+    padding: 8px;
+    min-width: 32px;
+    min-height: 32px;
   }
   
   .autocomplete-icon {
     right: 10px;
+    font-size: 16px;
   }
   
   .autocomplete-dropdown {
-    max-height: 150px;
+    max-height: 35vh !important; /* Altura reducida para móviles */
+    min-width: 250px !important; /* Ancho mínimo reducido */
+    max-width: calc(100vw - 30px) !important; /* Más margen en móviles */
+    border-radius: 8px !important;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2) !important; /* Sombra más sutil */
+    left: 15px !important; /* Margen uniforme */
+    right: 15px !important;
+    width: calc(100vw - 30px) !important; /* Ancho calculado con márgenes */
+    transform: translateZ(0);
+    will-change: transform;
+    margin-top: 1px !important; /* Espacio mínimo entre input y dropdown */
   }
   
   .autocomplete-option {
-    padding: 10px;
+    padding: 14px 12px; /* Padding optimizado para touch */
+    min-height: 50px; /* Altura reducida pero cómoda para touch */
+    border-bottom: 1px solid #eee;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .autocomplete-option:active {
+    background-color: #e3f2fd;
+  }
+  
+  .option-main {
+    font-size: 14px; /* Tamaño de fuente apropiado para móviles */
+    line-height: 1.3;
+  }
+  
+  .option-subtitle {
+    font-size: 11px;
+    line-height: 1.2;
+    margin-top: 3px;
+  }
+  
+  .autocomplete-no-results {
+    padding: 14px;
+    font-size: 13px;
+  }
+  
+  /* Scrollbar mejorado para móviles */
+  .autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+  }
+}
+
+/* Estilos específicos para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .autocomplete-dropdown {
+    max-height: 30vh !important; /* Altura aún más reducida */
+    min-width: 240px !important; /* Ancho mínimo más pequeño */
+    max-width: calc(100vw - 20px) !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: calc(100vw - 20px) !important;
+    margin-top: 1px !important;
+  }
+  
+  .autocomplete-option {
+    padding: 12px 8px; /* Padding más compacto */
+    min-height: 44px; /* Altura mínima reducida */
+  }
+  
+  .option-main {
+    font-size: 13px; /* Fuente más pequeña para pantallas pequeñas */
+  }
+  
+  .option-subtitle {
+    font-size: 10px;
+  }
+}
+
+/* Estilos específicos para dispositivos táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .autocomplete-option:hover {
+    background-color: transparent; /* Remover hover en dispositivos táctiles */
+  }
+  
+  .autocomplete-option:active {
+    background-color: #e3f2fd; /* Solo mostrar estado activo en touch */
   }
 }
 
