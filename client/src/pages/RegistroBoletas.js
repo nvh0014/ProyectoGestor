@@ -893,10 +893,6 @@ function RegistroBoletas() {
                             Lista de Boletas
                         </h3>
                         <div className="registro-boletas-stats">
-                            <div className="registro-boletas-stat">
-                                <div className="registro-boletas-stat-value">{boletas.length}</div>
-                                <div className="registro-boletas-stat-label">PDF´s Generados</div>
-                            </div>
                             <button
                                 className="clientes-add-button"
                                 onClick={() => navigate('/generarboleta')}
