@@ -1,4 +1,10 @@
-require('dotenv').config();
+// Cargar variables de entorno
+// En desarrollo local, usa .env.local
+// En producción, usa las variables de Railway
+require('dotenv').config({ 
+  path: process.env.NODE_ENV === 'production' ? '.env' : '.env.local' 
+});
+
 const express = require('express');
 const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
 const logger = require('./config/logger');

@@ -1,7 +1,20 @@
 // Configuración de la API
 import axios from 'axios';
 
-const API_BASE_URL = 'https://gestorcerronegrobackend.up.railway.app';
+// Detectar automáticamente el entorno
+// En desarrollo local: usa el servidor local
+// En producción (Vercel): usa el servidor de Railway
+const isDevelopment = process.env.NODE_ENV === 'development' || 
+                      window.location.hostname === 'localhost' ||
+                      window.location.hostname === '127.0.0.1';
+
+const API_BASE_URL = isDevelopment 
+  ? 'http://localhost:3001'  // Servidor local
+  : 'https://gestorcerronegrobackend.up.railway.app'; // Servidor Railway (producción)
+
+// Log para verificar qué servidor se está usando
+console.log('🌍 Entorno:', isDevelopment ? 'DESARROLLO LOCAL' : 'PRODUCCIÓN');
+console.log('🔗 API URL:', API_BASE_URL);
 
 // Crear instancia de axios con configuración base
 const api = axios.create({

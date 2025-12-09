@@ -542,15 +542,13 @@ function Clientes() {
                             <i className="fas fa-list"></i>
                             Lista de Clientes
                         </h3>
-                        {isAdmin && (
-                            <button
-                                className="clientes-add-button"
-                                onClick={abrirModalCrear}
-                            >
-                                <i className="fas fa-plus"></i>
-                                Nuevo Cliente
-                            </button>
-                        )}
+                        <button
+                            className="clientes-add-button"
+                            onClick={abrirModalCrear}
+                        >
+                            <i className="fas fa-plus"></i>
+                            Nuevo Cliente
+                        </button>
                     </div>
 
                     <div className="clientes-table-container">

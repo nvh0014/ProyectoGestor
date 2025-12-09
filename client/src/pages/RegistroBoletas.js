@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import Swal from 'sweetalert2';
@@ -34,6 +34,15 @@ function RegistroBoletas() {
     // Estados para el header
     const [isLoading, setIsLoading] = useState(false);
     const [usuario, setUsuario] = useState('');
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [userId, setUserId] = useState(null);
+
+    // Estados para filtros de admin
+    const [usuarios, setUsuarios] = useState([]);
+    const [filtroUsuario, setFiltroUsuario] = useState('');
+    const [filtroPeriodo, setFiltroPeriodo] = useState('mes'); // día, semana, mes
+    const [reporteVentas, setReporteVentas] = useState(null);
+    const [mostrarReporte, setMostrarReporte] = useState(false);
 
     // Estados para las boletas
     const [boletas, setBoletas] = useState([]);
@@ -131,10 +140,28 @@ function RegistroBoletas() {
     };
 
     // Funciones para obtener datos
-    const obtenerBoletas = async () => {
+    const obtenerBoletas = useCallback(async (filtros = {}) => {
         try {
             setLoading(true);
-            const response = await api.get('/boletas');
+            
+            // Construir parámetros de consulta
+            const params = new URLSearchParams({
+                userId: userId,
+                isAdmin: isAdmin ? '1' : '0'
+            });
+            
+            // Agregar filtros si existen
+            if (filtros.usuarioFiltro) {
+                params.append('usuarioFiltro', filtros.usuarioFiltro);
+            }
+            if (filtros.fechaInicio) {
+                params.append('fechaInicio', filtros.fechaInicio);
+            }
+            if (filtros.fechaFin) {
+                params.append('fechaFin', filtros.fechaFin);
+            }
+            
+            const response = await api.get(`/boletas?${params.toString()}`);
             setBoletas(response.data);
         } catch (error) {
             console.error('Error al obtener boletas:', error);
@@ -150,7 +177,258 @@ function RegistroBoletas() {
                 setLoading(false);
             }, 1500);
         }
+    }, [userId, isAdmin]);
+
+    // Función para obtener lista de usuarios (solo admin)
+    const obtenerUsuarios = useCallback(async () => {
+        if (!isAdmin) {
+            console.log('🚫 No es admin, no se cargan usuarios');
+            return;
+        }
+        
+        try {
+            console.log('📞 Solicitando lista de usuarios...');
+            const response = await api.get('/usuarios');
+            console.log('✅ Usuarios recibidos:', response.data);
+            setUsuarios(response.data);
+        } catch (error) {
+            console.error('❌ Error al obtener usuarios:', error);
+            console.error('❌ Detalles:', error.response?.data || error.message);
+        }
+    }, [isAdmin]);
+
+    // Función para calcular fechas según período
+    const calcularFechas = (periodo) => {
+        const hoy = new Date();
+        const fechaFin = hoy.toISOString().split('T')[0];
+        let fechaInicio;
+
+        switch (periodo) {
+            case 'dia':
+                fechaInicio = fechaFin;
+                break;
+            case 'semana':
+                const semanaAtras = new Date(hoy);
+                semanaAtras.setDate(hoy.getDate() - 7);
+                fechaInicio = semanaAtras.toISOString().split('T')[0];
+                break;
+            case 'mes':
+                const mesAtras = new Date(hoy);
+                mesAtras.setMonth(hoy.getMonth() - 1);
+                fechaInicio = mesAtras.toISOString().split('T')[0];
+                break;
+            default:
+                fechaInicio = fechaFin;
+        }
+
+        return { fechaInicio, fechaFin };
     };
+
+    // Función para aplicar filtros
+    const aplicarFiltros = () => {
+        if (!isAdmin) {
+            console.log('🚫 No es admin, no se pueden aplicar filtros');
+            return;
+        }
+        
+        const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
+        
+        console.log('🔍 Aplicando filtros:', {
+            filtroUsuario,
+            filtroPeriodo,
+            fechaInicio,
+            fechaFin
+        });
+        
+        const filtros = {
+            fechaInicio,
+            fechaFin
+        };
+        
+        if (filtroUsuario) {
+            filtros.usuarioFiltro = filtroUsuario;
+        }
+        
+        obtenerBoletas(filtros);
+    };
+
+    // Función para generar reporte
+    const generarReporte = async () => {
+        if (!isAdmin || !filtroUsuario) {
+            console.log('⚠️ Validación fallida:', { isAdmin, filtroUsuario });
+            Swal.fire({
+                icon: 'warning',
+                title: 'Seleccione un Usuario',
+                text: 'Debe seleccionar un usuario para generar el reporte.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        try {
+            const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
+            
+            console.log('📊 Generando reporte:', {
+                userId: filtroUsuario,
+                fechaInicio,
+                fechaFin
+            });
+            
+            const params = new URLSearchParams({
+                userId: filtroUsuario,
+                fechaInicio,
+                fechaFin
+            });
+            
+            console.log('📞 Llamando a:', `/boletas/reporte?${params.toString()}`);
+            
+            const response = await api.get(`/boletas/reporte?${params.toString()}`);
+            console.log('✅ Reporte recibido:', response.data);
+            
+            setReporteVentas(response.data);
+            setMostrarReporte(true);
+            
+            // Preguntar si desea descargar el PDF
+            const result = await Swal.fire({
+                icon: 'success',
+                title: 'Reporte Generado',
+                text: '¿Desea descargar el reporte en PDF?',
+                showCancelButton: true,
+                confirmButtonText: 'Descargar PDF',
+                cancelButtonText: 'Solo Ver'
+            });
+            
+            if (result.isConfirmed) {
+                descargarReportePDF(response.data, fechaInicio, fechaFin);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error al generar reporte:', error);
+            console.error('❌ Detalles:', error.response?.data || error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al Generar Reporte',
+                text: 'No se pudo generar el reporte de ventas.',
+                confirmButtonText: 'Entendido'
+            });
+        }
+    };
+
+    // Función para descargar reporte como PDF
+    const descargarReportePDF = (datosReporte, fechaInicio, fechaFin) => {
+        const doc = new jsPDF();
+        
+        // Logo de la empresa (opcional)
+        try {
+            const logoImg = new Image();
+            logoImg.src = '/logo512.png';
+            logoImg.onload = () => {
+                try {
+                    doc.addImage(logoImg, 'PNG', 15, 10, 30, 30);
+                } catch (e) {
+                    console.warn('No se pudo agregar logo al PDF');
+                }
+            };
+        } catch (error) {
+            console.warn('Error al procesar logo para PDF:', error);
+        }
+        
+        // Título del reporte
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('REPORTE DE VENTAS', 105, 25, { align: 'center' });
+        
+        // Información del vendedor
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Vendedor:', 20, 50);
+        doc.setFont('helvetica', 'normal');
+        doc.text(datosReporte.Vendedor || 'N/A', 50, 50);
+        
+        // Período
+        doc.setFont('helvetica', 'bold');
+        doc.text('Período:', 20, 58);
+        doc.setFont('helvetica', 'normal');
+        const fechaInicioFormat = new Date(fechaInicio).toLocaleDateString('es-CL');
+        const fechaFinFormat = new Date(fechaFin).toLocaleDateString('es-CL');
+        doc.text(`${fechaInicioFormat} - ${fechaFinFormat}`, 50, 58);
+        
+        // Fecha de generación
+        doc.setFont('helvetica', 'bold');
+        doc.text('Generado:', 20, 66);
+        doc.setFont('helvetica', 'normal');
+        doc.text(new Date().toLocaleString('es-CL'), 50, 66);
+        
+        // Línea separadora
+        doc.setLineWidth(0.5);
+        doc.line(20, 72, 190, 72);
+        
+        // Estadísticas principales
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('RESUMEN DE VENTAS', 20, 85);
+        
+        // Cuadros de estadísticas
+        let yPos = 95;
+        const stats = [
+            { label: 'Total de Boletas:', value: datosReporte.TotalBoletas || 0, color: [52, 152, 219] },
+            { label: 'Total Ventas:', value: formatearPrecio(datosReporte.TotalVentas || 0), color: [46, 204, 113] },
+            { label: 'Promedio por Venta:', value: formatearPrecio(datosReporte.PromedioVenta || 0), color: [155, 89, 182] },
+            { label: 'Venta Mínima:', value: formatearPrecio(datosReporte.VentaMinima || 0), color: [241, 196, 15] },
+            { label: 'Venta Máxima:', value: formatearPrecio(datosReporte.VentaMaxima || 0), color: [231, 76, 60] }
+        ];
+        
+        stats.forEach((stat, index) => {
+            // Rectángulo de fondo
+            doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
+            doc.roundedRect(20, yPos, 170, 18, 3, 3, 'F');
+            
+            // Texto blanco
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.text(stat.label, 25, yPos + 8);
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            const valueText = typeof stat.value === 'number' ? stat.value.toString() : stat.value;
+            doc.text(valueText, 185, yPos + 11, { align: 'right' });
+            
+            // Resetear color de texto
+            doc.setTextColor(0, 0, 0);
+            
+            yPos += 22;
+        });
+        
+        // Pie de página
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(128, 128, 128);
+        doc.text('Reporte generado automáticamente por Sistema de Gestión', 105, 280, { align: 'center' });
+        doc.text(`Página 1 de 1`, 105, 285, { align: 'center' });
+        
+        // Guardar PDF
+        const nombreArchivo = `Reporte_${datosReporte.Vendedor.replace(/\s+/g, '_')}_${fechaInicio}_${fechaFin}.pdf`;
+        doc.save(nombreArchivo);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'PDF Descargado',
+            text: `El reporte ha sido descargado como ${nombreArchivo}`,
+            confirmButtonText: 'Entendido',
+            timer: 3000
+        });
+    };
+
+    // Función para limpiar filtros
+    const limpiarFiltros = () => {
+        setFiltroUsuario('');
+        setFiltroPeriodo('mes');
+        setMostrarReporte(false);
+        setReporteVentas(null);
+        obtenerBoletas();
+    };
+
     // Función para ver detalle de boleta
     const verDetalleBoleta = async (numeroBoleta) => {
         try {
@@ -421,7 +699,7 @@ function RegistroBoletas() {
                 observaciones: observacionesGenerales
             };
 
-            const response = await api.put(`/boletas/${editingBoleta.NumeroBoleta}`, datosActualizados);
+            await api.put(`/boletas/${editingBoleta.NumeroBoleta}`, datosActualizados);
 
             Swal.fire({
                 icon: 'success',
@@ -614,7 +892,6 @@ function RegistroBoletas() {
             let yPosition = startY + 6; // Posición inicial para los detalles de productos
             let subtotalGeneral = 0; // Inicializar subtotal general
             const lineHeight = 6; // Altura de línea más pequeña
-            const maxDescriptionLength = 35; // Máximo de caracteres para descripción
 
             detalles.forEach((detalle) => {
                 // Verificar si necesitamos una nueva página
@@ -732,6 +1009,7 @@ function RegistroBoletas() {
     };
 
     // Configuración de columnas de la tabla
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const columns = useMemo(() => [
         {
             accessorKey: 'NumeroBoleta',
@@ -774,28 +1052,32 @@ function RegistroBoletas() {
                         📥
                         <i className="fas fa-download"></i>
                     </button>
-                    <button
-                        className="registro-boletas-action-button edit"
-                        onClick={() => editarBoleta(row.original.NumeroBoleta)}
-                        title="Editar boleta"
-                        aria-label="Editar boleta"
-                    >
-                        ✏️
-                        <i className="fas fa-edit"></i>
-                    </button>
-                    <button
-                        className="registro-boletas-action-button delete"
-                        onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
-                        title="Eliminar boleta"
-                        aria-label="Eliminar boleta"
-                    >
-                        🗑️
-                        <i className="fas fa-delete"></i>
-                    </button>
+                    {isAdmin && (
+                        <>
+                            <button
+                                className="registro-boletas-action-button edit"
+                                onClick={() => editarBoleta(row.original.NumeroBoleta)}
+                                title="Editar boleta"
+                                aria-label="Editar boleta"
+                            >
+                                ✏️
+                                <i className="fas fa-edit"></i>
+                            </button>
+                            <button
+                                className="registro-boletas-action-button delete"
+                                onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
+                                title="Eliminar boleta"
+                                aria-label="Eliminar boleta"
+                            >
+                                🗑️
+                                <i className="fas fa-delete"></i>
+                            </button>
+                        </>
+                    )}
                 </div>
             )
         }
-    ], []);
+    ], [isAdmin, verDetalleBoleta, descargarBoleta, editarBoleta, eliminarBoleta]);
 
     // Configuración de la tabla
     const table = useReactTable({
@@ -818,11 +1100,47 @@ function RegistroBoletas() {
     // Efecto para cargar datos iniciales
     useEffect(() => {
         const usuarioLogueado = getCookie('usuario');
+        const userData = localStorage.getItem('userData');
+        
+        console.log('🔐 Cargando datos de sesión...');
+        console.log('  - Cookie usuario:', usuarioLogueado);
+        console.log('  - localStorage userData:', userData);
+        
         if (usuarioLogueado) {
             setUsuario(usuarioLogueado);
         }
-        obtenerBoletas();
+        
+        // Obtener datos del usuario logueado
+        if (userData) {
+            try {
+                const parsedData = JSON.parse(userData);
+                console.log('  - Datos parseados:', parsedData);
+                
+                const adminStatus = parsedData.rol === 'Administrador' || parsedData.RolAdmin === 1 || parsedData.RolAdmin === true;
+                const userIdValue = parsedData.id || parsedData.CodigoUsuario;
+                
+                console.log('  - Es Admin:', adminStatus);
+                console.log('  - User ID:', userIdValue);
+                
+                setIsAdmin(adminStatus);
+                setUserId(userIdValue);
+            } catch (error) {
+                console.error('❌ Error al parsear userData:', error);
+            }
+        } else {
+            console.warn('⚠️ No hay userData en localStorage');
+        }
     }, []);
+
+    // Efecto para cargar boletas cuando userId e isAdmin estén disponibles
+    useEffect(() => {
+        if (userId !== null) {
+            obtenerBoletas();
+            if (isAdmin) {
+                obtenerUsuarios();
+            }
+        }
+    }, [userId, isAdmin, obtenerBoletas, obtenerUsuarios]);
 
     if (loading) {
         return (
@@ -885,6 +1203,117 @@ function RegistroBoletas() {
             {/* Main Content */}
             <main className="registro-boletas-main-content">
                 <h2 className="registro-boletas-title">Registro de Boletas Emitidas</h2>
+
+                {/* Panel de filtros y reportes (solo para admin) */}
+                {isAdmin && (
+                    <div className="registro-boletas-filtros-card">
+                        <div className="registro-boletas-filtros-header">
+                            <h3 className="registro-boletas-filtros-title">
+                                <i className="fas fa-filter"></i>
+                                Filtros y Reportes
+                            </h3>
+                        </div>
+                        <div className="registro-boletas-filtros-content">
+                            <div className="registro-boletas-filtros-row">
+                                <div className="registro-boletas-filtro-group">
+                                    <label>Usuario:</label>
+                                    <select
+                                        value={filtroUsuario}
+                                        onChange={(e) => setFiltroUsuario(e.target.value)}
+                                        className="registro-boletas-filtro-select"
+                                    >
+                                        <option value="">Todos los usuarios</option>
+                                        {usuarios.map(user => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="registro-boletas-filtro-group">
+                                    <label>Período:</label>
+                                    <select
+                                        value={filtroPeriodo}
+                                        onChange={(e) => setFiltroPeriodo(e.target.value)}
+                                        className="registro-boletas-filtro-select"
+                                    >
+                                        <option value="dia">Hoy</option>
+                                        <option value="semana">Última Semana</option>
+                                        <option value="mes">Último Mes</option>
+                                    </select>
+                                </div>
+                                <div className="registro-boletas-filtro-buttons">
+                                    <button
+                                        onClick={aplicarFiltros}
+                                        className="registro-boletas-btn-filtrar"
+                                    >
+                                        <i className="fas fa-search"></i>
+                                        Filtrar
+                                    </button>
+                                    <button
+                                        onClick={generarReporte}
+                                        className="registro-boletas-btn-reporte"
+                                        disabled={!filtroUsuario}
+                                    >
+                                        <i className="fas fa-chart-bar"></i>
+                                        Generar Reporte
+                                    </button>
+                                    <button
+                                        onClick={limpiarFiltros}
+                                        className="registro-boletas-btn-limpiar"
+                                    >
+                                        <i className="fas fa-times"></i>
+                                        Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Mostrar reporte si existe */}
+                        {mostrarReporte && reporteVentas && (
+                            <div className="registro-boletas-reporte-card">
+                                <div className="registro-boletas-reporte-header">
+                                    <h4 className="registro-boletas-reporte-title">
+                                        <i className="fas fa-chart-line"></i>
+                                        Reporte de Ventas - {reporteVentas.Vendedor}
+                                    </h4>
+                                    <button
+                                        onClick={() => {
+                                            const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
+                                            descargarReportePDF(reporteVentas, fechaInicio, fechaFin);
+                                        }}
+                                        className="registro-boletas-btn-descargar-pdf"
+                                    >
+                                        <i className="fas fa-file-pdf"></i>
+                                        Descargar Reporte en PDF
+                                    </button>
+                                </div>
+                                <div className="registro-boletas-reporte-stats">
+                                    <div className="registro-boletas-stat-item">
+                                        <span className="stat-label">Total Boletas:</span>
+                                        <span className="stat-value">{reporteVentas.TotalBoletas}</span>
+                                    </div>
+                                    <div className="registro-boletas-stat-item">
+                                        <span className="stat-label">Total Ventas:</span>
+                                        <span className="stat-value highlight">{formatearPrecio(reporteVentas.TotalVentas || 0)}</span>
+                                    </div>
+                                    <div className="registro-boletas-stat-item">
+                                        <span className="stat-label">Promedio por Venta:</span>
+                                        <span className="stat-value">{formatearPrecio(reporteVentas.PromedioVenta || 0)}</span>
+                                    </div>
+                                    <div className="registro-boletas-stat-item">
+                                        <span className="stat-label">Venta Mínima:</span>
+                                        <span className="stat-value">{formatearPrecio(reporteVentas.VentaMinima || 0)}</span>
+                                    </div>
+                                    <div className="registro-boletas-stat-item">
+                                        <span className="stat-label">Venta Máxima:</span>
+                                        <span className="stat-value">{formatearPrecio(reporteVentas.VentaMaxima || 0)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="registro-boletas-content-card">
                     <div className="registro-boletas-card-header">

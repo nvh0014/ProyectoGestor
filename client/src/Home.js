@@ -360,7 +360,7 @@ const menuItems = [
         {/* Información adicional del sistema */}
         <div className="system-info">
           <p className="system-version">
-            Sistema v4.1 | Última actualización: {new Date().toLocaleDateString('es-CL')}
+            v4.2
           </p>
         </div>
       </main>
@@ -379,21 +379,24 @@ const menuItems = [
           
           <div className="footer-section">
             <h4>Ubicación</h4>
-            <p>📍 Av. Manuel Rodríguez, 4110909</p>
-            <p>Chiguayante, Concepción</p>
+            <p>📍 Av. Manuel Rodríguez 3604
+            </p>
+            <p>📍 Av. Manuel Rodríguez 1365
+            </p>
+            <p>Chiguayante</p>
           </div>
           
-          <div className="footer-section">
+          {/* <div className="footer-section">
             <h4>Horarios de Atención</h4>
             <p>Lunes a Sábado: 10:00 - 22:00</p>
             <p>Domingos: Cerrado</p>
-          </div>
+          </div> */}
           
-          <div className="footer-section">
+          {/* <div className="footer-section">
             <h4>Contacto</h4>
             <p>📲 +56 9 5389 6258</p>
             <p>📲 +56 9 5665 6089</p>
-          </div>
+          </div> */}
         </div>
         
         <div className="footer-bottom">

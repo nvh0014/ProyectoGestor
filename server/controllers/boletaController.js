@@ -1,22 +1,52 @@
 const pool = require('../config/database');
 
 const boletaController = {
-  // Obtener todas las boletas
+  // Obtener todas las boletas (filtradas por usuario si no es admin)
   getBoletas: async (req, res) => {
     try {
-      const query = `
+      const { userId, isAdmin, fechaInicio, fechaFin, usuarioFiltro } = req.query;
+      
+      let query = `
         SELECT 
           b.NumeroBoleta,
           b.CodigoCliente,
           c.RazonSocial,
           b.FechaBoleta,
           b.FechaVencimiento,
-          b.TotalBoleta
+          b.TotalBoleta,
+          b.CodigoUsuario,
+          u.NombreUsuario as VendedorNombre
         FROM boleta b
         INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
-        ORDER BY b.NumeroBoleta DESC
+        LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
+        WHERE 1=1
       `;
-      const [results] = await pool.execute(query);
+      
+      const params = [];
+      
+      // Si no es admin, solo mostrar sus boletas
+      if (isAdmin === 'false' || isAdmin === '0') {
+        query += ` AND b.CodigoUsuario = ?`;
+        params.push(userId);
+      } else if (usuarioFiltro) {
+        // Si es admin y hay filtro de usuario específico
+        query += ` AND b.CodigoUsuario = ?`;
+        params.push(usuarioFiltro);
+      }
+      
+      // Filtros de fecha
+      if (fechaInicio) {
+        query += ` AND b.FechaBoleta >= ?`;
+        params.push(fechaInicio);
+      }
+      if (fechaFin) {
+        query += ` AND b.FechaBoleta <= ?`;
+        params.push(fechaFin);
+      }
+      
+      query += ` ORDER BY b.NumeroBoleta DESC`;
+      
+      const [results] = await pool.execute(query, params);
       res.json(results);
     } catch (err) {
       console.error('Error al obtener boletas:', err);
@@ -416,6 +446,53 @@ deleteBoleta: async (req, res) => {
       });
     } finally {
       connection.release();
+    }
+  },
+
+  // Obtener reporte de ventas por usuario y período
+  getReporteVentas: async (req, res) => {
+    try {
+      const { userId, fechaInicio, fechaFin } = req.query;
+      
+      if (!userId || !fechaInicio || !fechaFin) {
+        return res.status(400).json({ 
+          error: 'Se requieren userId, fechaInicio y fechaFin' 
+        });
+      }
+      
+      const query = `
+        SELECT 
+          COUNT(b.NumeroBoleta) as TotalBoletas,
+          SUM(b.TotalBoleta) as TotalVentas,
+          AVG(b.TotalBoleta) as PromedioVenta,
+          MIN(b.TotalBoleta) as VentaMinima,
+          MAX(b.TotalBoleta) as VentaMaxima,
+          u.NombreUsuario as Vendedor
+        FROM boleta b
+        LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
+        WHERE b.CodigoUsuario = ?
+          AND b.FechaBoleta >= ?
+          AND b.FechaBoleta <= ?
+        GROUP BY b.CodigoUsuario, u.NombreUsuario
+      `;
+      
+      const [results] = await pool.execute(query, [userId, fechaInicio, fechaFin]);
+      
+      if (results.length === 0) {
+        return res.json({
+          TotalBoletas: 0,
+          TotalVentas: 0,
+          PromedioVenta: 0,
+          VentaMinima: 0,
+          VentaMaxima: 0,
+          Vendedor: 'Sin ventas en este período'
+        });
+      }
+      
+      res.json(results[0]);
+    } catch (err) {
+      console.error('Error al obtener reporte:', err);
+      res.status(500).json({ error: 'Error al obtener reporte de ventas' });
     }
   }
 };

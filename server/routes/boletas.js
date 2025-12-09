@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const boletaController = require('../controllers/boletaController');
 
+// Obtener reporte de ventas (debe ir antes de las rutas con parámetros)
+router.get('/reporte', boletaController.getReporteVentas);
+
 // Obtener todas las boletas
 router.get('/', boletaController.getBoletas);
 

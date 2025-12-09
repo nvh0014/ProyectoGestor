@@ -7,12 +7,9 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "node debug-railway.js",
-    "dev": "node server-local.js",
-    "railway": "node server-railway.js",
-    "auto": "node server-auto.js",
-    "test": "node test-local.js",
-    "test:railway": "node test-railway.js"
+    "start": "node server.js",
+    "dev": "set NODE_ENV=development && node server.js",
+    "prod": "set NODE_ENV=production && node server.js"
   },
   "keywords": [],
   "dependencies": {
