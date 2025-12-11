@@ -356,13 +356,6 @@ const menuItems = [
             );
           })}
         </div>
-
-        {/* Información adicional del sistema */}
-        <div className="system-info">
-          <p className="system-version">
-            v4.2
-          </p>
-        </div>
       </main>
 
       {/* Footer */}
@@ -379,28 +372,16 @@ const menuItems = [
           
           <div className="footer-section">
             <h4>Ubicación</h4>
-            <p>📍 Av. Manuel Rodríguez 3604
+            <p>📍 Av. Manuel Rodríguez 3204
             </p>
             <p>📍 Av. Manuel Rodríguez 1365
             </p>
-            <p>Chiguayante</p>
           </div>
-          
-          {/* <div className="footer-section">
-            <h4>Horarios de Atención</h4>
-            <p>Lunes a Sábado: 10:00 - 22:00</p>
-            <p>Domingos: Cerrado</p>
-          </div> */}
-          
-          {/* <div className="footer-section">
-            <h4>Contacto</h4>
-            <p>📲 +56 9 5389 6258</p>
-            <p>📲 +56 9 5665 6089</p>
-          </div> */}
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2025 Distribuidora Cerro Negro. Todos los derechos reservados.</p>
+          <p>&copy;Distribuidora Cerro Negro.</p>
+          <p>v4.6</p>
           <p>nvh0014</p>
         </div>
       </footer>
