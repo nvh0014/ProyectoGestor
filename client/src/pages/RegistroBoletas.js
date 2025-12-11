@@ -1052,7 +1052,6 @@ function RegistroBoletas() {
                         📥
                         <i className="fas fa-download"></i>
                     </button>
-                    {isAdmin && (
                         <>
                             <button
                                 className="registro-boletas-action-button edit"
@@ -1073,7 +1072,6 @@ function RegistroBoletas() {
                                 <i className="fas fa-delete"></i>
                             </button>
                         </>
-                    )}
                 </div>
             )
         }
