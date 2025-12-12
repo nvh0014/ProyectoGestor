@@ -806,10 +806,13 @@ function GenerarBoleta() {
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Cantidad</label>
+                      <small className="form-help-text">
+                      Si deseas agregar la mitad de un producto, presiona el botón 0.5
+                    </small>
                       <input
                         type="number"
-                        min="0.5"
-                        step="0.5"
+                        min="1"
+                        step="1"
                         className="form-input"
                         value={productoForm.Cantidad}
                         onChange={(e) => {
@@ -819,6 +822,10 @@ function GenerarBoleta() {
                           }
                         }}
                       />
+                      {/* Botón para settear 0.5 */}
+                      <button onClick={() => setProductoForm({ ...productoForm, Cantidad: (0) + 0.5 })} className="generar-boleta-button mitad">
+                      0.5
+                    </button>
                     </div>
 
                     <div className="form-group">
@@ -858,7 +865,7 @@ function GenerarBoleta() {
 
                   <div className="form-actions">
                     <button onClick={agregarProducto} className="generar-boleta-button primary">
-                      ➕ Agregar Producto
+                      Agregar Producto
                     </button>
                   </div>
                 </div>

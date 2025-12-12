@@ -423,7 +423,7 @@ textarea.form-input {
     display: block;
     margin-top: var(--spacing-xs);
     font-size: var(--font-size-xs);
-    color: var(--medium-gray);
+    color: var(--dark-gray);
     font-style: italic;
 }
 
@@ -515,6 +515,15 @@ textarea.form-input {
     min-height: 44px;
     text-decoration: none;
     box-shadow: var(--shadow-sm);
+}
+
+.generar-boleta-button.mitad {
+    background: var(--warning);
+    color: var(--white);
+    width: 8dvh;
+    padding: calc(var(--spacing-sm) - 1dvh) calc(var(--spacing-xl) - 1dvh);
+    margin-top: 1dvh;
+    justify-content: center;
 }
 
 .generar-boleta-button.primary {
