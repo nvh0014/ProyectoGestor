@@ -334,8 +334,16 @@ function GenerarBoleta() {
     }
 
     try {
-      const fechaBoleta = new Date().toISOString().split('T')[0];
-      const fechaVencimiento = new Date();
+      // Obtener fecha actual en zona horaria de Chile
+      const obtenerFechaChile = () => {
+        const fecha = new Date();
+        // Usar zona horaria de Chile (America/Santiago)
+        const fechaChile = new Date(fecha.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
+        return fechaChile.toISOString().split('T')[0];
+      };
+      
+      const fechaBoleta = obtenerFechaChile();
+      const fechaVencimiento = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
       fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
 
       const detalles = productosBoleta.map(producto => ({

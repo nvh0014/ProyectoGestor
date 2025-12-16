@@ -10,7 +10,7 @@ const isLocal = !isRailway && !isProduction;
 const dbConfig = {
   host: process.env.MYSQLHOST || 'localhost',
   user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || '141205',
+  password: process.env.MYSQLPASSWORD || '',
   database: process.env.MYSQLDATABASE || 'gestor',
   port: process.env.MYSQLPORT || 3306,
   waitForConnections: true,

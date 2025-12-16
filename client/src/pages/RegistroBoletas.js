@@ -73,6 +73,9 @@ function RegistroBoletas() {
     // Estado para el modal de confirmación de eliminación
     const [modalEliminarIsOpen, setModalEliminarIsOpen] = useState(false);
 
+    // Estado para controlar el proceso de actualización masiva
+    const [procesandoActualizacionMasiva, setProcesandoActualizacionMasiva] = useState(false);
+
 
     // Estados para la tabla
     const [sorting, setSorting] = useState([]);
@@ -147,13 +150,13 @@ function RegistroBoletas() {
     const obtenerBoletas = useCallback(async (filtros = {}) => {
         try {
             setLoading(true);
-            
+
             // Construir parámetros de consulta
             const params = new URLSearchParams({
                 userId: userId,
                 isAdmin: isAdmin ? '1' : '0'
             });
-            
+
             // Agregar filtros si existen
             if (filtros.usuarioFiltro) {
                 params.append('usuarioFiltro', filtros.usuarioFiltro);
@@ -164,7 +167,7 @@ function RegistroBoletas() {
             if (filtros.fechaFin) {
                 params.append('fechaFin', filtros.fechaFin);
             }
-            
+
             const response = await api.get(`/boletas?${params.toString()}`);
             setBoletas(response.data);
         } catch (error) {
@@ -189,7 +192,7 @@ function RegistroBoletas() {
             console.log('🚫 No es admin, no se cargan usuarios');
             return;
         }
-        
+
         try {
             console.log('📞 Solicitando lista de usuarios...');
             const response = await api.get('/usuarios');
@@ -251,24 +254,24 @@ function RegistroBoletas() {
             });
             return;
         }
-        
+
         console.log('🔍 Aplicando filtros:', {
             filtroUsuario,
             filtroPeriodo,
             fechaInicio,
             fechaFin
         });
-        
+
         const filtros = {
             fechaInicio,
             fechaFin
         };
-        
+
         // Agregar filtro de usuario si está seleccionado (admin)
         if (isAdmin && filtroUsuario) {
             filtros.usuarioFiltro = filtroUsuario;
         }
-        
+
         obtenerBoletas(filtros);
     };
 
@@ -287,27 +290,27 @@ function RegistroBoletas() {
 
         try {
             const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
-            
+
             console.log('📊 Generando reporte:', {
                 userId: filtroUsuario,
                 fechaInicio,
                 fechaFin
             });
-            
+
             const params = new URLSearchParams({
                 userId: filtroUsuario,
                 fechaInicio,
                 fechaFin
             });
-            
+
             console.log('📞 Llamando a:', `/boletas/reporte?${params.toString()}`);
-            
+
             const response = await api.get(`/boletas/reporte?${params.toString()}`);
             console.log('✅ Reporte recibido:', response.data);
-            
+
             setReporteVentas(response.data);
             setMostrarReporte(true);
-            
+
             // Preguntar si desea descargar el PDF
             const result = await Swal.fire({
                 icon: 'success',
@@ -317,11 +320,11 @@ function RegistroBoletas() {
                 confirmButtonText: 'Descargar PDF',
                 cancelButtonText: 'Solo Ver'
             });
-            
+
             if (result.isConfirmed) {
                 descargarReportePDF(response.data, fechaInicio, fechaFin);
             }
-            
+
         } catch (error) {
             console.error('❌ Error al generar reporte:', error);
             console.error('❌ Detalles:', error.response?.data || error.message);
@@ -337,7 +340,7 @@ function RegistroBoletas() {
     // Función para descargar reporte como PDF
     const descargarReportePDF = (datosReporte, fechaInicio, fechaFin) => {
         const doc = new jsPDF();
-        
+
         // Logo de la empresa (opcional)
         try {
             const logoImg = new Image();
@@ -352,19 +355,19 @@ function RegistroBoletas() {
         } catch (error) {
             console.warn('Error al procesar logo para PDF:', error);
         }
-        
+
         // Título del reporte
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
         doc.text('REPORTE DE VENTAS', 105, 25, { align: 'center' });
-        
+
         // Información del vendedor
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.text('Vendedor:', 20, 50);
         doc.setFont('helvetica', 'normal');
         doc.text(datosReporte.Vendedor || 'N/A', 50, 50);
-        
+
         // Período
         doc.setFont('helvetica', 'bold');
         doc.text('Período:', 20, 58);
@@ -372,22 +375,22 @@ function RegistroBoletas() {
         const fechaInicioFormat = new Date(fechaInicio).toLocaleDateString('es-CL');
         const fechaFinFormat = new Date(fechaFin).toLocaleDateString('es-CL');
         doc.text(`${fechaInicioFormat} - ${fechaFinFormat}`, 50, 58);
-        
+
         // Fecha de generación
         doc.setFont('helvetica', 'bold');
         doc.text('Generado:', 20, 66);
         doc.setFont('helvetica', 'normal');
         doc.text(new Date().toLocaleString('es-CL'), 50, 66);
-        
+
         // Línea separadora
         doc.setLineWidth(0.5);
         doc.line(20, 72, 190, 72);
-        
+
         // Estadísticas principales
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.text('RESUMEN DE VENTAS', 20, 85);
-        
+
         // Cuadros de estadísticas
         let yPos = 95;
         const stats = [
@@ -397,40 +400,40 @@ function RegistroBoletas() {
             { label: 'Venta Mínima:', value: formatearPrecio(datosReporte.VentaMinima || 0), color: [241, 196, 15] },
             { label: 'Venta Máxima:', value: formatearPrecio(datosReporte.VentaMaxima || 0), color: [231, 76, 60] }
         ];
-        
+
         stats.forEach((stat, index) => {
             // Rectángulo de fondo
             doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
             doc.roundedRect(20, yPos, 170, 18, 3, 3, 'F');
-            
+
             // Texto blanco
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
             doc.text(stat.label, 25, yPos + 8);
-            
+
             doc.setFontSize(14);
             doc.setFont('helvetica', 'bold');
             const valueText = typeof stat.value === 'number' ? stat.value.toString() : stat.value;
             doc.text(valueText, 185, yPos + 11, { align: 'right' });
-            
+
             // Resetear color de texto
             doc.setTextColor(0, 0, 0);
-            
+
             yPos += 22;
         });
-        
+
         // Pie de página
         doc.setFontSize(8);
         doc.setFont('helvetica', 'italic');
         doc.setTextColor(128, 128, 128);
         doc.text('Reporte generado automáticamente por Sistema de Gestión', 105, 280, { align: 'center' });
         doc.text(`Página 1 de 1`, 105, 285, { align: 'center' });
-        
+
         // Guardar PDF
         const nombreArchivo = `Reporte_${datosReporte.Vendedor.replace(/\s+/g, '_')}_${fechaInicio}_${fechaFin}.pdf`;
         doc.save(nombreArchivo);
-        
+
         Swal.fire({
             icon: 'success',
             title: 'PDF Descargado',
@@ -819,11 +822,17 @@ function RegistroBoletas() {
         }
     };
 
-    // Función para marcar/desmarcar todas las boletas
+    // Función para marcar/desmarcar todas las boletas (botón deshabilitado durante el proceso)
     const toggleTodasCompletadas = async (marcarTodas) => {
+        if (procesandoActualizacionMasiva) {
+            return; // Evitar múltiples ejecuciones simultáneas
+        }
+
         try {
+            setProcesandoActualizacionMasiva(true);
+
             const numerosBoletas = boletas.map(b => b.NumeroBoleta);
-            
+
             await api.patch('/boletas/completada/multiple', {
                 boletas: numerosBoletas,
                 completada: marcarTodas
@@ -858,6 +867,8 @@ function RegistroBoletas() {
                 text: 'No se pudo actualizar el estado de las boletas.',
                 confirmButtonText: 'Entendido'
             });
+        } finally {
+            setProcesandoActualizacionMasiva(false);
         }
     };
 
@@ -890,15 +901,15 @@ function RegistroBoletas() {
         if (event.target.closest('.registro-boletas-action-button')) {
             return;
         }
-        
+
         const row = event.currentTarget;
-        
+
         // Remover selección anterior
         const previousSelected = document.querySelector('.registro-boletas-table tbody tr.selected');
         if (previousSelected) {
             previousSelected.classList.remove('selected');
         }
-        
+
         // Añadir selección a la fila actual
         row.classList.add('selected');
     };
@@ -1104,7 +1115,8 @@ function RegistroBoletas() {
     // Configuración de columnas de la tabla
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const columns = useMemo(() => [
-        {
+        // ESTADO TABLA APARECE SOLO SI ES ADMIN
+        ...(isAdmin ? [{
             id: 'completada',
             header: 'Estado',
             cell: ({ row }) => (
@@ -1121,7 +1133,8 @@ function RegistroBoletas() {
                     />
                 </div>
             )
-        },
+        }] : []),
+        
         {
             accessorKey: 'NumeroBoleta',
             header: 'N° Boleta',
@@ -1163,26 +1176,26 @@ function RegistroBoletas() {
                         📥
                         <i className="fas fa-download"></i>
                     </button>
-                        <>
-                            <button
-                                className="registro-boletas-action-button edit"
-                                onClick={() => editarBoleta(row.original.NumeroBoleta)}
-                                title="Editar boleta"
-                                aria-label="Editar boleta"
-                            >
-                                ✏️
-                                <i className="fas fa-edit"></i>
-                            </button>
-                            <button
-                                className="registro-boletas-action-button delete"
-                                onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
-                                title="Eliminar boleta"
-                                aria-label="Eliminar boleta"
-                            >
-                                🗑️
-                                <i className="fas fa-delete"></i>
-                            </button>
-                        </>
+                    <>
+                        <button
+                            className="registro-boletas-action-button edit"
+                            onClick={() => editarBoleta(row.original.NumeroBoleta)}
+                            title="Editar boleta"
+                            aria-label="Editar boleta"
+                        >
+                            ✏️
+                            <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                            className="registro-boletas-action-button delete"
+                            onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
+                            title="Eliminar boleta"
+                            aria-label="Eliminar boleta"
+                        >
+                            🗑️
+                            <i className="fas fa-delete"></i>
+                        </button>
+                    </>
                 </div>
             )
         }
@@ -1210,27 +1223,27 @@ function RegistroBoletas() {
     useEffect(() => {
         const usuarioLogueado = getCookie('usuario');
         const userData = localStorage.getItem('userData');
-        
+
         console.log('🔐 Cargando datos de sesión...');
         console.log('  - Cookie usuario:', usuarioLogueado);
         console.log('  - localStorage userData:', userData);
-        
+
         if (usuarioLogueado) {
             setUsuario(usuarioLogueado);
         }
-        
+
         // Obtener datos del usuario logueado
         if (userData) {
             try {
                 const parsedData = JSON.parse(userData);
                 console.log('  - Datos parseados:', parsedData);
-                
+
                 const adminStatus = parsedData.rol === 'Administrador' || parsedData.RolAdmin === 1 || parsedData.RolAdmin === true;
                 const userIdValue = parsedData.id || parsedData.CodigoUsuario;
-                
+
                 console.log('  - Es Admin:', adminStatus);
                 console.log('  - User ID:', userIdValue);
-                
+
                 setIsAdmin(adminStatus);
                 setUserId(userIdValue);
             } catch (error) {
@@ -1323,6 +1336,26 @@ function RegistroBoletas() {
                     </div>
                     <div className="registro-boletas-filtros-content">
                         <div className="registro-boletas-filtros-row">
+                            {/* Filtro por usuario (solo para admin) */}
+                            {isAdmin && (
+                                <>
+                                    <div className="registro-boletas-filtro-group">
+                                        <label>Usuario:</label>
+                                        <select
+                                            value={filtroUsuario}
+                                            onChange={(e) => setFiltroUsuario(e.target.value)}
+                                            className="registro-boletas-filtro-select"
+                                        >
+                                            <option value="">Todos los usuarios</option>
+                                            {usuarios.map(user => (
+                                                <option key={user.id} value={user.id}>
+                                                    {user.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
                             {/* Filtros por fecha */}
                             <div className="registro-boletas-filtro-group">
                                 <label>Fecha Inicio:</label>
@@ -1342,40 +1375,9 @@ function RegistroBoletas() {
                                     onChange={(e) => setFechaFin(e.target.value)}
                                 />
                             </div>
-                            
-                            {/* Filtros de admin */}
-                            {isAdmin && (
-                                <>
-                                    <div className="registro-boletas-filtro-group">
-                                        <label>Usuario:</label>
-                                        <select
-                                            value={filtroUsuario}
-                                            onChange={(e) => setFiltroUsuario(e.target.value)}
-                                            className="registro-boletas-filtro-select"
-                                        >
-                                            <option value="">Todos los usuarios</option>
-                                            {usuarios.map(user => (
-                                                <option key={user.id} value={user.id}>
-                                                    {user.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="registro-boletas-filtro-group">
-                                        <label>Período:</label>
-                                        <select
-                                            value={filtroPeriodo}
-                                            onChange={(e) => setFiltroPeriodo(e.target.value)}
-                                            className="registro-boletas-filtro-select"
-                                        >
-                                            <option value="dia">Hoy</option>
-                                            <option value="semana">Última Semana</option>
-                                            <option value="mes">Último Mes</option>
-                                        </select>
-                                    </div>
-                                </>
-                            )}
-                            
+
+
+
                             {/* Botones de acción */}
                             <div className="registro-boletas-filtro-buttons">
                                 <button
@@ -1405,7 +1407,7 @@ function RegistroBoletas() {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Mostrar reporte si existe */}
                     {mostrarReporte && reporteVentas && (
                         <div className="registro-boletas-reporte-card">
@@ -1470,26 +1472,32 @@ function RegistroBoletas() {
 
                     <div className="registro-boletas-table-container">
                         {/* Botones de acción masiva */}
-                        <div className="registro-boletas-bulk-actions-bar">
-                            <button
-                                className="registro-boletas-btn-check-all"
-                                onClick={() => toggleTodasCompletadas(true)}
-                                disabled={boletas.length === 0}
-                                title="Marcar todas como completadas"
-                            >
-                                <i className="fas fa-check-double"></i>
-                                Marcar Todas
-                            </button>
-                            <button
-                                className="registro-boletas-btn-uncheck-all"
-                                onClick={() => toggleTodasCompletadas(false)}
-                                disabled={boletas.length === 0}
-                                title="Desmarcar todas"
-                            >
-                                <i className="fas fa-undo"></i>
-                                Desmarcar Todas
-                            </button>
-                        </div>
+                        {isAdmin && (
+                            <>
+                                <div className="registro-boletas-bulk-actions-bar">
+                                    <button
+                                        className="registro-boletas-btn-check-all"
+                                        onClick={() => toggleTodasCompletadas(true)}
+                                        disabled={boletas.length === 0 || procesandoActualizacionMasiva}
+                                        title="Marcar todas como completadas"
+                                    >
+                                        <i className={procesandoActualizacionMasiva ? "fas fa-spinner fa-spin" : "fas fa-check-double"}></i>
+                                        {procesandoActualizacionMasiva ? 'Procesando...' : 'Marcar'}
+                                    </button>
+                                    <button
+                                        className="registro-boletas-btn-uncheck-all"
+                                        onClick={() => toggleTodasCompletadas(false)}
+                                        disabled={boletas.length === 0 || procesandoActualizacionMasiva}
+                                        title="Desmarcar todas"
+                                    >
+                                        <i className={procesandoActualizacionMasiva ? "fas fa-spinner fa-spin" : "fas fa-undo"}></i>
+                                        {procesandoActualizacionMasiva ? 'Procesando...' : 'Desmarcar'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        
+
 
                         {/* Table */}
                         <div className="registro-boletas-table-wrapper">
@@ -1515,7 +1523,7 @@ function RegistroBoletas() {
                                 </thead>
                                 <tbody>
                                     {table.getRowModel().rows.map(row => (
-                                        <tr 
+                                        <tr
                                             key={row.id}
                                             onClick={(event) => handleRowClick(event, row.id)}
                                             className={row.original.Completada === 1 ? 'completada' : 'pendiente'}
@@ -1885,7 +1893,7 @@ function RegistroBoletas() {
                                                                 Precio Actual: ${parseFloat(nuevoProductoForm.PrecioUnitario || 0).toLocaleString('es-CL')}
                                                             </small>
                                                             <small>
-                                                                Sala: ${parseFloat(productoSeleccionado.PrecioUnitario || 0).toLocaleString('es-CL')} | 
+                                                                Sala: ${parseFloat(productoSeleccionado.PrecioUnitario || 0).toLocaleString('es-CL')} |
                                                                 Dsto: ${parseFloat(productoSeleccionado.PrecioDescuento || 0).toLocaleString('es-CL')}
                                                             </small>
                                                         </div>

@@ -626,11 +626,11 @@
 /* ===== BARRA DE ACCIONES MASIVAS ===== */
 .registro-boletas-bulk-actions-bar {
   margin-bottom: var(--spacing-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(255, 255, 255, 0.95);
   border-radius: var(--radius-md);
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: var(--spacing-md);
   flex-wrap: wrap;
@@ -640,24 +640,25 @@
 
 .registro-boletas-btn-check-all,
 .registro-boletas-btn-uncheck-all {
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: 6px 12px;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-base);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-xs);
-  min-height: 38px;
+  gap: 6px;
+  min-height: 32px;
   box-shadow: var(--shadow-sm);
 }
 
 .registro-boletas-btn-check-all {
   background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
   color: var(--white);
+  order: 1;
 }
 
 .registro-boletas-btn-check-all:hover:not(:disabled) {
@@ -667,12 +668,13 @@
 }
 
 .registro-boletas-btn-uncheck-all {
-  background: linear-gradient(135deg, var(--warning) 0%, #f1c40f 100%);
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   color: var(--white);
+  order: 2;
 }
 
 .registro-boletas-btn-uncheck-all:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f1c40f 0%, var(--warning) 100%);
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -2385,7 +2387,7 @@
 
 .registro-boletas-filtros-title {
   font-size: var(--font-size-xl);
-  color: var(--primary-blue);
+  color: var(--white);
   font-weight: 600;
   display: flex;
   align-items: center;

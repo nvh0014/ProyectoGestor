@@ -37,11 +37,11 @@ const boletaController = {
       
       // Filtros de fecha
       if (fechaInicio) {
-        query += ` AND b.FechaBoleta >= ?`;
+        query += ` AND DATE(b.FechaBoleta) >= ?`;
         params.push(fechaInicio);
       }
       if (fechaFin) {
-        query += ` AND b.FechaBoleta <= ?`;
+        query += ` AND DATE(b.FechaBoleta) <= ?`;
         params.push(fechaFin);
       }
       
@@ -472,8 +472,8 @@ deleteBoleta: async (req, res) => {
         FROM boleta b
         LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
         WHERE b.CodigoUsuario = ?
-          AND b.FechaBoleta >= ?
-          AND b.FechaBoleta <= ?
+          AND DATE(b.FechaBoleta) >= ?
+          AND DATE(b.FechaBoleta) <= ?
         GROUP BY b.CodigoUsuario, u.NombreUsuario
       `;
       
