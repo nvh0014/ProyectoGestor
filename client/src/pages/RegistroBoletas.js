@@ -44,6 +44,10 @@ function RegistroBoletas() {
     const [reporteVentas, setReporteVentas] = useState(null);
     const [mostrarReporte, setMostrarReporte] = useState(false);
 
+    // Estados para filtros de fecha
+    const [fechaInicio, setFechaInicio] = useState('');
+    const [fechaFin, setFechaFin] = useState('');
+
     // Estados para las boletas
     const [boletas, setBoletas] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -226,12 +230,27 @@ function RegistroBoletas() {
 
     // Función para aplicar filtros
     const aplicarFiltros = () => {
-        if (!isAdmin) {
-            console.log('🚫 No es admin, no se pueden aplicar filtros');
+        // Validar que haya fechas seleccionadas
+        if (!fechaInicio || !fechaFin) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fechas Requeridas',
+                text: 'Por favor seleccione fecha de inicio y fecha de término.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
-        
-        const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
+
+        // Validar que la fecha de inicio no sea mayor que la de término
+        if (new Date(fechaInicio) > new Date(fechaFin)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error en Fechas',
+                text: 'La fecha de inicio no puede ser mayor que la fecha de término.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
         
         console.log('🔍 Aplicando filtros:', {
             filtroUsuario,
@@ -245,7 +264,8 @@ function RegistroBoletas() {
             fechaFin
         };
         
-        if (filtroUsuario) {
+        // Agregar filtro de usuario si está seleccionado (admin)
+        if (isAdmin && filtroUsuario) {
             filtros.usuarioFiltro = filtroUsuario;
         }
         
@@ -424,6 +444,8 @@ function RegistroBoletas() {
     const limpiarFiltros = () => {
         setFiltroUsuario('');
         setFiltroPeriodo('mes');
+        setFechaInicio('');
+        setFechaFin('');
         setMostrarReporte(false);
         setReporteVentas(null);
         obtenerBoletas();
@@ -770,6 +792,77 @@ function RegistroBoletas() {
         }
     };
 
+    // Función para actualizar estado de completada individual
+    const toggleCompletada = async (numeroBoleta, completadaActual) => {
+        try {
+            const nuevoEstado = !completadaActual;
+            await api.patch(`/boletas/${numeroBoleta}/completada`, {
+                completada: nuevoEstado
+            });
+
+            // Actualizar el estado local
+            setBoletas(prevBoletas =>
+                prevBoletas.map(boleta =>
+                    boleta.NumeroBoleta === numeroBoleta
+                        ? { ...boleta, Completada: nuevoEstado ? 1 : 0 }
+                        : boleta
+                )
+            );
+        } catch (error) {
+            console.error('Error al actualizar estado:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo actualizar el estado de la boleta.',
+                confirmButtonText: 'Entendido'
+            });
+        }
+    };
+
+    // Función para marcar/desmarcar todas las boletas
+    const toggleTodasCompletadas = async (marcarTodas) => {
+        try {
+            const numerosBoletas = boletas.map(b => b.NumeroBoleta);
+            
+            await api.patch('/boletas/completada/multiple', {
+                boletas: numerosBoletas,
+                completada: marcarTodas
+            });
+
+            // Actualizar el estado local
+            setBoletas(prevBoletas =>
+                prevBoletas.map(boleta => ({
+                    ...boleta,
+                    Completada: marcarTodas ? 1 : 0
+                }))
+            );
+
+            // Toast pequeño y discreto
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'bottom-end',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true
+            });
+
+            Toast.fire({
+                icon: 'success',
+                title: marcarTodas ? 'Todas completadas' : 'Todas pendientes'
+            });
+        } catch (error) {
+            console.error('Error al actualizar estados:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo actualizar el estado de las boletas.',
+                confirmButtonText: 'Entendido'
+            });
+        }
+    };
+
+
+
     // Función para formatear fecha correctamente (corregir línea 152)
     const formatearFecha = (fechaString) => {
         if (!fechaString) return 'N/A';
@@ -1012,6 +1105,24 @@ function RegistroBoletas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const columns = useMemo(() => [
         {
+            id: 'completada',
+            header: 'Estado',
+            cell: ({ row }) => (
+                <div className="registro-boletas-checkbox-container">
+                    <input
+                        type="checkbox"
+                        className="registro-boletas-checkbox"
+                        checked={row.original.Completada === 1}
+                        onChange={(e) => {
+                            e.stopPropagation();
+                            toggleCompletada(row.original.NumeroBoleta, row.original.Completada === 1);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )
+        },
+        {
             accessorKey: 'NumeroBoleta',
             header: 'N° Boleta',
         },
@@ -1075,7 +1186,7 @@ function RegistroBoletas() {
                 </div>
             )
         }
-    ], [isAdmin, verDetalleBoleta, descargarBoleta, editarBoleta, eliminarBoleta]);
+    ], [isAdmin, verDetalleBoleta, descargarBoleta, editarBoleta, eliminarBoleta, toggleCompletada]);
 
     // Configuración de la tabla
     const table = useReactTable({
@@ -1202,52 +1313,79 @@ function RegistroBoletas() {
             <main className="registro-boletas-main-content">
                 <h2 className="registro-boletas-title">Registro de Boletas Emitidas</h2>
 
-                {/* Panel de filtros y reportes (solo para admin) */}
-                {isAdmin && (
-                    <div className="registro-boletas-filtros-card">
-                        <div className="registro-boletas-filtros-header">
-                            <h3 className="registro-boletas-filtros-title">
-                                <i className="fas fa-filter"></i>
-                                Filtros y Reportes
-                            </h3>
-                        </div>
-                        <div className="registro-boletas-filtros-content">
-                            <div className="registro-boletas-filtros-row">
-                                <div className="registro-boletas-filtro-group">
-                                    <label>Usuario:</label>
-                                    <select
-                                        value={filtroUsuario}
-                                        onChange={(e) => setFiltroUsuario(e.target.value)}
-                                        className="registro-boletas-filtro-select"
-                                    >
-                                        <option value="">Todos los usuarios</option>
-                                        {usuarios.map(user => (
-                                            <option key={user.id} value={user.id}>
-                                                {user.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="registro-boletas-filtro-group">
-                                    <label>Período:</label>
-                                    <select
-                                        value={filtroPeriodo}
-                                        onChange={(e) => setFiltroPeriodo(e.target.value)}
-                                        className="registro-boletas-filtro-select"
-                                    >
-                                        <option value="dia">Hoy</option>
-                                        <option value="semana">Última Semana</option>
-                                        <option value="mes">Último Mes</option>
-                                    </select>
-                                </div>
-                                <div className="registro-boletas-filtro-buttons">
-                                    <button
-                                        onClick={aplicarFiltros}
-                                        className="registro-boletas-btn-filtrar"
-                                    >
-                                        <i className="fas fa-search"></i>
-                                        Filtrar
-                                    </button>
+                {/* Panel de filtros integrado */}
+                <div className="registro-boletas-filtros-card">
+                    <div className="registro-boletas-filtros-header">
+                        <h3 className="registro-boletas-filtros-title">
+                            <i className="fas fa-filter"></i>
+                            Filtros y Reportes
+                        </h3>
+                    </div>
+                    <div className="registro-boletas-filtros-content">
+                        <div className="registro-boletas-filtros-row">
+                            {/* Filtros por fecha */}
+                            <div className="registro-boletas-filtro-group">
+                                <label>Fecha Inicio:</label>
+                                <input
+                                    type="date"
+                                    className="registro-boletas-filtro-input"
+                                    value={fechaInicio}
+                                    onChange={(e) => setFechaInicio(e.target.value)}
+                                />
+                            </div>
+                            <div className="registro-boletas-filtro-group">
+                                <label>Fecha Término:</label>
+                                <input
+                                    type="date"
+                                    className="registro-boletas-filtro-input"
+                                    value={fechaFin}
+                                    onChange={(e) => setFechaFin(e.target.value)}
+                                />
+                            </div>
+                            
+                            {/* Filtros de admin */}
+                            {isAdmin && (
+                                <>
+                                    <div className="registro-boletas-filtro-group">
+                                        <label>Usuario:</label>
+                                        <select
+                                            value={filtroUsuario}
+                                            onChange={(e) => setFiltroUsuario(e.target.value)}
+                                            className="registro-boletas-filtro-select"
+                                        >
+                                            <option value="">Todos los usuarios</option>
+                                            {usuarios.map(user => (
+                                                <option key={user.id} value={user.id}>
+                                                    {user.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="registro-boletas-filtro-group">
+                                        <label>Período:</label>
+                                        <select
+                                            value={filtroPeriodo}
+                                            onChange={(e) => setFiltroPeriodo(e.target.value)}
+                                            className="registro-boletas-filtro-select"
+                                        >
+                                            <option value="dia">Hoy</option>
+                                            <option value="semana">Última Semana</option>
+                                            <option value="mes">Último Mes</option>
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                            
+                            {/* Botones de acción */}
+                            <div className="registro-boletas-filtro-buttons">
+                                <button
+                                    onClick={aplicarFiltros}
+                                    className="registro-boletas-btn-filtrar"
+                                >
+                                    <i className="fas fa-search"></i>
+                                    Filtrar
+                                </button>
+                                {isAdmin && (
                                     <button
                                         onClick={generarReporte}
                                         className="registro-boletas-btn-reporte"
@@ -1256,62 +1394,62 @@ function RegistroBoletas() {
                                         <i className="fas fa-chart-bar"></i>
                                         Generar Reporte
                                     </button>
-                                    <button
-                                        onClick={limpiarFiltros}
-                                        className="registro-boletas-btn-limpiar"
-                                    >
-                                        <i className="fas fa-times"></i>
-                                        Limpiar
-                                    </button>
+                                )}
+                                <button
+                                    onClick={limpiarFiltros}
+                                    className="registro-boletas-btn-limpiar"
+                                >
+                                    <i className="fas fa-times"></i>
+                                    Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Mostrar reporte si existe */}
+                    {mostrarReporte && reporteVentas && (
+                        <div className="registro-boletas-reporte-card">
+                            <div className="registro-boletas-reporte-header">
+                                <h4 className="registro-boletas-reporte-title">
+                                    <i className="fas fa-chart-line"></i>
+                                    Reporte de Ventas - {reporteVentas.Vendedor}
+                                </h4>
+                                <button
+                                    onClick={() => {
+                                        const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
+                                        descargarReportePDF(reporteVentas, fechaInicio, fechaFin);
+                                    }}
+                                    className="registro-boletas-btn-descargar-pdf"
+                                >
+                                    <i className="fas fa-file-pdf"></i>
+                                    Descargar PDF
+                                </button>
+                            </div>
+                            <div className="registro-boletas-reporte-stats">
+                                <div className="registro-boletas-stat-item">
+                                    <span className="stat-label">Total Boletas:</span>
+                                    <span className="stat-value">{reporteVentas.TotalBoletas}</span>
+                                </div>
+                                <div className="registro-boletas-stat-item">
+                                    <span className="stat-label">Total Ventas:</span>
+                                    <span className="stat-value highlight">{formatearPrecio(reporteVentas.TotalVentas || 0)}</span>
+                                </div>
+                                <div className="registro-boletas-stat-item">
+                                    <span className="stat-label">Promedio por Venta:</span>
+                                    <span className="stat-value">{formatearPrecio(reporteVentas.PromedioVenta || 0)}</span>
+                                </div>
+                                <div className="registro-boletas-stat-item">
+                                    <span className="stat-label">Venta Mínima:</span>
+                                    <span className="stat-value">{formatearPrecio(reporteVentas.VentaMinima || 0)}</span>
+                                </div>
+                                <div className="registro-boletas-stat-item">
+                                    <span className="stat-label">Venta Máxima:</span>
+                                    <span className="stat-value">{formatearPrecio(reporteVentas.VentaMaxima || 0)}</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        {/* Mostrar reporte si existe */}
-                        {mostrarReporte && reporteVentas && (
-                            <div className="registro-boletas-reporte-card">
-                                <div className="registro-boletas-reporte-header">
-                                    <h4 className="registro-boletas-reporte-title">
-                                        <i className="fas fa-chart-line"></i>
-                                        Reporte de Ventas - {reporteVentas.Vendedor}
-                                    </h4>
-                                    <button
-                                        onClick={() => {
-                                            const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
-                                            descargarReportePDF(reporteVentas, fechaInicio, fechaFin);
-                                        }}
-                                        className="registro-boletas-btn-descargar-pdf"
-                                    >
-                                        <i className="fas fa-file-pdf"></i>
-                                        Descargar Reporte en PDF
-                                    </button>
-                                </div>
-                                <div className="registro-boletas-reporte-stats">
-                                    <div className="registro-boletas-stat-item">
-                                        <span className="stat-label">Total Boletas:</span>
-                                        <span className="stat-value">{reporteVentas.TotalBoletas}</span>
-                                    </div>
-                                    <div className="registro-boletas-stat-item">
-                                        <span className="stat-label">Total Ventas:</span>
-                                        <span className="stat-value highlight">{formatearPrecio(reporteVentas.TotalVentas || 0)}</span>
-                                    </div>
-                                    <div className="registro-boletas-stat-item">
-                                        <span className="stat-label">Promedio por Venta:</span>
-                                        <span className="stat-value">{formatearPrecio(reporteVentas.PromedioVenta || 0)}</span>
-                                    </div>
-                                    <div className="registro-boletas-stat-item">
-                                        <span className="stat-label">Venta Mínima:</span>
-                                        <span className="stat-value">{formatearPrecio(reporteVentas.VentaMinima || 0)}</span>
-                                    </div>
-                                    <div className="registro-boletas-stat-item">
-                                        <span className="stat-label">Venta Máxima:</span>
-                                        <span className="stat-value">{formatearPrecio(reporteVentas.VentaMaxima || 0)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                    )}
+                </div>
 
                 <div className="registro-boletas-content-card">
                     <div className="registro-boletas-card-header">
@@ -1331,15 +1469,26 @@ function RegistroBoletas() {
                     </div>
 
                     <div className="registro-boletas-table-container">
-                        {/* Controls */}
-                        <div className="registro-boletas-table-controls">
-                            <input
-                                type="text"
-                                className="registro-boletas-search-input"
-                                placeholder="Buscar boletas..."
-                                value={table.getState().globalFilter || ''}
-                                onChange={(e) => table.setGlobalFilter(e.target.value)}
-                            />
+                        {/* Botones de acción masiva */}
+                        <div className="registro-boletas-bulk-actions-bar">
+                            <button
+                                className="registro-boletas-btn-check-all"
+                                onClick={() => toggleTodasCompletadas(true)}
+                                disabled={boletas.length === 0}
+                                title="Marcar todas como completadas"
+                            >
+                                <i className="fas fa-check-double"></i>
+                                Marcar Todas
+                            </button>
+                            <button
+                                className="registro-boletas-btn-uncheck-all"
+                                onClick={() => toggleTodasCompletadas(false)}
+                                disabled={boletas.length === 0}
+                                title="Desmarcar todas"
+                            >
+                                <i className="fas fa-undo"></i>
+                                Desmarcar Todas
+                            </button>
                         </div>
 
                         {/* Table */}
@@ -1369,6 +1518,7 @@ function RegistroBoletas() {
                                         <tr 
                                             key={row.id}
                                             onClick={(event) => handleRowClick(event, row.id)}
+                                            className={row.original.Completada === 1 ? 'completada' : 'pendiente'}
                                             style={{ cursor: 'pointer' }}
                                         >
                                             {row.getVisibleCells().map(cell => (
@@ -1760,7 +1910,7 @@ function RegistroBoletas() {
                                                     disabled={!nuevoProductoForm.CodigoProducto || !nuevoProductoForm.Cantidad}
                                                 >
                                                     <i className="fas fa-plus"></i>
-                                                    ➕ Agregar Producto
+                                                    Agregar Producto
                                                 </button>
                                             </div>
                                         </div>

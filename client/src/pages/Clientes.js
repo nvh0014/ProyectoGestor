@@ -471,7 +471,6 @@ function Clientes() {
     }, []);
 
     if (loading) {
-        console.log('⏳ Componente en estado de carga...');
         return (
             <div className="clientes-container">
                 <div className="clientes-loading">

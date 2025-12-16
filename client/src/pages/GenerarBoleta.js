@@ -90,7 +90,6 @@ function GenerarBoleta() {
   const [boletaForm, setBoletaForm] = useState({
     CodigoCliente: '',
     CodigoUsuario: '',
-    MedioPago: 'Efectivo',
     Observaciones: ''
   });
 
@@ -122,7 +121,6 @@ function GenerarBoleta() {
 
     setTotales({
       subtotalNeto,
-      totalImpuestos: 0, // Ya no calculamos IVA
       totalBruto: subtotalNeto // Total es igual al subtotal
     });
   }, [productosBoleta]);
@@ -626,19 +624,16 @@ function GenerarBoleta() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="generar-boleta-container">
-        <div className="gb-loading-container">
-          <div className="gb-loading-spinner">
-            <div className="gb-spinner"></div>
-            <span>Cargando...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+    if (loading) {
+        return (
+            <div className="clientes-container">
+                <div className="clientes-loading">
+                    <div className="clientes-loading-spinner"></div>
+                    <div className="clientes-loading-text">Cargando...</div>
+                </div>
+            </div>
+        );
+    }
   return (
     <div className="generar-boleta-container">
       {/* Header */}
