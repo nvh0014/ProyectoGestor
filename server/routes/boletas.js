@@ -14,8 +14,14 @@ router.get('/:numero', boletaController.getBoletaById);
 // Crear nueva boleta con detalles
 router.post('/', boletaController.createBoleta);
 
+// Actualizar estado de múltiples boletas (debe ir ANTES de rutas con parámetros)
+router.patch('/completada/multiple', boletaController.updateCompletadaMultiple);
+
 // Actualizar boleta existente
 router.put('/:numero', boletaController.updateBoleta);
+
+// Actualizar estado de completada de una boleta
+router.patch('/:numero/completada', boletaController.updateCompletada);
 
 // Eliminar boleta por NumeroBoleta
 router.delete('/:numero', boletaController.deleteBoleta);

@@ -15,6 +15,7 @@ const boletaController = {
           b.FechaVencimiento,
           b.TotalBoleta,
           b.CodigoUsuario,
+          b.Completada,
           u.NombreUsuario as VendedorNombre
         FROM boleta b
         INNER JOIN cliente c ON b.CodigoCliente = c.CodigoCliente
@@ -493,6 +494,54 @@ deleteBoleta: async (req, res) => {
     } catch (err) {
       console.error('Error al obtener reporte:', err);
       res.status(500).json({ error: 'Error al obtener reporte de ventas' });
+    }
+  },
+
+  // Actualizar estado de completada de una boleta
+  updateCompletada: async (req, res) => {
+    const { numero } = req.params;
+    const { completada } = req.body;
+
+    try {
+      const query = `UPDATE boleta SET Completada = ? WHERE NumeroBoleta = ?`;
+      const [result] = await pool.execute(query, [completada ? 1 : 0, numero]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Boleta no encontrada' });
+      }
+
+      res.json({ 
+        message: 'Estado actualizado correctamente',
+        completada: completada ? 1 : 0
+      });
+    } catch (err) {
+      console.error('Error al actualizar estado:', err);
+      res.status(500).json({ error: 'Error al actualizar estado de la boleta' });
+    }
+  },
+
+  // Actualizar estado de múltiples boletas
+  updateCompletadaMultiple: async (req, res) => {
+    const { boletas, completada } = req.body;
+
+    try {
+      if (!Array.isArray(boletas) || boletas.length === 0) {
+        return res.status(400).json({ error: 'Se requiere un array de números de boleta' });
+      }
+
+      const placeholders = boletas.map(() => '?').join(',');
+      const query = `UPDATE boleta SET Completada = ? WHERE NumeroBoleta IN (${placeholders})`;
+      const params = [completada ? 1 : 0, ...boletas];
+      
+      const [result] = await pool.execute(query, params);
+
+      res.json({ 
+        message: `${result.affectedRows} boletas actualizadas correctamente`,
+        actualizadas: result.affectedRows
+      });
+    } catch (err) {
+      console.error('Error al actualizar estados:', err);
+      res.status(500).json({ error: 'Error al actualizar estados de las boletas' });
     }
   }
 };
