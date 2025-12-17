@@ -381,7 +381,7 @@ const menuItems = [
         
         <div className="footer-bottom">
           <p>&copy;Distribuidora Cerro Negro.</p>
-          <p>v0.4.9</p>
+          <p>v0.5.0</p>
           <p>nvh0014</p>
         </div>
       </footer>

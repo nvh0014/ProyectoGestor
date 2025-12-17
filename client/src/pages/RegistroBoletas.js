@@ -1234,8 +1234,8 @@ function RegistroBoletas() {
     // Configuración de columnas de la tabla
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const columns = useMemo(() => [
-        // ESTADO TABLA APARECE SOLO SI ES GIOVANNA
-        ...(usuario && usuario.trim().toLowerCase() === 'giovanna' ? [{
+        // ESTADO TABLA APARECE SOLO SI ES ADMINISTRADOR
+        ...(isAdmin ? [{
             id: 'completada',
             header: 'Estado',
             cell: ({ row }) => (
@@ -1839,8 +1839,8 @@ function RegistroBoletas() {
                     </div>
 
                     <div className="registro-boletas-table-container">
-                        {/* Botones de acción masiva aparecen sólo si el usuario es Giovanna */}
-                        {(usuario && usuario.trim().toLowerCase() === 'giovanna') && (
+                        {/* Botones de acción masiva aparecen sólo si el usuario es administrador */}
+                        {isAdmin && (
                             <>
                                 <div className="registro-boletas-bulk-actions-bar">
                                     <div className="registro-boletas-bulk-actions-text">
