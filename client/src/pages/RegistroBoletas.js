@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import Swal from 'sweetalert2';
@@ -52,7 +52,8 @@ function RegistroBoletas() {
     // Estados para las boletas
     const [boletas, setBoletas] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [cargandoTabla, setCargandoTabla] = useState(false); // Bloqueo para filtrado en tiempo real
+    const [cargandoTabla, setCargandoTabla] = useState(false); // Estado visual para deshabilitar inputs
+    const cargandoTablaRef = useRef(false); // Ref para verificar sin causar re-renders
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [boletaSeleccionada, setBoletaSeleccionada] = useState(null);
     const [detallesBoleta, setDetallesBoleta] = useState([]);
@@ -1394,15 +1395,16 @@ function RegistroBoletas() {
         }
 
         // Si ya está cargando, no hacer nada (protección contra múltiples peticiones)
-        if (cargandoTabla) {
+        if (cargandoTablaRef.current) {
             console.log('⏸️ Ya hay una petición en curso, ignorando...');
             return;
         }
 
-        // Debounce de 800ms para dar tiempo a seleccionar
-        const timeoutId = setTimeout(async () => {
+        // Ejecutar inmediatamente sin debounce
+        (async () => {
             try {
                 console.log('🔄 Filtrando tabla de boletas...');
+                cargandoTablaRef.current = true;
                 setCargandoTabla(true);
 
                 // Toast de inicio de carga
@@ -1455,18 +1457,17 @@ function RegistroBoletas() {
                     }
                 });
 
+                cargandoTablaRef.current = false;
                 setCargandoTabla(false);
 
             } catch (error) {
                 console.error('❌ Error al filtrar tabla:', error);
+                cargandoTablaRef.current = false;
                 setCargandoTabla(false);
             }
-        }, 800);
+        })();
 
-        // Limpiar timeout si cambian los filtros
-        return () => clearTimeout(timeoutId);
-
-    }, [isAdmin, filtroUsuario, fechaInicio, fechaFin, obtenerBoletas, cargandoTabla]);
+    }, [isAdmin, filtroUsuario, fechaInicio, fechaFin, obtenerBoletas]);
 
     // Efecto para generar/regenerar automáticamente el reporte en tiempo real con debounce
     useEffect(() => {
