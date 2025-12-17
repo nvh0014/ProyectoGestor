@@ -226,10 +226,21 @@ function RegistroBoletas() {
         }
     }, [isAdmin]);
 
-    // Función para calcular fechas según período
+    // Función para calcular fechas según período (en hora de Chile)
     const calcularFechas = (periodo) => {
+        // Obtener fecha actual en zona horaria de Chile
+        const obtenerFechaChile = (fecha = new Date()) => {
+            const opciones = {
+                timeZone: 'America/Santiago',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            };
+            return new Intl.DateTimeFormat('en-CA', opciones).format(fecha);
+        };
+
         const hoy = new Date();
-        const fechaFin = hoy.toISOString().split('T')[0];
+        const fechaFin = obtenerFechaChile(hoy);
         let fechaInicio;
 
         switch (periodo) {
@@ -239,12 +250,12 @@ function RegistroBoletas() {
             case 'semana':
                 const semanaAtras = new Date(hoy);
                 semanaAtras.setDate(hoy.getDate() - 7);
-                fechaInicio = semanaAtras.toISOString().split('T')[0];
+                fechaInicio = obtenerFechaChile(semanaAtras);
                 break;
             case 'mes':
                 const mesAtras = new Date(hoy);
                 mesAtras.setMonth(hoy.getMonth() - 1);
-                fechaInicio = mesAtras.toISOString().split('T')[0];
+                fechaInicio = obtenerFechaChile(mesAtras);
                 break;
             default:
                 fechaInicio = fechaFin;
@@ -419,20 +430,30 @@ function RegistroBoletas() {
     };
 
     // Función para descargar reporte como PDF
-    const descargarReportePDF = (datosReporte, fechaInicio, fechaFin) => {
+    const descargarReportePDF = async (datosReporte, fechaInicio, fechaFin) => {
         const doc = new jsPDF();
 
-        // Logo de la empresa (opcional)
+        // Logo de la empresa - cargar de forma asíncrona
         try {
             const logoImg = new Image();
-            logoImg.src = '/logo512.png';
-            logoImg.onload = () => {
-                try {
-                    doc.addImage(logoImg, 'PNG', 15, 10, 30, 30);
-                } catch (e) {
-                    console.warn('No se pudo agregar logo al PDF');
-                }
-            };
+            logoImg.crossOrigin = 'anonymous';
+            
+            await new Promise((resolve) => {
+                logoImg.onload = () => {
+                    try {
+                        doc.addImage(logoImg, 'PNG', 15, 10, 30, 30);
+                        resolve();
+                    } catch (e) {
+                        console.warn('No se pudo agregar logo al PDF:', e);
+                        resolve();
+                    }
+                };
+                logoImg.onerror = () => {
+                    console.warn('No se pudo cargar el logo');
+                    resolve();
+                };
+                logoImg.src = '/logo512.png';
+            });
         } catch (error) {
             console.warn('Error al procesar logo para PDF:', error);
         }
@@ -454,8 +475,9 @@ function RegistroBoletas() {
         doc.text('Período:', 20, 58);
         doc.setFont('helvetica', 'normal');
         if (fechaInicio && fechaFin) {
-            const fechaInicioFormat = new Date(fechaInicio).toLocaleDateString('es-CL');
-            const fechaFinFormat = new Date(fechaFin).toLocaleDateString('es-CL');
+            // Evitar desfase de zona horaria agregando 'T00:00:00' para forzar hora local
+            const fechaInicioFormat = new Date(fechaInicio + 'T00:00:00').toLocaleDateString('es-CL');
+            const fechaFinFormat = new Date(fechaFin + 'T00:00:00').toLocaleDateString('es-CL');
             doc.text(`${fechaInicioFormat} - ${fechaFinFormat}`, 50, 58);
         } else {
             doc.text('Todas las boletas históricas', 50, 58);
@@ -465,7 +487,17 @@ function RegistroBoletas() {
         doc.setFont('helvetica', 'bold');
         doc.text('Generado:', 20, 66);
         doc.setFont('helvetica', 'normal');
-        doc.text(new Date().toLocaleString('es-CL'), 50, 66);
+        const fechaGeneracion = new Date().toLocaleString('es-CL', {
+            timeZone: 'America/Santiago',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        doc.text(fechaGeneracion, 50, 66);
 
         // Línea separadora
         doc.setLineWidth(0.5);

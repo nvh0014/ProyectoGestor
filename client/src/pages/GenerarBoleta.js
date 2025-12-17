@@ -336,15 +336,38 @@ function GenerarBoleta() {
     try {
       // Obtener fecha actual en zona horaria de Chile
       const obtenerFechaChile = () => {
-        const fecha = new Date();
-        // Usar zona horaria de Chile (America/Santiago)
-        const fechaChile = new Date(fecha.toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-        return fechaChile.toISOString().split('T')[0];
+        const ahora = new Date();
+        // Formatear la fecha actual en zona horaria de Chile
+        const opciones = {
+          timeZone: 'America/Santiago',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        };
+        const partes = new Intl.DateTimeFormat('en-CA', opciones).format(ahora); // en-CA da formato YYYY-MM-DD
+        return partes; // Ya está en formato YYYY-MM-DD
       };
       
       const fechaBoleta = obtenerFechaChile();
-      const fechaVencimiento = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+      
+      // Calcular fecha de vencimiento (30 días después en zona horaria de Chile)
+      const obtenerFechaVencimiento = () => {
+        const ahora = new Date();
+        const opciones = {
+          timeZone: 'America/Santiago',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        };
+        // Obtener fecha actual en Chile
+        const fechaActualChile = new Intl.DateTimeFormat('en-CA', opciones).format(ahora);
+        // Crear objeto Date con la fecha de Chile y agregar 30 días
+        const fechaVenc = new Date(fechaActualChile + 'T00:00:00');
+        fechaVenc.setDate(fechaVenc.getDate() + 30);
+        return fechaVenc.toISOString().split('T')[0];
+      };
+      
+      const fechaVencimiento = obtenerFechaVencimiento();
 
       const detalles = productosBoleta.map(producto => ({
         CodigoProducto: producto.CodigoProducto,
@@ -358,7 +381,6 @@ function GenerarBoleta() {
         CodigoCliente: boletaForm.CodigoCliente,
         CodigoUsuario: boletaForm.CodigoUsuario,
         FechaBoleta: fechaBoleta,
-        FechaVencimiento: fechaVencimiento.toISOString().split('T')[0],
         TotalBoleta: totales.subtotalNeto,
         Observaciones: boletaForm.Observaciones || '',
         detalles: detalles
