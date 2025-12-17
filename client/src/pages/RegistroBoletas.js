@@ -1406,23 +1406,6 @@ function RegistroBoletas() {
                 console.log('🔄 Filtrando tabla de boletas...');
                 cargandoTablaRef.current = true;
                 setCargandoTabla(true);
-
-                // Toast de inicio de carga
-                const ToastCargando = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 800,
-                    timerProgressBar: true,
-                });
-
-                ToastCargando.fire({
-                    icon: 'info',
-                    title: 'Actualizando...',
-                    didOpen: (toast) => {
-                        toast.style.fontSize = '0.85rem';
-                    }
-                });
                 
                 // Construir filtros
                 const filtros = {
