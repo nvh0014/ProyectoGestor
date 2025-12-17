@@ -165,10 +165,10 @@ function Login() {
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </button>
 
-                <p>
+                {/* <p>
                     ¿Aún no te has registrado? 
                     <a href="/register"> Regístrate</a>
-                </p>
+                </p> */}
             </div>
         </div>
     )
