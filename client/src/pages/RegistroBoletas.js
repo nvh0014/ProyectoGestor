@@ -1752,7 +1752,7 @@ function RegistroBoletas() {
                                                                             />
                                                                             <button
                                                                                 type="button"
-                                                                                className="registro-boletas-btn-medio"
+                                                                                className="registro-boletas-btn-medio-tabla"
                                                                                 onClick={() => actualizarDetalle(index, 'Cantidad', 0.5)}
                                                                                 title="Settear cantidad a 0.5"
                                                                             >
@@ -1857,7 +1857,7 @@ function RegistroBoletas() {
                                                             />
                                                             <button
                                                                 type="button"
-                                                                className="registro-boletas-btn-medio"
+                                                                className="registro-boletas-btn-medio-form"
                                                                 onClick={() => handleNuevoProductoChange('Cantidad', 0.5)}
                                                                 title="Settear cantidad a 0.5"
                                                             >

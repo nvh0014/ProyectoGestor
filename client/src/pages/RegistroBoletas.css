@@ -2743,23 +2743,26 @@
 /* ===== CONTENEDOR DE CANTIDAD CON BOTÓN 0.5 ===== */
 .registro-boletas-cantidad-container {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   align-items: flex-start;
-  width: 8dvh;
-  flex-direction: column;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .registro-boletas-cantidad-container input {
   flex: 1;
-  min-width: 60px;
+  min-width: 100px;
 }
 
-.registro-boletas-btn-medio {
+/* Botón 0.5 en la TABLA (más compacto) */
+.registro-boletas-btn-medio-tabla {
   background: var(--warning);
   color: var(--white);
-  width: 1dvh;
-  padding: 1dvh;
-  margin-top: 1dvh;
+  min-width: 45px;
+  min-height: 36px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-top: 0;
+  margin-left: 0;
   justify-content: center;
   border: none;
   border-radius: var(--radius-sm);
@@ -2770,13 +2773,72 @@
   white-space: nowrap;
   display: flex;
   align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.registro-boletas-btn-medio-tabla:hover {
+  background-color: #e67e22;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
+}
+
+/* Botón 0.5 en el FORMULARIO (más grande) */
+.registro-boletas-btn-medio-form {
+  background: var(--warning);
+  color: var(--white);
+  min-width: 60px;
+  min-height: 25px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  margin-top: 0;
+  margin-left: 0;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.registro-boletas-btn-medio-form:hover {
+  background-color: #e67e22;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
+}
+
+/* Mantener compatibilidad con la clase antigua */
+.registro-boletas-btn-medio {
+  background: var(--warning);
+  color: var(--white);
+  min-width: 60px;
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  margin-top: 0;
+  margin-left: 0;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .registro-boletas-btn-medio:hover {
-  background-color: rgba(241, 196, 15, 0.1);
-  border-color: var(--warning);
-  color: var(--warning);
+  background-color: #e67e22;
   transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
 }
 
 .registro-boletas-btn-medio.active {
@@ -2793,7 +2855,20 @@
   transform: scale(1.05);
 }
 
-/* Responsive para contenedor de cantidad */
+/* Responsive para contenedor de cantidad - Tablets */
+@media (max-width: 1024px) {
+  .registro-boletas-cantidad-container {
+    gap: var(--spacing-xs);
+  }
+  
+  .registro-boletas-btn-medio {
+    min-width: 50px;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Responsive para contenedor de cantidad - Móviles */
 @media (max-width: 768px) {
   .registro-boletas-cantidad-container {
     flex-direction: column;
@@ -2807,5 +2882,14 @@
   .registro-boletas-btn-medio {
     width: 100%;
     min-width: unset;
+  }
+}
+
+/* Responsive específico para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .registro-boletas-btn-medio {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-base);
+    max-width: 24px;
   }
 }
