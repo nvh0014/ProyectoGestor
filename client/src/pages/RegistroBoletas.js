@@ -1387,9 +1387,13 @@ function RegistroBoletas() {
             return;
         }
 
-        console.log('⏱️ Iniciando debounce de filtrado de tabla (1000ms)...');
+        // Determinar debounce inteligente (invertido)
+        const tieneAlgunaFecha = fechaInicio || fechaFin;
+        const debounceTime = tieneAlgunaFecha ? 2000 : 800; // 2000ms si hay fechas, 800ms si solo vendedor
+        
+        console.log(`⏱️ Iniciando debounce de filtrado de tabla (${debounceTime}ms)...`);
 
-        // Debounce de 1000ms para filtrado de tabla (más conservador que reporte)
+        // Debounce inteligente: 800ms si hay fechas, 1800ms si solo vendedor
         const timeoutId = setTimeout(async () => {
             try {
                 console.log('🔄 Filtrando tabla de boletas...');
@@ -1430,7 +1434,7 @@ function RegistroBoletas() {
             } catch (error) {
                 console.error('❌ Error al filtrar tabla:', error);
             }
-        }, 1000); // Debounce de 1000ms
+        }, debounceTime); // Debounce inteligente: corto con fechas, largo sin fechas
 
         // Limpiar timeout si cambian los filtros antes de que se ejecute
         return () => clearTimeout(timeoutId);
