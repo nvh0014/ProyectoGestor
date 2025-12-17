@@ -54,9 +54,8 @@ function RegistroBoletas() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [boletaSeleccionada, setBoletaSeleccionada] = useState(null);
     const [detallesBoleta, setDetallesBoleta] = useState([]);
-    // Estado para el modal para editar boleta
-    const [modalEditarIsOpen, setModalEditarIsOpen] = useState(false);
-    const [editingBoleta, setEditingBoleta] = useState(null);
+    // Estado unificado para el modal de visualización/edición con pestañas
+    const [tabActiva, setTabActiva] = useState('visualizar'); // 'visualizar' o 'editar'
     const [editingDetalles, setEditingDetalles] = useState([]);
     const [observacionesGenerales, setObservacionesGenerales] = useState('');
     const [productos, setProductos] = useState([]); // Para cargar precios de productos
@@ -69,6 +68,8 @@ function RegistroBoletas() {
         PrecioUnitario: 0,
         DescripcionProducto: ''
     });
+
+
 
     // Estado para el modal de confirmación de eliminación
     const [modalEliminarIsOpen, setModalEliminarIsOpen] = useState(false);
@@ -454,12 +455,27 @@ function RegistroBoletas() {
         obtenerBoletas();
     };
 
-    // Función para ver detalle de boleta
-    const verDetalleBoleta = async (numeroBoleta) => {
+    // Función para ver detalle de boleta (ahora también carga productos para permitir edición)
+    const verDetalleBoleta = useCallback(async (numeroBoleta) => {
         try {
-            const response = await api.get(`/boletas/${numeroBoleta}`);
-            setBoletaSeleccionada(response.data.boleta);
-            setDetallesBoleta(response.data.detalles);
+            // Cargar datos de la boleta y productos en paralelo
+            const [boletaResponse, productosResponse] = await Promise.all([
+                api.get(`/boletas/${numeroBoleta}`),
+                api.get('/articulos')
+            ]);
+            
+            setBoletaSeleccionada(boletaResponse.data.boleta);
+            setDetallesBoleta(boletaResponse.data.detalles);
+            setEditingDetalles(boletaResponse.data.detalles || []);
+            setObservacionesGenerales(boletaResponse.data.boleta.Observaciones || '');
+            
+            // Filtrar solo productos activos
+            const productosActivos = productosResponse.data.filter(producto =>
+                producto.ArticuloActivo === true || producto.ArticuloActivo === 1
+            );
+            setProductos(productosActivos);
+            
+            setTabActiva('visualizar'); // Iniciar en pestaña de visualización
             setModalIsOpen(true);
         } catch (error) {
             console.error('Error al obtener detalle de boleta:', error);
@@ -470,7 +486,7 @@ function RegistroBoletas() {
                 confirmButtonText: 'Entendido'
             });
         }
-    };
+    }, []);
 
     // const handleTipoPrecioChange = (tipoPrecio) => {
     //     setProductoForm(prev => {
@@ -490,36 +506,9 @@ function RegistroBoletas() {
     //         };
     //     });
     // };
-    // Función para editar boleta
-    const editarBoleta = async (numeroBoleta) => {
-        try {
-            // Cargar datos de la boleta y productos en paralelo
-            const [boletaResponse, productosResponse] = await Promise.all([
-                api.get(`/boletas/${numeroBoleta}`),
-                api.get('/articulos')
-            ]);
 
-            setEditingBoleta(boletaResponse.data.boleta);
-            setEditingDetalles(boletaResponse.data.detalles || []);
-            setObservacionesGenerales(boletaResponse.data.boleta.Observaciones || '');
 
-            // Filtrar solo productos activos
-            const productosActivos = productosResponse.data.filter(producto =>
-                producto.ArticuloActivo === true || producto.ArticuloActivo === 1
-            );
-            setProductos(productosActivos);
 
-            setModalEditarIsOpen(true);
-        } catch (error) {
-            console.error('Error al obtener boleta para editar:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error al Cargar Boleta',
-                text: 'No se pudo cargar la boleta para editar.',
-                confirmButtonText: 'Entendido'
-            });
-        }
-    };
 
     // Función para actualizar un detalle específico
     const actualizarDetalle = (index, campo, valor) => {
@@ -710,7 +699,7 @@ function RegistroBoletas() {
             const totalCalculado = calcularTotalBoleta();
 
             const datosActualizados = {
-                numeroBoleta: editingBoleta.NumeroBoleta,
+                numeroBoleta: boletaSeleccionada.NumeroBoleta,
                 detalles: editingDetalles.map(detalle => ({
                     IdDetalleBoleta: detalle.esNuevo ? null : detalle.IdDetalleBoleta, // null para productos nuevos
                     CodigoProducto: detalle.CodigoProducto,
@@ -724,7 +713,7 @@ function RegistroBoletas() {
                 observaciones: observacionesGenerales
             };
 
-            await api.put(`/boletas/${editingBoleta.NumeroBoleta}`, datosActualizados);
+            await api.put(`/boletas/${boletaSeleccionada.NumeroBoleta}`, datosActualizados);
 
             Swal.fire({
                 icon: 'success',
@@ -733,7 +722,14 @@ function RegistroBoletas() {
                 confirmButtonText: 'Continuar'
             });
 
-            setModalEditarIsOpen(false);
+            // Actualizar los datos de visualización con los nuevos valores
+            setBoletaSeleccionada({
+                ...boletaSeleccionada,
+                TotalBoleta: totalCalculado,
+                Observaciones: observacionesGenerales
+            });
+            setDetallesBoleta(editingDetalles);
+            setTabActiva('visualizar'); // Volver a pestaña de visualización
             obtenerBoletas(); // Recargar la lista de boletas
 
         } catch (error) {
@@ -749,7 +745,7 @@ function RegistroBoletas() {
         }
     };
 
-    const eliminarBoleta = async (numeroBoleta) => {
+    const eliminarBoleta = useCallback(async (numeroBoleta) => {
         const result = await Swal.fire({
             title: 'Confirmar Eliminación',
             text: `¿Está seguro de que desea eliminar la boleta N° ${numeroBoleta}?`,
@@ -793,10 +789,10 @@ function RegistroBoletas() {
                 });
             }
         }
-    };
+    }, [obtenerBoletas]);
 
     // Función para actualizar estado de completada individual
-    const toggleCompletada = async (numeroBoleta, completadaActual) => {
+    const toggleCompletada = useCallback(async (numeroBoleta, completadaActual) => {
         try {
             const nuevoEstado = !completadaActual;
             await api.patch(`/boletas/${numeroBoleta}/completada`, {
@@ -820,7 +816,7 @@ function RegistroBoletas() {
                 confirmButtonText: 'Entendido'
             });
         }
-    };
+    }, []);
 
     // Función para marcar/desmarcar todas las boletas (botón deshabilitado durante el proceso)
     const toggleTodasCompletadas = async (marcarTodas) => {
@@ -914,7 +910,7 @@ function RegistroBoletas() {
         row.classList.add('selected');
     };
 
-    const descargarBoleta = async (numeroBoleta) => {
+    const descargarBoleta = useCallback(async (numeroBoleta) => {
         try {
             const response = await api.get(`/boletas/${numeroBoleta}`);
             const { boleta, detalles } = response.data;
@@ -1110,7 +1106,7 @@ function RegistroBoletas() {
                 confirmButtonText: 'Entendido'
             });
         }
-    };
+    }, []);
 
     // Configuración de columnas de la tabla
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1161,8 +1157,8 @@ function RegistroBoletas() {
                     <button
                         className="registro-boletas-action-button view"
                         onClick={() => verDetalleBoleta(row.original.NumeroBoleta)}
-                        title="Ver detalle"
-                        aria-label="Ver detalle de la boleta"
+                        title="Visualizar/Editar boleta"
+                        aria-label="Visualizar/Editar boleta"
                     >
                         👁️
                         <i className="fas fa-eye"></i>
@@ -1178,15 +1174,6 @@ function RegistroBoletas() {
                     </button>
                     <>
                         <button
-                            className="registro-boletas-action-button edit"
-                            onClick={() => editarBoleta(row.original.NumeroBoleta)}
-                            title="Editar boleta"
-                            aria-label="Editar boleta"
-                        >
-                            ✏️
-                            <i className="fas fa-edit"></i>
-                        </button>
-                        <button
                             className="registro-boletas-action-button delete"
                             onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
                             title="Eliminar boleta"
@@ -1199,7 +1186,7 @@ function RegistroBoletas() {
                 </div>
             )
         }
-    ], [isAdmin, verDetalleBoleta, descargarBoleta, editarBoleta, eliminarBoleta, toggleCompletada]);
+    ], [isAdmin, verDetalleBoleta, descargarBoleta, eliminarBoleta, toggleCompletada]);
 
     // Configuración de la tabla
     const table = useReactTable({
@@ -1580,7 +1567,7 @@ function RegistroBoletas() {
                 </div>
             </main>
 
-            {/* Modal para ver detalle de boleta */}
+            {/* Modal unificado para ver y editar boleta con pestañas */}
             <div className={`registro-boletas-modal-overlay ${modalIsOpen ? 'show' : ''}`}>
                 <div className="registro-boletas-modal-content">
                     {boletaSeleccionada && (
@@ -1588,25 +1575,47 @@ function RegistroBoletas() {
                             <div className="registro-boletas-modal-header">
                                 <h3 className="registro-boletas-modal-title">
                                     <i className="fas fa-file-invoice"></i>
-                                    Detalle Boleta N° {boletaSeleccionada.NumeroBoleta}
+                                    Boleta N° {boletaSeleccionada.NumeroBoleta}
                                 </h3>
                                 <button
                                     type="button"
                                     className="registro-boletas-modal-close"
-                                    onClick={() => setModalIsOpen(false)}
+                                    onClick={() => {
+                                        setModalIsOpen(false);
+                                        setTabActiva('visualizar');
+                                    }}
                                     aria-label="Cerrar modal"
                                 >
                                     <i className="fas fa-times"></i>
                                 </button>
                             </div>
 
+                            {/* Sistema de Pestañas/Tabs */}
+                            <div className="registro-boletas-tabs-container">
+                                <button
+                                    className={`registro-boletas-tab ${tabActiva === 'visualizar' ? 'active' : ''}`}
+                                    onClick={() => setTabActiva('visualizar')}
+                                >
+                                    <i className="fas fa-eye"></i>
+                                    Visualizar
+                                </button>
+                                <button
+                                    className={`registro-boletas-tab ${tabActiva === 'editar' ? 'active' : ''}`}
+                                    onClick={() => setTabActiva('editar')}
+                                >
+                                    <i className="fas fa-edit"></i>
+                                    Editar
+                                </button>
+                            </div>
+
                             <div className="registro-boletas-modal-body">
-                                <div className="registro-boletas-detail-grid">
-                                    <div className="registro-boletas-detail-section">
-                                        <h4 className="registro-boletas-detail-section-title">
-                                            <i className="fas fa-user"></i>
-                                            Información del Cliente
-                                        </h4>
+                                {/* Información del cliente (siempre visible, no editable) */}
+                                <div className="registro-boletas-detail-section">
+                                    <h4 className="registro-boletas-detail-section-title">
+                                        <i className="fas fa-user"></i>
+                                        Información del Cliente
+                                    </h4>
+                                    <div className="registro-boletas-client-info">
                                         <div className="registro-boletas-detail-item">
                                             <span className="registro-boletas-detail-label">RUT:</span>
                                             <span className="registro-boletas-detail-value">{boletaSeleccionada.Rut}</span>
@@ -1616,352 +1625,352 @@ function RegistroBoletas() {
                                             <span className="registro-boletas-detail-value">{boletaSeleccionada.RazonSocial}</span>
                                         </div>
                                         <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Teléfono:</span>
-                                            <span className="registro-boletas-detail-value">{boletaSeleccionada.Telefono || '-'}</span>
-                                        </div>
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Dirección:</span>
-                                            <span className="registro-boletas-detail-value">{boletaSeleccionada.Direccion || '-'}</span>
-                                        </div>
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Comuna:</span>
-                                            <span className="registro-boletas-detail-value">{boletaSeleccionada.Comuna || '-'}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="registro-boletas-detail-section">
-                                        <h4 className="registro-boletas-detail-section-title">
-                                            <i className="fas fa-file-invoice"></i>
-                                            Información de la Boleta
-                                        </h4>
-                                        <div className="registro-boletas-detail-item">
                                             <span className="registro-boletas-detail-label">Fecha Boleta:</span>
                                             <span className="registro-boletas-detail-value">{formatearFecha(boletaSeleccionada.FechaBoleta)}</span>
                                         </div>
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Total:</span>
-                                            <span className="registro-boletas-detail-value registro-boletas-total-highlight">{formatearPrecio(boletaSeleccionada.TotalBoleta)}</span>
-                                        </div>
+                                        {tabActiva === 'visualizar' && (
+                                            <>
+                                                <div className="registro-boletas-detail-item">
+                                                    <span className="registro-boletas-detail-label">Teléfono:</span>
+                                                    <span className="registro-boletas-detail-value">{boletaSeleccionada.Telefono || '-'}</span>
+                                                </div>
+                                                <div className="registro-boletas-detail-item">
+                                                    <span className="registro-boletas-detail-label">Dirección:</span>
+                                                    <span className="registro-boletas-detail-value">{boletaSeleccionada.Direccion || '-'}</span>
+                                                </div>
+                                                <div className="registro-boletas-detail-item">
+                                                    <span className="registro-boletas-detail-label">Comuna:</span>
+                                                    <span className="registro-boletas-detail-value">{boletaSeleccionada.Comuna || '-'}</span>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="registro-boletas-products-section">
-                                    <h4 className="registro-boletas-detail-section-title">
-                                        <i className="fas fa-list"></i>
-                                        Detalle de Productos
-                                    </h4>
-                                    <div className="registro-boletas-products-table-container">
-                                        <table className="registro-boletas-products-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Descripción</th>
-                                                    <th>Cantidad</th>
-                                                    <th>Precio Unitario</th>
-                                                    <th>Subtotal</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {detallesBoleta.map((detalle, index) => (
-                                                    <tr key={index}>
-                                                        <td>{detalle.Descripcion}</td>
-                                                        <td>{detalle.Cantidad}</td>
-                                                        <td>{formatearPrecio(detalle.PrecioUnitario)}</td>
-                                                        <td>{formatearPrecio(detalle.Subtotal)}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr className="registro-boletas-products-total">
-                                                    <th colSpan="3">Total:</th>
-                                                    <th>{formatearPrecio(boletaSeleccionada.TotalBoleta)}</th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="registro-boletas-modal-footer">
-                                <button
-                                    type="button"
-                                    className="registro-boletas-modal-button secondary"
-                                    onClick={() => setModalIsOpen(false)}
-                                >
-                                    Cerrar
-                                </button>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
-            {/* Modal para editar boleta */}
-            <div className={`registro-boletas-modal-overlay ${modalEditarIsOpen ? 'show' : ''}`}>
-                <div className="registro-boletas-modal-content">
-                    {editingBoleta && (
-                        <>
-                            <div className="registro-boletas-modal-header">
-                                <h3 className="registro-boletas-modal-title">
-                                    <i className="fas fa-edit"></i>
-                                    Editar Boleta N° {editingBoleta.NumeroBoleta}
-                                </h3>
-                                <button
-                                    type="button"
-                                    className="registro-boletas-modal-close"
-                                    onClick={() => setModalEditarIsOpen(false)}
-                                    aria-label="Cerrar modal"
-                                >
-                                    <i className="fas fa-times"></i>
-                                </button>
-                            </div>
-
-                            <div className="registro-boletas-modal-body">
-                                {/* Información del cliente (solo lectura) */}
-                                <div className="registro-boletas-edit-section">
-                                    <h4 className="registro-boletas-detail-section-title">
-                                        <i className="fas fa-user"></i>
-                                        Información del Cliente
-                                    </h4>
-                                    <div className="registro-boletas-client-info">
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">RUT:</span>
-                                            <span className="registro-boletas-detail-value">{editingBoleta.Rut}</span>
-                                        </div>
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Razón Social:</span>
-                                            <span className="registro-boletas-detail-value">{editingBoleta.RazonSocial}</span>
-                                        </div>
-                                        <div className="registro-boletas-detail-item">
-                                            <span className="registro-boletas-detail-label">Fecha Boleta:</span>
-                                            <span className="registro-boletas-detail-value">{formatearFecha(editingBoleta.FechaBoleta)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Edición de productos */}
-                                <div className="registro-boletas-edit-section">
-                                    <h4 className="registro-boletas-detail-section-title">
-                                        <i className="fas fa-list"></i>
-                                        Editar Productos
-                                    </h4>
-                                    <div className="registro-boletas-edit-products-container">
-                                        <table className="registro-boletas-edit-products-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Descripción</th>
-                                                    <th>Cantidad</th>
-                                                    <th>Tipo Precio</th>
-                                                    <th>Subtotal</th>
-                                                    <th>Descripción</th>
-                                                    <th>Acciones</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {editingDetalles.map((detalle, index) => {
-                                                    const producto = productos.find(p => p.CodigoArticulo === detalle.CodigoProducto);
-                                                    const tipoPrecioActual = detalle.TipoPrecio || 'PrecioUnitario';
-
-                                                    return (
-                                                        <tr key={index}>
-                                                            <td className="registro-boletas-product-description">
-                                                                {detalle.Descripcion || detalle.NombreProducto}
-                                                            </td>
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    step="0.5"
-                                                                    min="0.5"
-                                                                    value={detalle.Cantidad || ''}
-                                                                    onChange={(e) => actualizarDetalle(index, 'Cantidad', e.target.value)}
-                                                                    className="registro-boletas-edit-input-cantidad"
-                                                                />
-                                                            </td>
-                                                            <td>
-                                                                <select
-                                                                    value={tipoPrecioActual}
-                                                                    onChange={(e) => handleTipoPrecioCambio(index, e.target.value)}
-                                                                    className="registro-boletas-edit-input-tipo-precio"
-                                                                    disabled={!producto}
-                                                                >
-                                                                    <option value="PrecioUnitario">Precio Sala</option>
-                                                                    <option value="PrecioDescuento">Precio Dsto.</option>
-                                                                </select>
-                                                                {producto && (
-                                                                    <div className="registro-boletas-precios-info">
-                                                                        <small>
-                                                                            Actual: ${parseFloat(detalle.PrecioUnitario || 0).toLocaleString('es-CL')}
-                                                                        </small>
-                                                                        {/* <small>
-                                                                            Sala: ${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} |
-                                                                            Dsto: ${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')}
-                                                                        </small> */}
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                            <td className="registro-boletas-subtotal">
-                                                                {formatearPrecio(detalle.Subtotal || 0)}
-                                                            </td>
-                                                            <td>
-                                                                <textarea
-                                                                    value={detalle.DescripcionProducto || ''}
-                                                                    onChange={(e) => actualizarDetalle(index, 'DescripcionProducto', e.target.value)}
-                                                                    className="registro-boletas-edit-textarea"
-                                                                    placeholder="Obs"
-                                                                    rows="2"
-                                                                />
-                                                            </td>
-                                                            <td className="registro-boletas-actions">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => eliminarProductoDeBoleta(index)}
-                                                                    className="registro-boletas-btn-delete"
-                                                                    title="Eliminar producto"
-                                                                >
-                                                                    🗑️
-                                                                    <i className="fas fa-trash"></i>
-                                                                </button>
-                                                            </td>
+                                {/* PESTAÑA: VISUALIZACIÓN */}
+                                {tabActiva === 'visualizar' && (
+                                    <>
+                                        <div className="registro-boletas-products-section">
+                                            <h4 className="registro-boletas-detail-section-title">
+                                                <i className="fas fa-list"></i>
+                                                Detalle de Productos
+                                            </h4>
+                                            <div className="registro-boletas-products-table-container">
+                                                <table className="registro-boletas-products-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Descripción</th>
+                                                            <th>Cantidad</th>
+                                                            <th>Precio Unitario</th>
+                                                            <th>Subtotal</th>
                                                         </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr className="registro-boletas-edit-total">
-                                                    <th colSpan="3">Total General:</th>
-                                                    <th>{formatearPrecio(calcularTotalBoleta())}</th>
-                                                    <th></th>
-                                                    <th></th>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                {/* Agregar nuevo producto */}
-                                <div className="registro-boletas-edit-section">
-                                    <h4 className="registro-boletas-detail-section-title">
-                                        <i className="fas fa-plus"></i>
-                                        Agregar Nuevo Producto
-                                    </h4>
-                                    <div className="registro-boletas-nuevo-producto-form">
-                                        <div className="registro-boletas-edit-form-row">
-                                            <div className="registro-boletas-edit-form-group">
-                                                <label className='registro-boletas-label'>Producto *</label>
-                                                <Autocomplete
-                                                    options={productos.map(producto => ({
-                                                        value: producto.CodigoArticulo,
-                                                        name: `${producto.CodigoArticulo} - ${producto.NombreArticulo || producto.Descripcion || 'Sin descripción'}`,
-                                                        subtitle: `Sala: $${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} | Descuento: $${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')} | Stock: ${producto.Stock || 'N/A'}`
-                                                    }))}
-                                                    value={nuevoProductoForm.CodigoProducto}
-                                                    onChange={(codigoProducto) => handleNuevoProductoChange('producto', codigoProducto)}
-                                                    placeholder="Buscar producto..."
-                                                    className="form-input"
-                                                    displayKey="name"
-                                                    valueKey="value"
-                                                    searchKeys={["name"]}
-                                                    maxResults={10}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="registro-boletas-edit-products-form-group">
-                                                <label>Cantidad:</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.5"
-                                                    min="0.5"
-                                                    value={nuevoProductoForm.Cantidad}
-                                                    onChange={(e) => handleNuevoProductoChange('Cantidad', e.target.value)}
-                                                    className="registro-boletas-edit-input"
-                                                />
-                                            </div>
-                                            <div className="registro-boletas-edit-products-form-group">
-                                                <label>Tipo Precio:</label>
-                                                <select
-                                                    value={nuevoProductoForm.TipoPrecio}
-                                                    onChange={(e) => handleNuevoTipoPrecioCambio(e.target.value)}
-                                                    className="registro-boletas-edit-input"
-                                                    disabled={!nuevoProductoForm.CodigoProducto}
-                                                >
-                                                    <option value="PrecioUnitario">Precio Sala</option>
-                                                    <option value="PrecioDescuento">Precio con Descuento</option>
-                                                </select>
-                                                {nuevoProductoForm.CodigoProducto && (() => {
-                                                    const productoSeleccionado = productos.find(p => p.CodigoArticulo === nuevoProductoForm.CodigoProducto);
-                                                    return productoSeleccionado ? (
-                                                        <div className="registro-boletas-precios-info">
-                                                            <small>
-                                                                Precio Actual: ${parseFloat(nuevoProductoForm.PrecioUnitario || 0).toLocaleString('es-CL')}
-                                                            </small>
-                                                            <small>
-                                                                Sala: ${parseFloat(productoSeleccionado.PrecioUnitario || 0).toLocaleString('es-CL')} |
-                                                                Dsto: ${parseFloat(productoSeleccionado.PrecioDescuento || 0).toLocaleString('es-CL')}
-                                                            </small>
-                                                        </div>
-                                                    ) : null;
-                                                })()}
-                                            </div>
-                                            <div className="registro-boletas-edit-products-form-group">
-                                                <label>Descripción personalizada (opcional)</label>
-                                                <input
-                                                    type="text"
-                                                    value={nuevoProductoForm.DescripcionProducto}
-                                                    onChange={(e) => handleNuevoProductoChange('DescripcionProducto', e.target.value)}
-                                                    className="registro-boletas-edit-input"
-                                                    placeholder="Descripción especial para el producto..."
-                                                />
-                                            </div>
-                                            <div className="registro-boletas-edit-products-form-group-btnagregar">
-                                                <button
-                                                    type="button"
-                                                    onClick={agregarNuevoProducto}
-                                                    className="registro-boletas-btn-add"
-                                                    disabled={!nuevoProductoForm.CodigoProducto || !nuevoProductoForm.Cantidad}
-                                                >
-                                                    <i className="fas fa-plus"></i>
-                                                    Agregar Producto
-                                                </button>
+                                                    </thead>
+                                                    <tbody>
+                                                        {detallesBoleta.map((detalle, index) => (
+                                                            <React.Fragment key={index}>
+                                                                <tr>
+                                                                    <td>{detalle.Descripcion}</td>
+                                                                    <td>{detalle.Cantidad}</td>
+                                                                    <td>{formatearPrecio(detalle.PrecioUnitario)}</td>
+                                                                    <td>{formatearPrecio(detalle.Subtotal)}</td>
+                                                                </tr>
+                                                                {detalle.DescripcionProducto && detalle.DescripcionProducto.trim() !== '' && (
+                                                                    <tr className="registro-boletas-product-note-row">
+                                                                        <td colSpan="4" style={{ paddingLeft: '30px', fontStyle: 'italic', color: '#666' }}>
+                                                                            <strong>Nota:</strong> {detalle.DescripcionProducto}
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr className="registro-boletas-products-total">
+                                                            <th colSpan="3">Total:</th>
+                                                            <th>{formatearPrecio(boletaSeleccionada.TotalBoleta)}</th>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* Observaciones generales */}
-                                <div className="registro-boletas-edit-section">
-                                    <h4 className="registro-boletas-detail-section-title">
-                                        <i className="fas fa-comment"></i>
-                                        Observaciones
-                                    </h4>
-                                    <textarea
-                                        value={observacionesGenerales}
-                                        onChange={(e) => setObservacionesGenerales(e.target.value)}
-                                        className="registro-boletas-edit-observaciones"
-                                        placeholder="Ingrese observaciones adicionales para la boleta..."
-                                        rows="3"
-                                    />
-                                </div>
+                                        {/* Mostrar observaciones en modo visualización */}
+                                        {boletaSeleccionada.Observaciones && boletaSeleccionada.Observaciones.trim() !== '' && (
+                                            <div className="registro-boletas-detail-section">
+                                                <h4 className="registro-boletas-detail-section-title">
+                                                    <i className="fas fa-comment"></i>
+                                                    Observaciones
+                                                </h4>
+                                                <div className="registro-boletas-observaciones-view">
+                                                    {boletaSeleccionada.Observaciones}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* PESTAÑA: EDICIÓN */}
+                                {tabActiva === 'editar' && (
+                                    <>
+                                        {/* Edición de productos */}
+                                        <div className="registro-boletas-edit-section">
+                                            <h4 className="registro-boletas-detail-section-title">
+                                                <i className="fas fa-list"></i>
+                                                Editar Productos
+                                            </h4>
+                                            <div className="registro-boletas-edit-products-container">
+                                                <table className="registro-boletas-edit-products-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Descripción</th>
+                                                            <th>Cantidad</th>
+                                                            <th>Tipo Precio</th>
+                                                            <th>Subtotal</th>
+                                                            <th>Descripción</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {editingDetalles.map((detalle, index) => {
+                                                            const producto = productos.find(p => p.CodigoArticulo === detalle.CodigoProducto);
+                                                            const tipoPrecioActual = detalle.TipoPrecio || 'PrecioUnitario';
+
+                                                            return (
+                                                                <tr key={index}>
+                                                                    <td className="registro-boletas-product-description">
+                                                                        {detalle.Descripcion || detalle.NombreProducto}
+                                                                    </td>
+                                                                    <td>
+                                                                        <div className="registro-boletas-cantidad-container">
+                                                                            <input
+                                                                                type="number"
+                                                                                step="1"
+                                                                                min="1"
+                                                                                value={detalle.Cantidad || 0}
+                                                                                onChange={(e) => actualizarDetalle(index, 'Cantidad', e.target.value)}
+                                                                                className="registro-boletas-edit-input-cantidad"
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                className="registro-boletas-btn-medio"
+                                                                                onClick={() => actualizarDetalle(index, 'Cantidad', 0.5)}
+                                                                                title="Settear cantidad a 0.5"
+                                                                            >
+                                                                                0.5
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <select
+                                                                            value={tipoPrecioActual}
+                                                                            onChange={(e) => handleTipoPrecioCambio(index, e.target.value)}
+                                                                            className="registro-boletas-edit-input-tipo-precio"
+                                                                            disabled={!producto}
+                                                                        >
+                                                                            <option value="PrecioUnitario">Precio Sala</option>
+                                                                            <option value="PrecioDescuento">Precio Dsto.</option>
+                                                                        </select>
+                                                                        {producto && (
+                                                                            <div className="registro-boletas-precios-info">
+                                                                                <small>
+                                                                                    Actual: ${parseFloat(detalle.PrecioUnitario || 0).toLocaleString('es-CL')}
+                                                                                </small>
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="registro-boletas-subtotal">
+                                                                        {formatearPrecio(detalle.Subtotal || 0)}
+                                                                    </td>
+                                                                    <td>
+                                                                        <textarea
+                                                                            value={detalle.DescripcionProducto || ''}
+                                                                            onChange={(e) => actualizarDetalle(index, 'DescripcionProducto', e.target.value)}
+                                                                            className="registro-boletas-edit-textarea"
+                                                                            placeholder="Obs"
+                                                                            rows="2"
+                                                                        />
+                                                                    </td>
+                                                                    <td className="registro-boletas-actions">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => eliminarProductoDeBoleta(index)}
+                                                                            className="registro-boletas-btn-delete"
+                                                                            title="Eliminar producto"
+                                                                        >
+                                                                            🗑️
+                                                                            <i className="fas fa-trash"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr className="registro-boletas-edit-total">
+                                                            <th colSpan="3">Total General:</th>
+                                                            <th>{formatearPrecio(calcularTotalBoleta())}</th>
+                                                            <th></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Agregar nuevo producto */}
+                                        <div className="registro-boletas-edit-section">
+                                            <h4 className="registro-boletas-detail-section-title">
+                                                <i className="fas fa-plus"></i>
+                                                Agregar Nuevo Producto
+                                            </h4>
+                                            <div className="registro-boletas-nuevo-producto-form">
+                                                <div className="registro-boletas-edit-form-row">
+                                                    <div className="registro-boletas-edit-form-group">
+                                                        <label className='registro-boletas-label'>Producto *</label>
+                                                        <Autocomplete
+                                                            options={productos.map(producto => ({
+                                                                value: producto.CodigoArticulo,
+                                                                name: `${producto.CodigoArticulo} - ${producto.NombreArticulo || producto.Descripcion || 'Sin descripción'}`,
+                                                                subtitle: `Sala: $${parseFloat(producto.PrecioUnitario || 0).toLocaleString('es-CL')} | Descuento: $${parseFloat(producto.PrecioDescuento || 0).toLocaleString('es-CL')} | Stock: ${producto.Stock || 'N/A'}`
+                                                            }))}
+                                                            value={nuevoProductoForm.CodigoProducto}
+                                                            onChange={(codigoProducto) => handleNuevoProductoChange('producto', codigoProducto)}
+                                                            placeholder="Buscar producto..."
+                                                            className="form-input"
+                                                            displayKey="name"
+                                                            valueKey="value"
+                                                            searchKeys={["name"]}
+                                                            maxResults={10}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="registro-boletas-edit-products-form-group">
+                                                        <label>Cantidad:</label>
+                                                        <div className="registro-boletas-cantidad-container">
+                                                            <input
+                                                                type="number"
+                                                                step="1"
+                                                                min="1"
+                                                                value={nuevoProductoForm.Cantidad || 1}
+                                                                onChange={(e) => handleNuevoProductoChange('Cantidad', parseFloat(e.target.value) || 1)}
+                                                                className="registro-boletas-edit-input"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="registro-boletas-btn-medio"
+                                                                onClick={() => handleNuevoProductoChange('Cantidad', 0.5)}
+                                                                title="Settear cantidad a 0.5"
+                                                            >
+                                                                0.5
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="registro-boletas-edit-products-form-group">
+                                                        <label>Tipo Precio:</label>
+                                                        <select
+                                                            value={nuevoProductoForm.TipoPrecio}
+                                                            onChange={(e) => handleNuevoTipoPrecioCambio(e.target.value)}
+                                                            className="registro-boletas-edit-input"
+                                                            disabled={!nuevoProductoForm.CodigoProducto}
+                                                        >
+                                                            <option value="PrecioUnitario">Precio Sala</option>
+                                                            <option value="PrecioDescuento">Precio con Descuento</option>
+                                                        </select>
+                                                        {nuevoProductoForm.CodigoProducto && (
+                                                            <div className="registro-boletas-precios-info">
+                                                                <small style={{ display: 'block', marginTop: '5px', fontWeight: 'bold' }}>
+                                                                    Precio {nuevoProductoForm.TipoPrecio === 'PrecioUnitario' ? 'Sala' : 'con Descuento'}: ${parseFloat(nuevoProductoForm.PrecioUnitario || 0).toLocaleString('es-CL')}
+                                                                </small>
+                                                                {nuevoProductoForm.Cantidad > 0 && (
+                                                                    <small style={{ display: 'block', marginTop: '3px', color: '#2563eb', fontWeight: 'bold' }}>
+                                                                        Total: ${(parseFloat(nuevoProductoForm.PrecioUnitario || 0) * parseFloat(nuevoProductoForm.Cantidad || 0)).toLocaleString('es-CL')}
+                                                                    </small>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="registro-boletas-edit-products-form-group">
+                                                        <label>Descripción personalizada (opcional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={nuevoProductoForm.DescripcionProducto}
+                                                            onChange={(e) => handleNuevoProductoChange('DescripcionProducto', e.target.value)}
+                                                            className="registro-boletas-edit-input"
+                                                            placeholder="Descripción especial para el producto..."
+                                                        />
+                                                    </div>
+                                                    <div className="registro-boletas-edit-products-form-group-btnagregar">
+                                                        <button
+                                                            type="button"
+                                                            onClick={agregarNuevoProducto}
+                                                            className="registro-boletas-btn-add"
+                                                            disabled={!nuevoProductoForm.CodigoProducto || !nuevoProductoForm.Cantidad}
+                                                        >
+                                                            <i className="fas fa-plus"></i>
+                                                            Agregar Producto
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Observaciones generales */}
+                                        <div className="registro-boletas-edit-section">
+                                            <h4 className="registro-boletas-detail-section-title">
+                                                <i className="fas fa-comment"></i>
+                                                Observaciones
+                                            </h4>
+                                            <textarea
+                                                value={observacionesGenerales}
+                                                onChange={(e) => setObservacionesGenerales(e.target.value)}
+                                                className="registro-boletas-edit-observaciones"
+                                                placeholder="Ingrese observaciones adicionales para la boleta..."
+                                                rows="3"
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <div className="registro-boletas-modal-footer">
-                                <button
-                                    type="button"
-                                    className="registro-boletas-modal-button secondary"
-                                    onClick={() => setModalEditarIsOpen(false)}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="button"
-                                    className="registro-boletas-modal-button primary"
-                                    onClick={guardarCambiosBoleta}
-                                >
-                                    <i className="fas fa-save"></i>
-                                    Guardar Cambios
-                                </button>
+                                {tabActiva === 'visualizar' ? (
+                                    <button
+                                        type="button"
+                                        className="registro-boletas-modal-button secondary"
+                                        onClick={() => setModalIsOpen(false)}
+                                    >
+                                        Cerrar
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="registro-boletas-modal-button secondary"
+                                            onClick={() => {
+                                                setTabActiva('visualizar');
+                                                // Recargar detalles originales
+                                                setEditingDetalles(detallesBoleta);
+                                                setObservacionesGenerales(boletaSeleccionada.Observaciones || '');
+                                            }}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="registro-boletas-modal-button primary"
+                                            onClick={guardarCambiosBoleta}
+                                        >
+                                            <i className="fas fa-save"></i>
+                                            Guardar Cambios
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </>
                     )}
                 </div>
             </div>
+
             {/* Modal para eliminar boletas */}
             <div className={`registro-boletas-modal-overlay ${modalEliminarIsOpen ? 'show' : ''}`}>
                 <div className="registro-boletas-modal-content">
