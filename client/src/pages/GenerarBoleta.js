@@ -381,6 +381,7 @@ function GenerarBoleta() {
         CodigoCliente: boletaForm.CodigoCliente,
         CodigoUsuario: boletaForm.CodigoUsuario,
         FechaBoleta: fechaBoleta,
+        FechaVencimiento: fechaVencimiento,
         TotalBoleta: totales.subtotalNeto,
         Observaciones: boletaForm.Observaciones || '',
         detalles: detalles
