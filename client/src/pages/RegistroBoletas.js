@@ -52,6 +52,7 @@ function RegistroBoletas() {
     // Estados para las boletas
     const [boletas, setBoletas] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [cargandoTabla, setCargandoTabla] = useState(false); // Bloqueo para filtrado en tiempo real
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [boletaSeleccionada, setBoletaSeleccionada] = useState(null);
     const [detallesBoleta, setDetallesBoleta] = useState([]);
@@ -1367,10 +1368,16 @@ function RegistroBoletas() {
         }
     }, [userId, isAdmin, obtenerBoletas, obtenerUsuarios]);
 
-    // Efecto para filtrar tabla de boletas en tiempo real para ADMINS
+    // Efecto para filtrar tabla de boletas en tiempo real para ADMINS (sin debounce, con bloqueo)
     useEffect(() => {
         // Solo aplicar filtrado si es admin
         if (!isAdmin) {
+            return;
+        }
+
+        // Si ya está cargando, ignorar esta actualización
+        if (cargandoTabla) {
+            console.log('⏸️ Ya hay una carga en progreso, ignorando cambios...');
             return;
         }
 
@@ -1387,16 +1394,11 @@ function RegistroBoletas() {
             return;
         }
 
-        // Determinar debounce inteligente (invertido)
-        const tieneAlgunaFecha = fechaInicio || fechaFin;
-        const debounceTime = tieneAlgunaFecha ? 2000 : 800; // 2000ms si hay fechas, 800ms si solo vendedor
-        
-        console.log(`⏱️ Iniciando debounce de filtrado de tabla (${debounceTime}ms)...`);
-
-        // Debounce inteligente: 800ms si hay fechas, 1800ms si solo vendedor
-        const timeoutId = setTimeout(async () => {
+        // Ejecutar inmediatamente (sin debounce)
+        const filtrarTabla = async () => {
             try {
-                console.log('🔄 Filtrando tabla de boletas...');
+                console.log('🔄 Filtrando tabla de boletas (sin debounce)...');
+                setCargandoTabla(true);
                 
                 // Construir filtros
                 const filtros = {
@@ -1419,7 +1421,7 @@ function RegistroBoletas() {
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,
-                    timer: 1500,
+                    timer: 1000,
                     timerProgressBar: false,
                 });
 
@@ -1431,14 +1433,18 @@ function RegistroBoletas() {
                     }
                 });
 
+                setCargandoTabla(false);
+
             } catch (error) {
                 console.error('❌ Error al filtrar tabla:', error);
+                setCargandoTabla(false);
             }
-        }, debounceTime); // Debounce inteligente: corto con fechas, largo sin fechas
+        };
 
-        // Limpiar timeout si cambian los filtros antes de que se ejecute
-        return () => clearTimeout(timeoutId);
-    }, [isAdmin, filtroUsuario, fechaInicio, fechaFin, obtenerBoletas]);
+        // Ejecutar inmediatamente sin debounce
+        filtrarTabla();
+
+    }, [isAdmin, filtroUsuario, fechaInicio, fechaFin, obtenerBoletas, cargandoTabla]);
 
     // Efecto para generar/regenerar automáticamente el reporte en tiempo real con debounce
     useEffect(() => {
