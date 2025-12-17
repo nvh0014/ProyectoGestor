@@ -150,9 +150,12 @@ function RegistroBoletas() {
     };
 
     // Funciones para obtener datos
-    const obtenerBoletas = useCallback(async (filtros = {}) => {
+    const obtenerBoletas = useCallback(async (filtros = {}, mostrarPantallaCarga = true) => {
         try {
-            setLoading(true);
+            // Solo mostrar pantalla de carga azul en la carga inicial
+            if (mostrarPantallaCarga) {
+                setLoading(true);
+            }
 
             // Construir parámetros de consulta
             const params = new URLSearchParams({
@@ -182,10 +185,12 @@ function RegistroBoletas() {
                 confirmButtonText: 'Entendido'
             });
         } finally {
-            // Agregar tiempo de carga para asegurar que los datos se carguen correctamente
-            setTimeout(() => {
-                setLoading(false);
-            }, 1500);
+            if (mostrarPantallaCarga) {
+                // Agregar tiempo de carga para asegurar que los datos se carguen correctamente
+                setTimeout(() => {
+                    setLoading(false);
+                }, 1500);
+            }
         }
     }, [userId, isAdmin]);
 
@@ -1368,23 +1373,17 @@ function RegistroBoletas() {
         }
     }, [userId, isAdmin, obtenerBoletas, obtenerUsuarios]);
 
-    // Efecto para filtrar tabla de boletas en tiempo real para ADMINS (sin debounce, con bloqueo)
+    // Efecto para filtrar tabla de boletas en tiempo real para ADMINS (con debounce y bloqueo)
     useEffect(() => {
         // Solo aplicar filtrado si es admin
         if (!isAdmin) {
             return;
         }
 
-        // Si ya está cargando, ignorar esta actualización
-        if (cargandoTabla) {
-            console.log('⏸️ Ya hay una carga en progreso, ignorando cambios...');
-            return;
-        }
-
         // Si no hay usuario seleccionado, no filtrar
         if (!filtroUsuario) {
             console.log('⏸️ Admin sin usuario seleccionado, mostrando todas las boletas');
-            obtenerBoletas(); // Mostrar todas cuando no hay filtro
+            obtenerBoletas({}, false); // Mostrar todas cuando no hay filtro (sin pantalla de carga)
             return;
         }
 
@@ -1394,11 +1393,34 @@ function RegistroBoletas() {
             return;
         }
 
-        // Ejecutar inmediatamente (sin debounce)
-        const filtrarTabla = async () => {
+        // Si ya está cargando, no hacer nada (protección contra múltiples peticiones)
+        if (cargandoTabla) {
+            console.log('⏸️ Ya hay una petición en curso, ignorando...');
+            return;
+        }
+
+        // Debounce de 800ms para dar tiempo a seleccionar
+        const timeoutId = setTimeout(async () => {
             try {
-                console.log('🔄 Filtrando tabla de boletas (sin debounce)...');
+                console.log('🔄 Filtrando tabla de boletas...');
                 setCargandoTabla(true);
+
+                // Toast de inicio de carga
+                const ToastCargando = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 800,
+                    timerProgressBar: true,
+                });
+
+                ToastCargando.fire({
+                    icon: 'info',
+                    title: 'Actualizando...',
+                    didOpen: (toast) => {
+                        toast.style.fontSize = '0.85rem';
+                    }
+                });
                 
                 // Construir filtros
                 const filtros = {
@@ -1413,19 +1435,19 @@ function RegistroBoletas() {
 
                 console.log('📊 Aplicando filtros a tabla:', filtros);
                 
-                // Llamar a obtenerBoletas con los filtros
-                await obtenerBoletas(filtros);
+                // Llamar a obtenerBoletas SIN pantalla de carga (false = tiempo real)
+                await obtenerBoletas(filtros, false);
 
-                // Toast de confirmación sutil
-                const Toast = Swal.mixin({
+                // Toast de confirmación
+                const ToastExito = Swal.mixin({
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,
-                    timer: 1000,
+                    timer: 1500,
                     timerProgressBar: false,
                 });
 
-                Toast.fire({
+                ToastExito.fire({
                     icon: 'success',
                     title: 'Tabla actualizada',
                     didOpen: (toast) => {
@@ -1439,10 +1461,10 @@ function RegistroBoletas() {
                 console.error('❌ Error al filtrar tabla:', error);
                 setCargandoTabla(false);
             }
-        };
+        }, 800);
 
-        // Ejecutar inmediatamente sin debounce
-        filtrarTabla();
+        // Limpiar timeout si cambian los filtros
+        return () => clearTimeout(timeoutId);
 
     }, [isAdmin, filtroUsuario, fechaInicio, fechaFin, obtenerBoletas, cargandoTabla]);
 
@@ -1660,6 +1682,7 @@ function RegistroBoletas() {
                                                 setFiltroUsuario(valorSeleccionado);
                                             }}
                                             className="registro-boletas-filtro-select"
+                                            disabled={cargandoTabla}
                                         >
                                             <option value="">Seleccionar vendedor...</option>
                                             {usuarios.map(user => (
@@ -1680,7 +1703,7 @@ function RegistroBoletas() {
                                             className="registro-boletas-filtro-input"
                                             value={fechaInicio}
                                             onChange={(e) => setFechaInicio(e.target.value)}
-                                            disabled={!filtroUsuario}
+                                            disabled={!filtroUsuario || cargandoTabla}
                                         />
                                     </div>
                                     <div className="registro-boletas-filtro-group">
@@ -1692,7 +1715,7 @@ function RegistroBoletas() {
                                             className="registro-boletas-filtro-input"
                                             value={fechaFin}
                                             onChange={(e) => setFechaFin(e.target.value)}
-                                            disabled={!filtroUsuario}
+                                            disabled={!filtroUsuario || cargandoTabla}
                                         />
                                     </div>
 
