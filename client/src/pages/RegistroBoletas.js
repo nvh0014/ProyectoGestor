@@ -1367,6 +1367,75 @@ function RegistroBoletas() {
         }
     }, [userId, isAdmin, obtenerBoletas, obtenerUsuarios]);
 
+    // Efecto para filtrar tabla de boletas en tiempo real para ADMINS
+    useEffect(() => {
+        // Solo aplicar filtrado si es admin
+        if (!isAdmin) {
+            return;
+        }
+
+        // Si no hay usuario seleccionado, no filtrar
+        if (!filtroUsuario) {
+            console.log('⏸️ Admin sin usuario seleccionado, mostrando todas las boletas');
+            obtenerBoletas(); // Mostrar todas cuando no hay filtro
+            return;
+        }
+
+        // No filtrar si solo una fecha está definida (estado incompleto)
+        if ((fechaInicio && !fechaFin) || (!fechaInicio && fechaFin)) {
+            console.log('⏸️ Fechas incompletas, esperando fechas válidas...');
+            return;
+        }
+
+        console.log('⏱️ Iniciando debounce de filtrado de tabla (1000ms)...');
+
+        // Debounce de 1000ms para filtrado de tabla (más conservador que reporte)
+        const timeoutId = setTimeout(async () => {
+            try {
+                console.log('🔄 Filtrando tabla de boletas...');
+                
+                // Construir filtros
+                const filtros = {
+                    usuarioFiltro: filtroUsuario
+                };
+
+                // Agregar fechas solo si ambas están definidas
+                if (fechaInicio && fechaFin) {
+                    filtros.fechaInicio = fechaInicio;
+                    filtros.fechaFin = fechaFin;
+                }
+
+                console.log('📊 Aplicando filtros a tabla:', filtros);
+                
+                // Llamar a obtenerBoletas con los filtros
+                await obtenerBoletas(filtros);
+
+                // Toast de confirmación sutil
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    timerProgressBar: false,
+                });
+
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Tabla actualizada',
+                    didOpen: (toast) => {
+                        toast.style.fontSize = '0.85rem';
+                    }
+                });
+
+            } catch (error) {
+                console.error('❌ Error al filtrar tabla:', error);
+            }
+        }, 1000); // Debounce de 1000ms
+
+        // Limpiar timeout si cambian los filtros antes de que se ejecute
+        return () => clearTimeout(timeoutId);
+    }, [isAdmin, filtroUsuario, fechaInicio, fechaFin, obtenerBoletas]);
+
     // Efecto para generar/regenerar automáticamente el reporte en tiempo real con debounce
     useEffect(() => {
         // Solo generar si hay un usuario seleccionado
