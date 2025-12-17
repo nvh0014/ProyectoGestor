@@ -455,31 +455,68 @@ deleteBoleta: async (req, res) => {
     try {
       const { userId, fechaInicio, fechaFin } = req.query;
       
-      if (!userId || !fechaInicio || !fechaFin) {
+      console.log('📊 Solicitud de reporte:', { userId, fechaInicio, fechaFin });
+      
+      // Validar que al menos userId esté presente
+      if (!userId) {
         return res.status(400).json({ 
-          error: 'Se requieren userId, fechaInicio y fechaFin' 
+          error: 'Se requiere userId' 
         });
       }
       
-      const query = `
-        SELECT 
-          COUNT(b.NumeroBoleta) as TotalBoletas,
-          SUM(b.TotalBoleta) as TotalVentas,
-          AVG(b.TotalBoleta) as PromedioVenta,
-          MIN(b.TotalBoleta) as VentaMinima,
-          MAX(b.TotalBoleta) as VentaMaxima,
-          u.NombreUsuario as Vendedor
-        FROM boleta b
-        LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
-        WHERE b.CodigoUsuario = ?
-          AND DATE(b.FechaBoleta) >= ?
-          AND DATE(b.FechaBoleta) <= ?
-        GROUP BY b.CodigoUsuario, u.NombreUsuario
-      `;
+      // Construir query dinámicamente según si hay fechas o no
+      let query;
+      let params;
       
-      const [results] = await pool.execute(query, [userId, fechaInicio, fechaFin]);
+      if (fechaInicio && fechaFin) {
+        // Query con filtro de fechas
+        query = `
+          SELECT 
+            COUNT(b.NumeroBoleta) as TotalBoletas,
+            SUM(b.TotalBoleta) as TotalVentas,
+            AVG(b.TotalBoleta) as PromedioVenta,
+            MIN(b.TotalBoleta) as VentaMinima,
+            MAX(b.TotalBoleta) as VentaMaxima,
+            u.NombreUsuario as Vendedor
+          FROM boleta b
+          LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
+          WHERE b.CodigoUsuario = ?
+            AND DATE(b.FechaBoleta) >= ?
+            AND DATE(b.FechaBoleta) <= ?
+          GROUP BY b.CodigoUsuario, u.NombreUsuario
+        `;
+        params = [userId, fechaInicio, fechaFin];
+      } else {
+        // Query sin filtro de fechas (todas las boletas del usuario)
+        query = `
+          SELECT 
+            COUNT(b.NumeroBoleta) as TotalBoletas,
+            SUM(b.TotalBoleta) as TotalVentas,
+            AVG(b.TotalBoleta) as PromedioVenta,
+            MIN(b.TotalBoleta) as VentaMinima,
+            MAX(b.TotalBoleta) as VentaMaxima,
+            u.NombreUsuario as Vendedor
+          FROM boleta b
+          LEFT JOIN usuario u ON b.CodigoUsuario = u.CodigoUsuario
+          WHERE b.CodigoUsuario = ?
+          GROUP BY b.CodigoUsuario, u.NombreUsuario
+        `;
+        params = [userId];
+      }
+      
+      console.log('🔍 Ejecutando query:', { query: query.substring(0, 100), params });
+      const [results] = await pool.execute(query, params);
+      console.log('📊 Resultados de la query:', results);
+      
+      // También consultar las boletas individuales para debug
+      const [boletasDebug] = await pool.execute(
+        'SELECT NumeroBoleta, FechaBoleta, TotalBoleta, CodigoUsuario FROM boleta WHERE CodigoUsuario = ? LIMIT 5',
+        [userId]
+      );
+      console.log('🎫 Boletas del usuario (muestra):', boletasDebug);
       
       if (results.length === 0) {
+        console.log('⚠️ No se encontraron resultados, retornando reporte vacío');
         return res.json({
           TotalBoletas: 0,
           TotalVentas: 0,
@@ -490,6 +527,7 @@ deleteBoleta: async (req, res) => {
         });
       }
       
+      console.log('✅ Enviando reporte:', results[0]);
       res.json(results[0]);
     } catch (err) {
       console.error('Error al obtener reporte:', err);

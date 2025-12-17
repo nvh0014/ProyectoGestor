@@ -288,7 +288,7 @@ const menuItems = [
           {/* Usuario y botón de cerrar sesión a la derecha */}
           <div className="header-actions">
             {usuario && (
-              <p className="user-greeting">¡¡Bienvenido {usuario}!!</p>
+              <p className="user-greeting">¡¡Bienvenid@ {usuario}!!</p>
             )}
             <button
               onClick={cerrarSesion}
@@ -381,7 +381,7 @@ const menuItems = [
         
         <div className="footer-bottom">
           <p>&copy;Distribuidora Cerro Negro.</p>
-          <p>v4.8</p>
+          <p>v0.4.8</p>
           <p>nvh0014</p>
         </div>
       </footer>

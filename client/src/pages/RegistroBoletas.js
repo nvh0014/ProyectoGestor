@@ -43,6 +43,7 @@ function RegistroBoletas() {
     const [filtroPeriodo, setFiltroPeriodo] = useState('mes'); // día, semana, mes
     const [reporteVentas, setReporteVentas] = useState(null);
     const [mostrarReporte, setMostrarReporte] = useState(false);
+    const [generandoReporte, setGenerandoReporte] = useState(false);
 
     // Estados para filtros de fecha
     const [fechaInicio, setFechaInicio] = useState('');
@@ -198,7 +199,27 @@ function RegistroBoletas() {
             console.log('📞 Solicitando lista de usuarios...');
             const response = await api.get('/usuarios');
             console.log('✅ Usuarios recibidos:', response.data);
-            setUsuarios(response.data);
+            
+            // Parsear y limpiar los IDs de los usuarios
+            const usuariosLimpios = response.data.map(user => {
+                // Extraer solo el número del ID si viene con formato extra
+                let idLimpio = user.id;
+                if (typeof user.id === 'string' && user.id.includes(':')) {
+                    idLimpio = parseInt(user.id.split(':')[0], 10);
+                } else {
+                    idLimpio = parseInt(user.id, 10);
+                }
+                
+                console.log('🔍 Usuario:', { original: user.id, limpio: idLimpio, nombre: user.nombre });
+                
+                return {
+                    ...user,
+                    id: idLimpio
+                };
+            });
+            
+            console.log('✅ Usuarios procesados:', usuariosLimpios);
+            setUsuarios(usuariosLimpios);
         } catch (error) {
             console.error('❌ Error al obtener usuarios:', error);
             console.error('❌ Detalles:', error.response?.data || error.message);
@@ -289,20 +310,71 @@ function RegistroBoletas() {
             return;
         }
 
+        // Validar que si hay fechas, ambas estén completas
+        if ((fechaInicio && !fechaFin) || (!fechaInicio && fechaFin)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fechas Incompletas',
+                text: 'Si desea filtrar por fecha, debe seleccionar tanto la fecha de inicio como la de término. O deje ambas vacías para ver todas las boletas del usuario.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        // Validar que la fecha de inicio no sea mayor que la de término (solo si ambas están definidas)
+        if (fechaInicio && fechaFin && new Date(fechaInicio) > new Date(fechaFin)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error en Fechas',
+                text: 'La fecha de inicio no puede ser mayor que la fecha de término.',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
         try {
-            const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
-
+            // Limpiar cualquier formato extra del userId
+            let userIdLimpio = filtroUsuario;
+            
+            // Si contiene ':', tomar solo la parte antes de los dos puntos
+            if (typeof userIdLimpio === 'string' && userIdLimpio.includes(':')) {
+                userIdLimpio = userIdLimpio.split(':')[0];
+                console.log('⚠️ Usuario tenía formato con ":", extrayendo:', userIdLimpio);
+            }
+            
+            // Convertir a número entero
+            const userIdNumero = parseInt(userIdLimpio, 10);
+            
+            // Validar que sea un número válido
+            if (isNaN(userIdNumero)) {
+                console.error('❌ userId no es un número válido:', filtroUsuario);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'ID de usuario inválido',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+            
             console.log('📊 Generando reporte:', {
-                userId: filtroUsuario,
-                fechaInicio,
-                fechaFin
+                filtroUsuarioOriginal: filtroUsuario,
+                userIdLimpio,
+                userIdNumero,
+                fechaInicio: fechaInicio || 'Sin filtro',
+                fechaFin: fechaFin || 'Sin filtro'
             });
 
+            // Construir parámetros solo con los campos que tienen valor
             const params = new URLSearchParams({
-                userId: filtroUsuario,
-                fechaInicio,
-                fechaFin
+                userId: userIdNumero.toString()
             });
+            
+            // Agregar fechas solo si ambas están definidas
+            if (fechaInicio && fechaFin) {
+                params.append('fechaInicio', fechaInicio);
+                params.append('fechaFin', fechaFin);
+            }
 
             console.log('📞 Llamando a:', `/boletas/reporte?${params.toString()}`);
 
@@ -312,19 +384,27 @@ function RegistroBoletas() {
             setReporteVentas(response.data);
             setMostrarReporte(true);
 
-            // Preguntar si desea descargar el PDF
-            const result = await Swal.fire({
+            // Mostrar notificación de éxito con opción de descargar
+            const periodoTexto = fechaInicio && fechaFin 
+                ? 'del período seleccionado' 
+                : 'de todas las boletas históricas';
+            
+            Swal.fire({
                 icon: 'success',
                 title: 'Reporte Generado',
-                text: '¿Desea descargar el reporte en PDF?',
+                html: `
+                    <p>El reporte ${periodoTexto} se ha generado exitosamente.</p>
+                    <p><small><strong>Tip:</strong> El reporte se actualizará automáticamente cuando cambies las fechas o el usuario seleccionado.</small></p>
+                `,
                 showCancelButton: true,
-                confirmButtonText: 'Descargar PDF',
-                cancelButtonText: 'Solo Ver'
+                confirmButtonText: '<i class="fas fa-file-pdf"></i> Descargar PDF',
+                cancelButtonText: 'Solo Ver',
+                confirmButtonColor: '#27ae60'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    descargarReportePDF(response.data, fechaInicio, fechaFin);
+                }
             });
-
-            if (result.isConfirmed) {
-                descargarReportePDF(response.data, fechaInicio, fechaFin);
-            }
 
         } catch (error) {
             console.error('❌ Error al generar reporte:', error);
@@ -373,9 +453,13 @@ function RegistroBoletas() {
         doc.setFont('helvetica', 'bold');
         doc.text('Período:', 20, 58);
         doc.setFont('helvetica', 'normal');
-        const fechaInicioFormat = new Date(fechaInicio).toLocaleDateString('es-CL');
-        const fechaFinFormat = new Date(fechaFin).toLocaleDateString('es-CL');
-        doc.text(`${fechaInicioFormat} - ${fechaFinFormat}`, 50, 58);
+        if (fechaInicio && fechaFin) {
+            const fechaInicioFormat = new Date(fechaInicio).toLocaleDateString('es-CL');
+            const fechaFinFormat = new Date(fechaFin).toLocaleDateString('es-CL');
+            doc.text(`${fechaInicioFormat} - ${fechaFinFormat}`, 50, 58);
+        } else {
+            doc.text('Todas las boletas históricas', 50, 58);
+        }
 
         // Fecha de generación
         doc.setFont('helvetica', 'bold');
@@ -1111,8 +1195,8 @@ function RegistroBoletas() {
     // Configuración de columnas de la tabla
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const columns = useMemo(() => [
-        // ESTADO TABLA APARECE SOLO SI ES ADMIN
-        ...(isAdmin ? [{
+        // ESTADO TABLA APARECE SOLO SI ES GIOVANNA
+        ...(usuario && usuario.trim().toLowerCase() === 'giovanna' ? [{
             id: 'completada',
             header: 'Estado',
             cell: ({ row }) => (
@@ -1251,6 +1335,126 @@ function RegistroBoletas() {
         }
     }, [userId, isAdmin, obtenerBoletas, obtenerUsuarios]);
 
+    // Efecto para generar/regenerar automáticamente el reporte en tiempo real con debounce
+    useEffect(() => {
+        // Solo generar si hay un usuario seleccionado
+        if (!filtroUsuario) {
+            console.log('⏸️ No hay usuario seleccionado, esperando...');
+            return;
+        }
+        
+        // No generar si solo una fecha está definida (estado incompleto)
+        if ((fechaInicio && !fechaFin) || (!fechaInicio && fechaFin)) {
+            console.log('⏸️ Fechas incompletas, esperando...');
+            return;
+        }
+        
+        console.log('⏱️ Iniciando debounce de 1500ms...');
+        
+        // Implementar debounce de 1500ms para dar tiempo a que todo cargue
+        const timeoutId = setTimeout(() => {
+            const generarReporteEnTiempoReal = async () => {
+                try {
+                    console.log('🚀 Ejecutando generación de reporte después del debounce');
+                    setGenerandoReporte(true);
+                    
+                    // Esperar un momento adicional para asegurar que el estado esté estable
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Limpiar cualquier formato extra del userId
+                    let userIdLimpio = filtroUsuario;
+                    
+                    console.log('🔍 Procesando userId:', {
+                        tipo: typeof userIdLimpio,
+                        valor: userIdLimpio,
+                        contieneDosUntos: String(userIdLimpio).includes(':')
+                    });
+                    
+                    // Si contiene ':', tomar solo la parte antes de los dos puntos
+                    if (typeof userIdLimpio === 'string' && userIdLimpio.includes(':')) {
+                        const partes = userIdLimpio.split(':');
+                        userIdLimpio = partes[0];
+                        console.log('⚠️ Usuario tenía formato con ":", extrayendo:', { original: filtroUsuario, extraido: userIdLimpio, partes });
+                    }
+                    
+                    // Convertir a número entero
+                    const userIdNumero = parseInt(userIdLimpio, 10);
+                    
+                    console.log('🔄 Generando reporte en tiempo real...');
+                    console.log('📝 Datos procesados:', {
+                        filtroUsuarioOriginal: filtroUsuario,
+                        userIdLimpio,
+                        userIdNumero,
+                        esNumeroValido: !isNaN(userIdNumero),
+                        fechaInicio,
+                        fechaFin
+                    });
+                    
+                    // Validar que sea un número válido
+                    if (isNaN(userIdNumero) || userIdNumero <= 0) {
+                        console.error('❌ userId no es un número válido:', { filtroUsuario, userIdLimpio, userIdNumero });
+                        throw new Error('ID de usuario inválido');
+                    }
+                    
+                    // Construir parámetros solo con los campos que tienen valor
+                    const params = new URLSearchParams({
+                        userId: userIdNumero.toString()
+                    });
+                    
+                    // Agregar fechas solo si ambas están definidas
+                    if (fechaInicio && fechaFin) {
+                        params.append('fechaInicio', fechaInicio);
+                        params.append('fechaFin', fechaFin);
+                    }
+
+                    console.log('🌐 URL completa:', `/boletas/reporte?${params.toString()}`);
+                    
+                    const response = await api.get(`/boletas/reporte?${params.toString()}`);
+                    setReporteVentas(response.data);
+                    setMostrarReporte(true);
+                    setGenerandoReporte(false);
+                    
+                    // Mostrar notificación sutil solo si ya había un reporte previo
+                    if (mostrarReporte) {
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 1500,
+                            timerProgressBar: true,
+                        });
+                        
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Reporte actualizado'
+                        });
+                    }
+
+                } catch (error) {
+                    setGenerandoReporte(false);
+                    console.error('❌ Error al generar reporte:', error);
+                    // Mostrar error solo si es la primera vez
+                    if (!mostrarReporte) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error al generar reporte',
+                            text: 'No se pudo generar el reporte. Intenta de nuevo.',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+                }
+            };
+
+            generarReporteEnTiempoReal();
+        }, 800); // Debounce de 800ms
+        
+        // Limpiar el timeout si los valores cambian antes de que se ejecute
+        return () => clearTimeout(timeoutId);
+    }, [filtroUsuario, fechaInicio, fechaFin]); // Removemos mostrarReporte de las dependencias
+
     if (loading) {
         return (
             <div className="registro-boletas-container">
@@ -1313,132 +1517,282 @@ function RegistroBoletas() {
             <main className="registro-boletas-main-content">
                 <h2 className="registro-boletas-title">Registro de Boletas Emitidas</h2>
 
-                {/* Panel de filtros integrado */}
-                <div className="registro-boletas-filtros-card">
-                    <div className="registro-boletas-filtros-header">
-                        <h3 className="registro-boletas-filtros-title">
-                            <i className="fas fa-filter"></i>
-                            Filtros y Reportes
-                        </h3>
+
+
+                {/* SECCIÓN: Filtros por Fecha (Para Vendedores) */}
+                {!isAdmin && (
+                    <div className="registro-boletas-filtros-card">
+                        <div className="registro-boletas-filtros-header">
+                            <h3 className="registro-boletas-filtros-title">
+                                <i className="fas fa-filter"></i>
+                                Filtrar mis boletas
+                            </h3>
+                        </div>
+                        <div className="registro-boletas-filtros-content">
+                            <p className="registro-boletas-filtros-description">
+                                <i className="fas fa-info-circle"></i>
+                                Filtra tus boletas por rango de fechas para encontrar lo que necesitas más fácilmente.
+                            </p>
+                            
+                            <div className="registro-boletas-filtros-row">
+                                <div className="registro-boletas-filtro-group">
+                                    <label>
+                                        <i className="fas fa-calendar-alt"></i> Fecha Inicio:
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="registro-boletas-filtro-input"
+                                        value={fechaInicio}
+                                        onChange={(e) => setFechaInicio(e.target.value)}
+                                    />
+                                </div>
+                                <div className="registro-boletas-filtro-group">
+                                    <label>
+                                        <i className="fas fa-calendar-check"></i> Fecha Término:
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="registro-boletas-filtro-input"
+                                        value={fechaFin}
+                                        onChange={(e) => setFechaFin(e.target.value)}
+                                    />
+                                </div>
+                                <div className="registro-boletas-filtro-group">
+                                    <label style={{ opacity: 0 }}>Acción</label>
+                                    <button
+                                        onClick={() => {
+                                            if ((fechaInicio && !fechaFin) || (!fechaInicio && fechaFin)) {
+                                                Swal.fire({
+                                                    icon: 'warning',
+                                                    title: 'Fechas Incompletas',
+                                                    text: 'Debes seleccionar ambas fechas o dejarlas ambas vacías.',
+                                                    confirmButtonText: 'Entendido'
+                                                });
+                                                return;
+                                            }
+                                            aplicarFiltros();
+                                        }}
+                                        className="registro-boletas-btn-aplicar"
+                                        title="Aplicar filtros"
+                                    >
+                                        <i className="fas fa-filter"></i>
+                                        Filtrar
+                                    </button>
+                                    {(fechaInicio || fechaFin) && (
+                                        <button
+                                            onClick={() => {
+                                                setFechaInicio('');
+                                                setFechaFin('');
+                                                obtenerBoletas();
+                                            }}
+                                            className="registro-boletas-btn-limpiar"
+                                            title="Limpiar filtros"
+                                        >
+                                            <i className="fas fa-eraser"></i>
+                                            Limpiar
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Estado de filtros activos */}
+                            {fechaInicio && fechaFin && (
+                                <div className="registro-boletas-filtros-estado">
+                                    <div className="registro-boletas-filtro-badge activo">
+                                        <i className="fas fa-calendar-alt"></i>
+                                        {formatearFecha(fechaInicio)} - {formatearFecha(fechaFin)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="registro-boletas-filtros-content">
-                        <div className="registro-boletas-filtros-row">
-                            {/* Filtro por usuario (solo para admin) */}
-                            {isAdmin && (
-                                <>
+                )}
+
+                {/* SECCIÓN: Reporte de Ventas con Filtros Integrados (Solo Admin) */}
+                {isAdmin && (
+                    <div className="registro-boletas-reporte-generator-card">
+                        <div className="registro-boletas-reporte-generator-header">
+                            <h3 className="registro-boletas-reporte-generator-title">
+                                <i className="fas fa-chart-bar"></i>
+                                Reporte de ventas y filtrado
+                            </h3>
+                        </div>
+                        <div className="registro-boletas-reporte-generator-content">
+                            {/* Descripción explicativa */}
+                            <p className="registro-boletas-reporte-description">
+                                <i className="fas fa-bolt"></i>
+                                Selecciona un vendedor y opcionalmente un rango de fechas. <strong>El reporte se genera y actualiza automáticamente en tiempo real</strong> cuando cambias los filtros. Sin fechas = todas las boletas históricas.
+                            </p>
+
+                            {/* Filtros integrados */}
+                            <div className="registro-boletas-reporte-filtros-integrados">
+                                <div className="registro-boletas-filtros-row">
+                                    {/* Filtro por usuario */}
                                     <div className="registro-boletas-filtro-group">
-                                        <label>Usuario:</label>
+                                        <label>
+                                            <i className="fas fa-user"></i> Vendedor:
+                                        </label>
                                         <select
                                             value={filtroUsuario}
-                                            onChange={(e) => setFiltroUsuario(e.target.value)}
+                                            onChange={(e) => {
+                                                const valorSeleccionado = e.target.value;
+                                                console.log('👤 Usuario seleccionado:', valorSeleccionado);
+                                                setFiltroUsuario(valorSeleccionado);
+                                            }}
                                             className="registro-boletas-filtro-select"
                                         >
-                                            <option value="">Todos los usuarios</option>
+                                            <option value="">Seleccionar vendedor...</option>
                                             {usuarios.map(user => (
-                                                <option key={user.id} value={user.id}>
+                                                <option key={user.id} value={String(user.id)}>
                                                     {user.nombre}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
-                                </>
-                            )}
-                            {/* Filtros por fecha */}
-                            <div className="registro-boletas-filtro-group">
-                                <label>Fecha Inicio:</label>
-                                <input
-                                    type="date"
-                                    className="registro-boletas-filtro-input"
-                                    value={fechaInicio}
-                                    onChange={(e) => setFechaInicio(e.target.value)}
-                                />
-                            </div>
-                            <div className="registro-boletas-filtro-group">
-                                <label>Fecha Término:</label>
-                                <input
-                                    type="date"
-                                    className="registro-boletas-filtro-input"
-                                    value={fechaFin}
-                                    onChange={(e) => setFechaFin(e.target.value)}
-                                />
-                            </div>
+                                    
+                                    {/* Filtros por fecha */}
+                                    <div className="registro-boletas-filtro-group">
+                                        <label>
+                                            <i className="fas fa-calendar-alt"></i> Fecha Inicio:
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="registro-boletas-filtro-input"
+                                            value={fechaInicio}
+                                            onChange={(e) => setFechaInicio(e.target.value)}
+                                            disabled={!filtroUsuario}
+                                        />
+                                    </div>
+                                    <div className="registro-boletas-filtro-group">
+                                        <label>
+                                            <i className="fas fa-calendar-check"></i> Fecha Término:
+                                        </label>
+                                        <input
+                                            type="date"
+                                            className="registro-boletas-filtro-input"
+                                            value={fechaFin}
+                                            onChange={(e) => setFechaFin(e.target.value)}
+                                            disabled={!filtroUsuario}
+                                        />
+                                    </div>
 
+                                    {/* Botón para limpiar */}
+                                    {filtroUsuario && (
+                                        <div className="registro-boletas-filtro-group">
+                                            <label style={{ opacity: 0 }}>Acción</label>
+                                            <button
+                                                onClick={() => {
+                                                    setFiltroUsuario('');
+                                                    setFechaInicio('');
+                                                    setFechaFin('');
+                                                    setMostrarReporte(false);
+                                                    setReporteVentas(null);
+                                                }}
+                                                className="registro-boletas-btn-limpiar"
+                                                title="Limpiar filtros y reporte"
+                                            >
+                                                <i className="fas fa-eraser"></i>
+                                                Limpiar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
 
-
-                            {/* Botones de acción */}
-                            <div className="registro-boletas-filtro-buttons">
-                                <button
-                                    onClick={aplicarFiltros}
-                                    className="registro-boletas-btn-filtrar"
-                                >
-                                    <i className="fas fa-search"></i>
-                                    Filtrar
-                                </button>
-                                {isAdmin && (
-                                    <button
-                                        onClick={generarReporte}
-                                        className="registro-boletas-btn-reporte"
-                                        disabled={!filtroUsuario}
-                                    >
-                                        <i className="fas fa-chart-bar"></i>
-                                        Generar Reporte
-                                    </button>
+                                {/* Estado de filtros */}
+                                {filtroUsuario && (
+                                    <div className="registro-boletas-filtros-estado">
+                                        <div className="registro-boletas-filtro-badge activo">
+                                            <i className="fas fa-user"></i>
+                                            {usuarios.find(u => u.id === parseInt(filtroUsuario))?.nombre || 'Usuario'}
+                                        </div>
+                                        {fechaInicio && fechaFin ? (
+                                            <div className="registro-boletas-filtro-badge activo">
+                                                <i className="fas fa-calendar-alt"></i>
+                                                {formatearFecha(fechaInicio)} - {formatearFecha(fechaFin)}
+                                            </div>
+                                        ) : (
+                                            <div className="registro-boletas-filtro-badge opcional">
+                                                <i className="fas fa-infinity"></i>
+                                                Todas las boletas históricas
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
-                                <button
-                                    onClick={limpiarFiltros}
-                                    className="registro-boletas-btn-limpiar"
-                                >
-                                    <i className="fas fa-times"></i>
-                                    Limpiar
-                                </button>
+
+                                {/* Ayuda contextual */}
+                                {!filtroUsuario && (
+                                    <div className="registro-boletas-reporte-help-text">
+                                        <i className="fas fa-lightbulb"></i>
+                                        Selecciona un vendedor para comenzar. El reporte se generará automáticamente.
+                                    </div>
+                                )}
+                                {filtroUsuario && ((fechaInicio && !fechaFin) || (!fechaInicio && fechaFin)) && (
+                                    <div className="registro-boletas-reporte-help-text warning">
+                                        <i className="fas fa-exclamation-triangle"></i>
+                                        Completa ambas fechas o deja ambas vacías para ver todas las boletas.
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Indicador de carga */}
+                            {generandoReporte && (
+                                <div className="registro-boletas-reporte-loading">
+                                    <div className="registro-boletas-loading-spinner-small"></div>
+                                    <span>Generando reporte en tiempo real...</span>
+                                </div>
+                            )}
+
+                            {/* Mostrar reporte si existe */}
+                            {mostrarReporte && reporteVentas && !generandoReporte && (
+                                <div className="registro-boletas-reporte-resultado">
+                                    <div className="registro-boletas-reporte-resultado-header">
+                                        <div className="registro-boletas-reporte-titulo-container">
+                                            <h4 className="registro-boletas-reporte-resultado-title">
+                                                <i className="fas fa-chart-line"></i>
+                                                Reporte de Ventas - {reporteVentas.Vendedor}
+                                            </h4>
+                                            {/* <span className="registro-boletas-auto-update-badge" title="Este reporte se actualiza automáticamente al cambiar fechas o usuario">
+                                                <i className="fas fa-sync-alt"></i>
+                                                Auto-actualizable
+                                            </span> */}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                descargarReportePDF(reporteVentas, fechaInicio, fechaFin);
+                                            }}
+                                            className="registro-boletas-btn-descargar-pdf"
+                                        >
+                                            <i className="fas fa-file-pdf"></i>
+                                            Descargar PDF
+                                        </button>
+                                    </div>
+                                    <div className="registro-boletas-reporte-stats">
+                                        <div className="registro-boletas-stat-item">
+                                            <span className="stat-label">Total Boletas:</span>
+                                            <span className="stat-value">{reporteVentas.TotalBoletas}</span>
+                                        </div>
+                                        <div className="registro-boletas-stat-item">
+                                            <span className="stat-label">Total Ventas:</span>
+                                            <span className="stat-value highlight">{formatearPrecio(reporteVentas.TotalVentas || 0)}</span>
+                                        </div>
+                                        <div className="registro-boletas-stat-item">
+                                            <span className="stat-label">Promedio por Venta:</span>
+                                            <span className="stat-value">{formatearPrecio(reporteVentas.PromedioVenta || 0)}</span>
+                                        </div>
+                                        <div className="registro-boletas-stat-item">
+                                            <span className="stat-label">Venta Mínima:</span>
+                                            <span className="stat-value">{formatearPrecio(reporteVentas.VentaMinima || 0)}</span>
+                                        </div>
+                                        <div className="registro-boletas-stat-item">
+                                            <span className="stat-label">Venta Máxima:</span>
+                                            <span className="stat-value">{formatearPrecio(reporteVentas.VentaMaxima || 0)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-
-                    {/* Mostrar reporte si existe */}
-                    {mostrarReporte && reporteVentas && (
-                        <div className="registro-boletas-reporte-card">
-                            <div className="registro-boletas-reporte-header">
-                                <h4 className="registro-boletas-reporte-title">
-                                    <i className="fas fa-chart-line"></i>
-                                    Reporte de Ventas - {reporteVentas.Vendedor}
-                                </h4>
-                                <button
-                                    onClick={() => {
-                                        const { fechaInicio, fechaFin } = calcularFechas(filtroPeriodo);
-                                        descargarReportePDF(reporteVentas, fechaInicio, fechaFin);
-                                    }}
-                                    className="registro-boletas-btn-descargar-pdf"
-                                >
-                                    <i className="fas fa-file-pdf"></i>
-                                    Descargar PDF
-                                </button>
-                            </div>
-                            <div className="registro-boletas-reporte-stats">
-                                <div className="registro-boletas-stat-item">
-                                    <span className="stat-label">Total Boletas:</span>
-                                    <span className="stat-value">{reporteVentas.TotalBoletas}</span>
-                                </div>
-                                <div className="registro-boletas-stat-item">
-                                    <span className="stat-label">Total Ventas:</span>
-                                    <span className="stat-value highlight">{formatearPrecio(reporteVentas.TotalVentas || 0)}</span>
-                                </div>
-                                <div className="registro-boletas-stat-item">
-                                    <span className="stat-label">Promedio por Venta:</span>
-                                    <span className="stat-value">{formatearPrecio(reporteVentas.PromedioVenta || 0)}</span>
-                                </div>
-                                <div className="registro-boletas-stat-item">
-                                    <span className="stat-label">Venta Mínima:</span>
-                                    <span className="stat-value">{formatearPrecio(reporteVentas.VentaMinima || 0)}</span>
-                                </div>
-                                <div className="registro-boletas-stat-item">
-                                    <span className="stat-label">Venta Máxima:</span>
-                                    <span className="stat-value">{formatearPrecio(reporteVentas.VentaMaxima || 0)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                )}
 
                 <div className="registro-boletas-content-card">
                     <div className="registro-boletas-card-header">
@@ -1458,28 +1812,35 @@ function RegistroBoletas() {
                     </div>
 
                     <div className="registro-boletas-table-container">
-                        {/* Botones de acción masiva */}
-                        {isAdmin && (
+                        {/* Botones de acción masiva aparecen sólo si el usuario es Giovanna */}
+                        {(usuario && usuario.trim().toLowerCase() === 'giovanna') && (
                             <>
                                 <div className="registro-boletas-bulk-actions-bar">
-                                    <button
-                                        className="registro-boletas-btn-check-all"
-                                        onClick={() => toggleTodasCompletadas(true)}
-                                        disabled={boletas.length === 0 || procesandoActualizacionMasiva}
-                                        title="Marcar todas como completadas"
-                                    >
-                                        <i className={procesandoActualizacionMasiva ? "fas fa-spinner fa-spin" : "fas fa-check-double"}></i>
-                                        {procesandoActualizacionMasiva ? 'Procesando...' : 'Marcar'}
-                                    </button>
-                                    <button
-                                        className="registro-boletas-btn-uncheck-all"
-                                        onClick={() => toggleTodasCompletadas(false)}
-                                        disabled={boletas.length === 0 || procesandoActualizacionMasiva}
-                                        title="Desmarcar todas"
-                                    >
-                                        <i className={procesandoActualizacionMasiva ? "fas fa-spinner fa-spin" : "fas fa-undo"}></i>
-                                        {procesandoActualizacionMasiva ? 'Procesando...' : 'Desmarcar'}
-                                    </button>
+                                    <div className="registro-boletas-bulk-actions-text">
+                                        <p>
+                                            El marcado es una ayuda visual para identificar boletas ya revisadas. Acomódalas a tu gusto.
+                                        </p>
+                                    </div>
+                                    <div className="registro-boletas-bulk-actions-buttons">
+                                        <button
+                                            className="registro-boletas-btn-check-all"
+                                            onClick={() => toggleTodasCompletadas(true)}
+                                            disabled={boletas.length === 0 || procesandoActualizacionMasiva}
+                                            title="Marcar todas como completadas"
+                                        >
+                                            <i className={procesandoActualizacionMasiva ? "fas fa-spinner fa-spin" : "fas fa-check-double"}></i>
+                                            {procesandoActualizacionMasiva ? 'Procesando...' : 'Marcar todas'}
+                                        </button>
+                                        <button
+                                            className="registro-boletas-btn-uncheck-all"
+                                            onClick={() => toggleTodasCompletadas(false)}
+                                            disabled={boletas.length === 0 || procesandoActualizacionMasiva}
+                                            title="Desmarcar todas"
+                                        >
+                                            <i className={procesandoActualizacionMasiva ? "fas fa-spinner fa-spin" : "fas fa-undo"}></i>
+                                            {procesandoActualizacionMasiva ? 'Procesando...' : 'Desmarcar todas'}
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         )}
