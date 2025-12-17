@@ -1381,9 +1381,9 @@ function RegistroBoletas() {
             return;
         }
         
-        console.log('⏱️ Iniciando debounce de 1500ms...');
+        console.log('⏱️ Iniciando debounce de 800ms...');
         
-        // Implementar debounce de 1500ms para dar tiempo a que todo cargue
+        // Implementar debounce de 800ms para dar tiempo a que todo cargue
         const timeoutId = setTimeout(() => {
             const generarReporteEnTiempoReal = async () => {
                 try {
@@ -1548,97 +1548,6 @@ function RegistroBoletas() {
             {/* Main Content */}
             <main className="registro-boletas-main-content">
                 <h2 className="registro-boletas-title">Registro de Boletas Emitidas</h2>
-
-
-
-                {/* SECCIÓN: Filtros por Fecha (Para Vendedores) */}
-                {!isAdmin && (
-                    <div className="registro-boletas-filtros-card">
-                        <div className="registro-boletas-filtros-header">
-                            <h3 className="registro-boletas-filtros-title">
-                                <i className="fas fa-filter"></i>
-                                Filtrar mis boletas
-                            </h3>
-                        </div>
-                        <div className="registro-boletas-filtros-content">
-                            <p className="registro-boletas-filtros-description">
-                                <i className="fas fa-info-circle"></i>
-                                Filtra tus boletas por rango de fechas para encontrar lo que necesitas más fácilmente.
-                            </p>
-                            
-                            <div className="registro-boletas-filtros-row">
-                                <div className="registro-boletas-filtro-group">
-                                    <label>
-                                        <i className="fas fa-calendar-alt"></i> Fecha Inicio:
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className="registro-boletas-filtro-input"
-                                        value={fechaInicio}
-                                        onChange={(e) => setFechaInicio(e.target.value)}
-                                    />
-                                </div>
-                                <div className="registro-boletas-filtro-group">
-                                    <label>
-                                        <i className="fas fa-calendar-check"></i> Fecha Término:
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className="registro-boletas-filtro-input"
-                                        value={fechaFin}
-                                        onChange={(e) => setFechaFin(e.target.value)}
-                                    />
-                                </div>
-                                <div className="registro-boletas-filtro-group">
-                                    <label style={{ opacity: 0 }}>Acción</label>
-                                    <button
-                                        onClick={() => {
-                                            if ((fechaInicio && !fechaFin) || (!fechaInicio && fechaFin)) {
-                                                Swal.fire({
-                                                    icon: 'warning',
-                                                    title: 'Fechas Incompletas',
-                                                    text: 'Debes seleccionar ambas fechas o dejarlas ambas vacías.',
-                                                    confirmButtonText: 'Entendido'
-                                                });
-                                                return;
-                                            }
-                                            aplicarFiltros();
-                                        }}
-                                        className="registro-boletas-btn-aplicar"
-                                        title="Aplicar filtros"
-                                    >
-                                        <i className="fas fa-filter"></i>
-                                        Filtrar
-                                    </button>
-                                    {(fechaInicio || fechaFin) && (
-                                        <button
-                                            onClick={() => {
-                                                setFechaInicio('');
-                                                setFechaFin('');
-                                                obtenerBoletas();
-                                            }}
-                                            className="registro-boletas-btn-limpiar"
-                                            title="Limpiar filtros"
-                                        >
-                                            <i className="fas fa-eraser"></i>
-                                            Limpiar
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            {/* Estado de filtros activos */}
-                            {fechaInicio && fechaFin && (
-                                <div className="registro-boletas-filtros-estado">
-                                    <div className="registro-boletas-filtro-badge activo">
-                                        <i className="fas fa-calendar-alt"></i>
-                                        {formatearFecha(fechaInicio)} - {formatearFecha(fechaFin)}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* SECCIÓN: Reporte de Ventas con Filtros Integrados (Solo Admin) */}
                 {isAdmin && (
