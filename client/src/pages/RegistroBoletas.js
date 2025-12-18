@@ -63,6 +63,18 @@ function RegistroBoletas() {
     const [observacionesGenerales, setObservacionesGenerales] = useState('');
     const [productos, setProductos] = useState([]); // Para cargar precios de productos
 
+    // Helper para evaluar estado completada en cualquier formato (1, '1', true)
+    const esBoletaCompletada = useCallback((boleta) => {
+        const valor = boleta?.Completada ?? boleta?.completada;
+        return Number(valor) === 1 || valor === true;
+    }, []);
+
+    const puedeEditarBoleta = useMemo(() => {
+        if (!boletaSeleccionada) return false;
+        // Nueva regla: si está completada, nadie edita (ni admin)
+        return !esBoletaCompletada(boletaSeleccionada);
+    }, [boletaSeleccionada, esBoletaCompletada]);
+
     // Estados para agregar nuevos productos en edición
     const [nuevoProductoForm, setNuevoProductoForm] = useState({
         CodigoProducto: '',
@@ -578,6 +590,19 @@ function RegistroBoletas() {
         obtenerBoletas();
     };
 
+    // Asegurar que no se quede en pestaña de edición si no está permitido
+    useEffect(() => {
+        if (boletaSeleccionada && !puedeEditarBoleta && tabActiva !== 'visualizar') {
+            setTabActiva('visualizar');
+        }
+    }, [boletaSeleccionada, puedeEditarBoleta, tabActiva]);
+
+    // Control de cambio de pestañas evitando edición cuando no corresponde
+    const handleTabChange = useCallback((tab) => {
+        if (tab === 'editar' && !puedeEditarBoleta) return;
+        setTabActiva(tab);
+    }, [puedeEditarBoleta]);
+
     // Función para ver detalle de boleta (ahora también carga productos para permitir edición)
     const verDetalleBoleta = useCallback(async (numeroBoleta) => {
         try {
@@ -587,10 +612,31 @@ function RegistroBoletas() {
                 api.get('/articulos')
             ]);
             
-            setBoletaSeleccionada(boletaResponse.data.boleta);
+            const boletaLocal = boletas.find(b => b.NumeroBoleta === numeroBoleta);
+            const boleta = boletaResponse.data.boleta || boletaLocal || {};
+            const boletaCompletada = esBoletaCompletada(boleta) || esBoletaCompletada(boletaLocal);
+
+            // Normalizar flag completada para el estado del modal
+            const boletaNormalizada = {
+                ...boleta,
+                Completada: boletaCompletada ? 1 : 0
+            };
+
+            // Si está completada, abrir solo en modo visualizar (nadie edita)
+            if (boletaCompletada) {
+                setBoletaSeleccionada(boletaNormalizada);
+                setDetallesBoleta(boletaResponse.data.detalles || []);
+                setEditingDetalles(boletaResponse.data.detalles || []);
+                setObservacionesGenerales(boleta.Observaciones || '');
+                setTabActiva('visualizar');
+                setModalIsOpen(true);
+                return;
+            }
+            
+            setBoletaSeleccionada(boletaNormalizada);
             setDetallesBoleta(boletaResponse.data.detalles);
             setEditingDetalles(boletaResponse.data.detalles || []);
-            setObservacionesGenerales(boletaResponse.data.boleta.Observaciones || '');
+            setObservacionesGenerales(boleta.Observaciones || '');
             
             // Filtrar solo productos activos
             const productosActivos = productosResponse.data.filter(producto =>
@@ -609,7 +655,7 @@ function RegistroBoletas() {
                 confirmButtonText: 'Entendido'
             });
         }
-    }, []);
+    }, [boletas, esBoletaCompletada, isAdmin]);
 
     // const handleTipoPrecioChange = (tipoPrecio) => {
     //     setProductoForm(prev => {
@@ -804,6 +850,17 @@ function RegistroBoletas() {
     // Función para guardar cambios en la boleta
     const guardarCambiosBoleta = async () => {
         try {
+            // Validar si intenta editar una boleta completada (nadie puede)
+            if (esBoletaCompletada(boletaSeleccionada)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Acción No Permitida',
+                    text: 'No puede editar boletas completadas.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
             // Validar que todos los campos requeridos estén completos
             const detallesValidos = editingDetalles.every(detalle =>
                 detalle.Cantidad > 0 && detalle.PrecioUnitario > 0
@@ -1235,6 +1292,7 @@ function RegistroBoletas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const columns = useMemo(() => [
         // ESTADO TABLA APARECE SOLO SI ES ADMINISTRADOR
+        // SI LA TABLA ES MARCADA COMO COMPLETADA, EL USUARIO NO PODRÁ EDITARLA NI ELIMINARLA
         ...(isAdmin ? [{
             id: 'completada',
             header: 'Estado',
@@ -1275,41 +1333,44 @@ function RegistroBoletas() {
         {
             id: 'acciones',
             header: 'Acciones',
-            cell: ({ row }) => (
-                <div className="registro-boletas-table-actions">
-                    <button
-                        className="registro-boletas-action-button view"
-                        onClick={() => verDetalleBoleta(row.original.NumeroBoleta)}
-                        title="Visualizar/Editar boleta"
-                        aria-label="Visualizar/Editar boleta"
-                    >
-                        👁️
-                        <i className="fas fa-eye"></i>
-                    </button>
-                    <button
-                        className="registro-boletas-action-button download"
-                        onClick={() => descargarBoleta(row.original.NumeroBoleta)}
-                        title="Descargar boleta"
-                        aria-label="Descargar PDF de la boleta"
-                    >
-                        📥
-                        <i className="fas fa-download"></i>
-                    </button>
-                    <>
+            cell: ({ row }) => {
+                const completada = esBoletaCompletada(row.original);
+                return (
+                    <div className="registro-boletas-table-actions">
                         <button
-                            className="registro-boletas-action-button delete"
-                            onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
-                            title="Eliminar boleta"
-                            aria-label="Eliminar boleta"
+                            className="registro-boletas-action-button view"
+                            onClick={() => verDetalleBoleta(row.original.NumeroBoleta)}
+                            title="Visualizar/Editar boleta"
+                            aria-label="Visualizar/Editar boleta"
                         >
-                            🗑️
-                            <i className="fas fa-delete"></i>
+                            👁️
+                            <i className="fas fa-eye"></i>
                         </button>
-                    </>
-                </div>
-            )
+                        <button
+                            className="registro-boletas-action-button download"
+                            onClick={() => descargarBoleta(row.original.NumeroBoleta)}
+                            title="Descargar boleta"
+                            aria-label="Descargar PDF de la boleta"
+                        >
+                            📥
+                            <i className="fas fa-download"></i>
+                        </button>
+                        {!(completada && !isAdmin) && (
+                            <button
+                                className="registro-boletas-action-button delete"
+                                onClick={() => eliminarBoleta(row.original.NumeroBoleta)}
+                                title="Eliminar boleta"
+                                aria-label="Eliminar boleta"
+                            >
+                                🗑️
+                                <i className="fas fa-delete"></i>
+                            </button>
+                        )}
+                    </div>
+                );
+            }
         }
-    ], [isAdmin, verDetalleBoleta, descargarBoleta, eliminarBoleta, toggleCompletada]);
+    ], [esBoletaCompletada, isAdmin, verDetalleBoleta, descargarBoleta, eliminarBoleta, toggleCompletada]);
 
     // Configuración de la tabla
     const table = useReactTable({
@@ -1982,18 +2043,20 @@ function RegistroBoletas() {
                             <div className="registro-boletas-tabs-container">
                                 <button
                                     className={`registro-boletas-tab ${tabActiva === 'visualizar' ? 'active' : ''}`}
-                                    onClick={() => setTabActiva('visualizar')}
+                                    onClick={() => handleTabChange('visualizar')}
                                 >
                                     <i className="fas fa-eye"></i>
                                     Visualizar
                                 </button>
-                                <button
-                                    className={`registro-boletas-tab ${tabActiva === 'editar' ? 'active' : ''}`}
-                                    onClick={() => setTabActiva('editar')}
-                                >
-                                    <i className="fas fa-edit"></i>
-                                    Editar
-                                </button>
+                                {puedeEditarBoleta && (
+                                    <button
+                                        className={`registro-boletas-tab ${tabActiva === 'editar' ? 'active' : ''}`}
+                                        onClick={() => handleTabChange('editar')}
+                                    >
+                                        <i className="fas fa-edit"></i>
+                                        Editar
+                                    </button>
+                                )}
                             </div>
 
                             <div className="registro-boletas-modal-body">
@@ -2098,7 +2161,7 @@ function RegistroBoletas() {
                                 )}
 
                                 {/* PESTAÑA: EDICIÓN */}
-                                {tabActiva === 'editar' && (
+                                {tabActiva === 'editar' && puedeEditarBoleta && (
                                     <>
                                         {/* Edición de productos */}
                                         <div className="registro-boletas-edit-section">
@@ -2321,7 +2384,7 @@ function RegistroBoletas() {
                             </div>
 
                             <div className="registro-boletas-modal-footer">
-                                {tabActiva === 'visualizar' ? (
+                                {tabActiva === 'visualizar' || !puedeEditarBoleta ? (
                                     <button
                                         type="button"
                                         className="registro-boletas-modal-button secondary"
@@ -2335,7 +2398,7 @@ function RegistroBoletas() {
                                             type="button"
                                             className="registro-boletas-modal-button secondary"
                                             onClick={() => {
-                                                setTabActiva('visualizar');
+                                                handleTabChange('visualizar');
                                                 // Recargar detalles originales
                                                 setEditingDetalles(detallesBoleta);
                                                 setObservacionesGenerales(boletaSeleccionada.Observaciones || '');
