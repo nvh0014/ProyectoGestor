@@ -1937,7 +1937,7 @@ function RegistroBoletas() {
                             <input
                                 type="text"
                                 className="productos-search-input"
-                                placeholder="Buscar productos..."
+                                placeholder="Buscar boletas..."
                                 value={table.getState().globalFilter || ''}
                                 onChange={(e) => table.setGlobalFilter(e.target.value)}
                             />
