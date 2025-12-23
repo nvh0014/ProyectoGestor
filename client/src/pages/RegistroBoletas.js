@@ -1932,6 +1932,16 @@ function RegistroBoletas() {
                                 </div>
                             </>
                         )}
+                        {/* Controls */}
+                        <div className="productos-table-controls">
+                            <input
+                                type="text"
+                                className="productos-search-input"
+                                placeholder="Buscar productos..."
+                                value={table.getState().globalFilter || ''}
+                                onChange={(e) => table.setGlobalFilter(e.target.value)}
+                            />
+                        </div>
                         
 
 
