@@ -1,42 +1,28 @@
-// Cargar variables de entorno
-// En desarrollo local, usa .env.local
-// En producción, usa las variables de Railway
+/* Se cargan las variables de entorno dependiendo del contexto de ejecucion */
 require('dotenv').config({ 
   path: process.env.NODE_ENV === 'production' ? '.env' : '.env.local' 
 });
 
 const express = require('express');
-const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
+const corsMiddleware = require('./middleware/cors');
 const logger = require('./config/logger');
 const { startServer } = require('./config/server');
-const opcionesCors = require('./middleware/cors');
 
 const app = express();
 
-// =============================================
-// 1. Middlewares
-// =============================================
-
-// Aplicar CORS
+/* Se aplican los middlewares de seguridad y formato de datos */
 app.use(corsMiddleware);
-app.use(additionalCorsHeaders);
-app.use(opcionesCors);
 
-// Middleware para parsear JSON
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logger de solicitudes
+/* Se registra en consola el metodo y la ruta de cada solicitud entrante */
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
 
-// =============================================
-// 2. Rutas
-// =============================================
-
-// Importar rutas
+/* Se definen e importan las rutas principales del sistema */
 const authRoutes = require('./routes/auth');
 const clienteRoutes = require('./routes/clientes');
 const productoRoutes = require('./routes/productos');
@@ -45,7 +31,6 @@ const apiRoutes = require('./routes/api');
 const articulosRoutes = require('./routes/articulos');
 const debugRoutes = require('./routes/debug');
 
-// Ruta raíz
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Gestor Cerro Negro - API Backend',
@@ -55,12 +40,11 @@ app.get('/', (req, res) => {
   });
 });
 
-// Ruta de prueba básica
 app.get('/test', (req, res) => {
   res.json({ message: 'Servidor funcionando correctamente' });
 });
 
-// Usar las rutas
+/* Se asocian las rutas importadas a sus endpoints correspondientes */
 app.use('/', authRoutes);
 app.use('/clientes', clienteRoutes);
 app.use('/productos', productoRoutes);
@@ -69,11 +53,7 @@ app.use('/articulos', articulosRoutes);
 app.use('/api', apiRoutes);
 app.use('/debug', debugRoutes);
 
-// =============================================
-// 3. Manejo de Errores y Inicio del Servidor
-// =============================================
-
-// Manejo de rutas no encontradas
+/* Se interceptan las rutas no definidas para retornar un error 404 */
 app.use('*', (req, res) => {
   res.status(404).json({ 
     error: 'Ruta no encontrada',
@@ -82,14 +62,14 @@ app.use('*', (req, res) => {
   });
 });
 
-// Manejo de errores generales
+/* Se capturan y formatean los errores globales del servidor */
 app.use((err, req, res, next) => {
   console.error('Error no manejado:', err.stack);
   res.status(500).json({ 
-    error: 'Algo salió mal',
+    error: 'Algo salio mal',
     message: err.message
   });
 });
 
-// Iniciar servidor
+/* Se inicia la ejecucion del servidor web */
 startServer(app);
