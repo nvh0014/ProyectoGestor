@@ -9,6 +9,7 @@ const express = require('express');
 const { corsMiddleware, additionalCorsHeaders } = require('./middleware/cors');
 const logger = require('./config/logger');
 const { startServer } = require('./config/server');
+const opcionesCors = require('./middleware/cors');
 
 const app = express();
 
@@ -19,6 +20,7 @@ const app = express();
 // Aplicar CORS
 app.use(corsMiddleware);
 app.use(additionalCorsHeaders);
+app.use(opcionesCors);
 
 // Middleware para parsear JSON
 app.use(express.json({ limit: '10mb' }));

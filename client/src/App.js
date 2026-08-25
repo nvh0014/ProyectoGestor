@@ -13,6 +13,8 @@ import RegistroBoletas from './pages/RegistroBoletas';
 import Home from './Home';
 import Usuarios from './pages/Usuarios';
 
+
+
 function App() {
   return (
     <Router>
