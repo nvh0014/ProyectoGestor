@@ -3,7 +3,7 @@ const cors = require('cors');
 // Se definen los orígenes autorizados para interactuar con la API
 const origenesPermitidos = [
   'http://localhost:3000',
-  'https://proyecto-gestor-irku.vercel.app'
+  'https://gestorcerronegro.vercel.app'
 ];
 
 // Se definen las opciones de configuración de CORS
